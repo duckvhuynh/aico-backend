@@ -1,9 +1,12 @@
 # ADR-007: Tenant, Object-Storage, and Retention Selection
 
-**Status:** Proposed for AICO-003 owner acceptance
+**Status:** Accepted for AICO-003
 **Date:** 2026-08-12
-**Decision owner:** Pending human Architecture owner acceptance
-**Decision evidence:** Pending
+**Decision owner:** Duc Huynh (`@duckvhuynh`) as authorized Architecture/Engineering and Product/QA-Security owner
+**Decision evidence:** https://github.com/duckvhuynh/aico-backend/pull/11#issuecomment-5269354275
+**Product/Security evidence:** https://github.com/duckvhuynh/aico-backend/pull/11#issuecomment-5269357627
+**Accepted revision:** `58c32a98a36723d4104fb90a64882afde8cda460`
+**Hosted verification:** https://github.com/duckvhuynh/aico-backend/actions/runs/31615020989
 **Parent:** `duckvhuynh/aicompanyos#3`
 **Implementation child:** `duckvhuynh/aico-backend#10`
 **Product trace:** Goal G-05; SRS TD-002, TD-006, and TD-009; SRS-FR-086–087 and SRS-FR-092; SRS-NFR-008–010 and 013–016; PRD-NFR-004, PRD-NFR-005, PRD-NFR-007, PRD-NFR-008; PRD-OQ-004; DEC-013
@@ -222,6 +225,6 @@ Acceptance of this ADR binds later implementation to all of the following:
 
 ## 13. Human acceptance gate
 
-This file remains proposed until an identifiable authorized human Architecture owner records `APPROVE`, the exact reviewed commit SHA, date, selected Option A, disputed sections (or `None`), and any conditions in permanent GitHub evidence. Product/Security must separately confirm that this mechanism does not close DEC-013 or promise final durations. QA/Security must accept the non-waivable boundary/threat-test plan before AICO-003 completion.
+This decision was accepted on 2026-08-12 by Duc Huynh (`@duckvhuynh`) as the authorized Architecture/Engineering owner and, in a separate permanent comment, as the authorized Product/QA-Security owner. Both decisions approve exact revision `58c32a98a36723d4104fb90a64882afde8cda460` with no disputes or conditions. The Product/Security acceptance explicitly keeps DEC-013 and PRD-OQ-004 open and makes no final retention-duration promise. QA/Security must still approve the complete non-waivable boundary/threat-test package on the new exact final SHA before AICO-003 completion.
 
-An agent-authored `Accepted` label, passing formatter, existing code, or green CI cannot substitute for those decisions. If an owner disputes a binding invariant, the ADR remains proposed and AICO-003 remains open.
+The permanent human decision comments above are the authority for this accepted status; an agent-authored label, passing formatter, existing code, or green CI cannot substitute for them. Any semantic change after acceptance reopens the Architecture and Product/Security decision. A metadata-only commit that binds this evidence still requires exact-SHA validation and QA/Security approval before merge.
