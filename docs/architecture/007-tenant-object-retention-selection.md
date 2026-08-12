@@ -6,7 +6,7 @@
 **Decision evidence:** Pending
 **Parent:** `duckvhuynh/aicompanyos#3`
 **Implementation child:** `duckvhuynh/aico-backend#10`
-**Product trace:** Goal G-05; SRS TD-002, TD-006, and TD-009; SRS-FR-092; SRS-NFR-008–010 and 013–016; PRD-NFR-004–008; PRD-OQ-004; DEC-013
+**Product trace:** Goal G-05; SRS TD-002, TD-006, and TD-009; SRS-FR-086–087 and SRS-FR-092; SRS-NFR-008–010 and 013–016; PRD-NFR-004, PRD-NFR-005, PRD-NFR-007, PRD-NFR-008; PRD-OQ-004; DEC-013
 
 ## 1. Context and decision boundary
 
@@ -184,7 +184,7 @@ Security telemetry may distinguish foreign from absent resources for authorized 
 Acceptance of this ADR binds later implementation to all of the following:
 
 1. `company_id` comes from verified server-side context and scopes every row, object, attachment, context, sandbox, preview, export, log/audit view, backup restore, deletion, and hold operation.
-2. Missing and foreign resources are non-disclosing; denial creates zero bytes, grant, mutation, invocation, or cost effect.
+2. Missing and foreign resources are non-disclosing; denial creates zero unauthorized business/external effect. Where SRS-FR-087 applies, one scoped, redacted PolicyDecision/event records the denial without revealing the foreign resource or authorizing a tool effect.
 3. PostgreSQL registry metadata, not a raw key, URL, bucket, provider tag, model output, or client claim, is ownership authority.
 4. Object keys and version identities are server-generated, tenant-scoped, immutable, non-listable, and checksum-verifiable.
 5. All data types bind an immutable retention-policy version; no final duration exists until DEC-013 is accepted.

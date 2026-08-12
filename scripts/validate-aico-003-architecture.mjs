@@ -32,6 +32,11 @@ if (probe === 'adr-status') {
   documents.evidence = documents.evidence.replace(/A3-VERIFY-01/g, 'REMOVED-VERIFY-01');
 } else if (probe === 'aeo-gate') {
   documents.aeo = documents.aeo.replace(/A3-AEO-12/g, 'REMOVED-AEO-12');
+} else if (probe === 'ownership') {
+  documents.evidence = documents.evidence.replace(
+    /AICO-082 owns tenant\/redaction and signed-access tests/g,
+    'AICO-080 owns tenant tests',
+  );
 } else if (probe !== undefined) {
   throw new Error(`Unknown AICO-003 validation failure probe: ${probe}`);
 }
@@ -87,6 +92,8 @@ for (const boundary of [
 }
 
 requireText('contract', [
+  'Proposed AICO-003 contract',
+  'becomes normative only with accepted ADR-007 decision evidence',
   'company_id',
   'authenticated',
   'composite',
@@ -99,12 +106,17 @@ requireText('contract', [
   'checksum',
   'non-disclosing',
   'resource_not_found',
-  'zero side effect',
+  'zero unauthorized business',
+  'SRS-FR-087',
+  'PolicyDecision',
+  'authorized audit mutation',
   'restore',
   'hold',
 ]);
 
 requireText('threat', [
+  'proposed adversarial evidence contract',
+  'becomes binding only when ADR-007 has accepted human decision evidence',
   'release-blocking',
   'A3-T-ROW-01',
   'A3-T-OBJ-01',
@@ -125,6 +137,8 @@ requireText('threat', [
   'evidence owner',
   'non-waivable',
   'no paid',
+  'SRS-FR-087',
+  'PolicyDecision',
 ]);
 
 for (let number = 1; number <= 12; number += 1) {
@@ -181,6 +195,10 @@ requireText('evidence', [
   'AICO-007',
   'AICO-010',
   'AICO-078',
+  'AICO-082 owns tenant/redaction and signed-access tests',
+  'AICO-083 owns sandbox/preview isolation',
+  'AICO-080 owns performance',
+  'AICO-090 owns founder-facing limitations',
   'AICO-083',
 ]);
 

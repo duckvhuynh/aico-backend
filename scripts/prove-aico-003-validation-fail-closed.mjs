@@ -6,6 +6,7 @@ const probes = {
   'threat-ids': 'must define at least 12 unique stable A3-T-* threat cases',
   'evidence-id': 'is missing evidence ID: A3-VERIFY-01',
   'aeo-gate': 'is missing AEO gate: A3-AEO-12',
+  ownership: 'is missing required content: AICO-082 owns tenant/redaction and signed-access tests',
 };
 
 for (const [probe, expected] of Object.entries(probes)) {

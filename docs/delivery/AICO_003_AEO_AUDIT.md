@@ -73,7 +73,7 @@ Passing AICO-003 selects architecture and proof obligations only. It does not ma
 | Exact-version model context and provider policy/isolation                 | AICO-030, AICO-031, AICO-032, AICO-082           | AI Runtime + Security QA                           |
 | Telemetry allowlists, bounded evidence, analytics, alerts, canary tests   | AICO-020, AICO-056, AICO-072, AICO-077, AICO-082 | Observability + Security QA                        |
 | Sandbox input/output, egress, credentials, and isolation tests            | AICO-047-AICO-052, AICO-083                      | Sandbox/Platform + Security QA                     |
-| Preview isolation, grant expiry/revocation, and negative tests            | AICO-007, AICO-057, AICO-076, AICO-083           | Preview Platform + Security QA                     |
+| Preview isolation, grant expiry/revocation, and negative tests            | AICO-007, AICO-057, AICO-076, AICO-082, AICO-083 | Preview Platform + Security QA                     |
 | Export integrity and tenant-authorized download                           | AICO-069, AICO-070, AICO-071, AICO-076, AICO-082 | Export/Storage + Security QA                       |
 | Versioned retention, deletion, holds, and Product/legal disclosures       | DEC-013, AICO-076, AICO-082, AICO-090, AICO-091  | Product + Privacy/Legal/Security + QA              |
 | Backup/PITR, isolated restore, continuation reconciliation, restore drill | AICO-078, AICO-084, AICO-089, AICO-091           | Platform Operations + Runtime + Security QA        |

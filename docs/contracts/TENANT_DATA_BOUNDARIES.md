@@ -1,6 +1,6 @@
 # Tenant and Data Boundary Contract
 
-- **Status:** Normative AICO-003 contract; implementation obligations are staged below
+- **Status:** Proposed AICO-003 contract; becomes normative only with accepted ADR-007 decision evidence
 - **Date:** 2026-08-12
 - **Scope:** A3-BOUNDARY-01, A3-DENY-01, A3-OBJECT-01
 - **Authority:** SRS TD-002, TD-006, TD-009; SRS-FR-092; SRS-NFR-008-010 and 013-016
@@ -9,7 +9,7 @@
 
 This contract defines the tenant boundary for PostgreSQL, S3-compatible object storage, model context, generated execution, derived delivery surfaces, operational data, backup/restore, and destruction. `company_id` is the authoritative tenant key. A caller-provided company identifier, storage key, object metadata field, model value, task envelope, sandbox path, preview token, export manifest, log field, or backup label is never a trusted source of tenant authority.
 
-Normative terms **MUST**, **MUST NOT**, **SHOULD**, and **MAY** are binding in the usual RFC sense. A row marked **Required** is an implementation obligation and must not be represented as already deployed.
+If ADR-007 is accepted, normative terms **MUST**, **MUST NOT**, **SHOULD**, and **MAY** become binding in the usual RFC sense. Until then, this document is a proposed contract. A row marked **Required** is a proposed implementation obligation and must not be represented as already deployed.
 
 ## 1. Universal boundary rules
 
@@ -33,15 +33,17 @@ Authorization occurs at the application boundary before content lookup, object-s
 
 Missing, malformed, stale, expired, revoked, cross-tenant, or ambiguous inputs deny. Denial is final for that attempt; downstream components MUST NOT infer permission from possession of a raw identifier or storage key.
 
-### 1.3 Zero-side-effect denial
+### 1.3 Zero-unauthorized-effect denial with auditable policy decisions
 
 Every denial covered by this contract MUST produce all of the following:
 
 - zero response content from the protected resource;
 - zero signed URL, redirect, preview credential, export credential, or sandbox credential;
 - zero row/object mutation, promotion, publication, deletion, restoration, or hold change;
-- zero model/provider/tool invocation, sandbox execution, task continuation, budget reservation, billable cost, event/outbox domain effect, or cache fill containing protected content; and
-- at most a bounded, redacted security/audit signal after the denial decision. That signal is not a domain mutation and MUST NOT contain a foreign identifier, object key, payload, signed URL, prompt/completion, source, attachment, or export body.
+- zero model/provider/tool invocation, sandbox execution, task continuation, budget reservation, billable cost, unauthorized business-success event/outbox effect, or cache fill containing protected content; and
+- where SRS-FR-087 applies, exactly one tenant-scoped, reason-coded, redacted `PolicyDecision` and linked denial event/outbox record. Other denials produce at most the bounded redacted security/audit record required by their owning contract. Neither record may contain a foreign identifier, object key, payload, signed URL, prompt/completion, source, attachment, or export body.
+
+The denial record is an authorized audit mutation, not the denied business effect. It MUST NOT grant access, transition work, trigger a tool/provider/sandbox, reserve budget, or disclose whether a foreign resource exists.
 
 Pre-authorization idempotency bookkeeping MAY record only request-local, non-sensitive replay state. It MUST neither prove resource existence nor acquire a resource-level lock in a foreign tenant.
 
@@ -216,4 +218,4 @@ Required evidence includes:
 8. RLS role/context/pool-reuse/`USING`/`WITH CHECK` tests when RLS is introduced; and
 9. exact reviewed SHA, canonical verifier result, and the human approvals required by backend issue #10.
 
-Tenant isolation and zero-side-effect denial are non-waivable. A missing implementation or non-executable future boundary remains explicitly open under its owning AICO issue; documentation alone cannot convert it to a passed control.
+Tenant isolation and zero unauthorized business/external effect on denial are non-waivable. Where SRS-FR-087 applies, absence of the required scoped/redacted PolicyDecision/event is also blocking. A missing implementation or non-executable future boundary remains explicitly open under its owning AICO issue; documentation alone cannot convert it to a passed control.
