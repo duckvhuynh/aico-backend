@@ -68,12 +68,12 @@ npm run start:worker
 
 ```bash
 npm run verify
-npm audit
-docker compose config --quiet
-npm run test:smoke
+npm run verify:ci
 ```
 
-The smoke test verifies readiness, authentication, company creation, identical-command replay, initiative/run creation, durable worker completion, ordered events, and a cross-tenant negative read.
+`npm run verify` is the fast source gate. `npm run verify:ci` is the canonical AICO-009 foreground verifier used locally and by GitHub Actions. It performs a clean lockfile install, governance validation, source/type/unit/contract/build checks, dependency audit, Compose validation, migration apply/revert/reapply, a tenant-scoped S3-compatible storage fixture, Docker image builds, and the HTTP smoke path. It owns a uniquely named disposable Compose project and removes only that project's containers and volumes in a `finally` cleanup.
+
+The smoke test verifies readiness, authentication, company creation, identical-command replay, initiative/run creation, durable worker completion, ordered events, and a cross-tenant negative read. Run `npm run verify:fail-closed` to prove that the verifier rejects an injected failure at every named gate without changing tracked files.
 
 ## GitHub traceability
 

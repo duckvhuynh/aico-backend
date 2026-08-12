@@ -1,0 +1,18 @@
+export const verificationGates = [
+  'install',
+  'governance',
+  'fail-closed',
+  'format',
+  'lint',
+  'typecheck',
+  'unit-contract',
+  'build',
+  'audit',
+  'compose-config',
+  'images',
+  'dependencies',
+  'object-init',
+  'migrations',
+  'storage',
+  'http-smoke',
+];
