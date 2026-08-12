@@ -1,0 +1,151 @@
+# AICO-003 Release-Blocking Threat Test Plan
+
+## Purpose and scope
+
+This plan is the binding adversarial evidence contract for backend issue
+[aico-backend#10](https://github.com/duckvhuynh/aico-backend/issues/10), parent
+[aicompanyos#3](https://github.com/duckvhuynh/aicompanyos/issues/3), `A3-THREAT-01`, and
+the test portion of `A3-TRACE-01`. It covers tenant, object, retention, deletion, and
+hold boundaries. It does not claim that every planned surface exists today, set the
+open DEC-013 retention durations, or broaden AICO-003 into general AI safety.
+
+Each case has a stable identifier. Renaming, combining, or deleting a case requires
+Architecture and QA/Security review plus an updated trace map. A case marked
+**Executable now** has repository evidence that can run today. **Planned** means the
+owning issue must implement and run it before its stated release gate; architecture
+text alone is not passing evidence.
+
+## Common adversarial protocol
+
+Every case uses two synthetic companies, A and B, with disjoint founders, resources,
+objects, runs, workspaces, and immutable marker values. It captures authoritative
+state and side-effect counters before the attack, executes the request through the
+real authorization boundary, and then proves all of the following:
+
+1. The external result is the same bounded `resource_not_found` contract used for an
+   absent tenant-owned resource, or the surface-specific generic denial. It contains
+   no foreign ID, key, filename, type, size, checksum, state, timestamp, policy,
+   prompt, content, stack, SQL, or timing-sensitive existence clue.
+2. No foreign body, metadata, signed URL, preview/export handle, model context,
+   credential, log field, trace attribute, metric label, backup material, or hold
+   fact crosses the requesting boundary.
+3. The before/after diff proves zero unauthorized business mutation, event/outbox or
+   continuation, object write/delete, access grant, model/provider invocation,
+   tool/sandbox invocation, budget reservation, token usage, compute/storage charge,
+   or cost-ledger effect. A bounded classified security-denial signal is the only
+   permitted new record.
+4. The denial signal contains safe actor, operation, reason-class, correlation,
+   environment, and release-manifest references only. It cannot contain tenant
+   content, secrets, signed URLs, provider bodies, or foreign resource metadata.
+5. Repeating, racing, or varying an opaque identifier does not change the response
+   shape, disclose list cardinality, or create a second logical result.
+
+Authoritative evidence is an exact-SHA automated test report plus database/object
+store snapshots or queries, provider/tool fake call ledgers, budget-ledger diff, and
+redaction scan. HTTP response assertions alone are insufficient. Test results must
+name the case IDs they prove; missing, skipped, flaky, or unavailable cases fail the
+applicable gate.
+
+## Threat and evidence matrix
+
+| Test ID           | Boundary and preconditions                                                                                                                                               | Attack or action                                                                                                                                                         | Expected non-disclosing result and zero-side-effect proof                                                                                                                                                                        | Authoritative evidence                                                                                                               | Evidence owner                         | Gate                                        | Implementing AICO issue                                    | Current status                                                                                                                                                                                                                                       |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------- | ------------------------------------------- | ---------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `A3-T-ROW-01`     | Companies A/B each own relational roots and descendants; absent control ID also exists                                                                                   | B lists, reads, mutates, links, and deletes A's company/run/task/event/artifact/wait IDs; also attempts a cross-company child FK                                         | Same response as absent; no row/cardinality/version disclosure; no mutation, event, dispatch, provider/tool call, budget, or cost                                                                                                | Two-company API/repository suite, constraint/RLS assertions, state and side-effect diff, safe denial event                           | Backend + Security QA                  | R1 and every later tenant-owned schema gate | AICO-015; reusable harness AICO-082                        | **Partial executable evidence:** `test/smoke.mjs` proves one foreign run read returns 404; current migrations provide composite tenant constraints. Write/list/delete, RLS, enumeration, and complete side-effect assertions are planned.            |
+| `A3-T-OBJ-01`     | A owns immutable object metadata/body; B and absent opaque object IDs/keys are known to harness only                                                                     | B requests HEAD/GET/delete/copy or supplies A's raw key/object ID                                                                                                        | Same result as absent before object-store access or grant; no body/metadata/key/checksum/URL; no object mutation, access grant, model/tool call, budget, or cost                                                                 | Object-service integration ledger, S3 access audit, metadata/body checksum inventory, database/outbox/budget diff                    | Storage + Security QA                  | R1/R3 and R7                                | AICO-015, AICO-039, AICO-082                               | **Partial executable evidence:** `scripts/storage-fixture.mjs` proves deterministic put/head/get/checksum and a fixture-local mismatched-tenant key denial. It is not production authorization and does not prove signed access or zero store calls. |
+| `A3-T-ATT-01`     | A owns pending, accepted, rejected, expired, and quarantined attachments; adversarial fixtures are synthetic                                                             | B references A's attachment; upload spoofs type/name, is oversized/polyglot/malicious, or embeds instructions/executable content                                         | Generic not-found/invalid-attachment result; no body, filename, scan result, or existence disclosure; no link, execution, model context, sandbox/tool call, signed URL, storage promotion, or cost                               | Ingestion/retrieval integration report, scanner stub ledger, quarantine/promotion inventory, provider/tool ledgers, redaction scan   | Attachment Security + QA               | R1 and R7                                   | AICO-017, AICO-082                                         | **Planned.** Attachment ingestion/retrieval is not implemented; DEC-014 formats/sizes remain open.                                                                                                                                                   |
+| `A3-T-CTX-01`     | A/B have immutable artifact, answer, attachment, and context versions plus seeded forbidden markers                                                                      | A worker/provider attempt for B is given an A reference, mutable-latest reference, deleted reference, arbitrary transcript, credential, or hidden-reasoning field        | Context assembly fails before provider/tool dispatch; result does not identify the foreign/missing field; zero invocation, tokens, budget reservation/consumption, tool call, task transition, event, or cost                    | Context-manifest negative suite, canonical digest/exclusion report, provider/tool fake call counts, task/event/budget diff, log scan | AI Runtime + Security QA               | R2/R3 and R7                                | AICO-015, AICO-031, AICO-032, AICO-082                     | **Planned.** Existing durable workflow evidence is reusable for invocation ledgers but does not prove cross-tenant context exclusion.                                                                                                                |
+| `A3-T-SBX-IN-01`  | B's workspace is empty and isolated; A source/object/workspace references and traversal/symlink/mount/device payloads are seeded                                         | B's sandbox input materializer requests A object/snapshot or an escaping path                                                                                            | Generic invalid-input denial before materialization; no A bytes/metadata/path; no workspace write, process spawn, tool/provider invocation, event, budget, compute, or cost                                                      | Materializer and object-call ledger, workspace hash/tree diff, process/compute ledger, security signal                               | Sandbox + Security QA                  | R4 and R7                                   | AICO-048, AICO-049, AICO-083                               | **Planned.** No sandbox input materializer exists.                                                                                                                                                                                                   |
+| `A3-T-SBX-OUT-01` | A/B have distinct ephemeral workspaces; output includes traversal/symlink/special-file and foreign marker attempts                                                       | B submits output outside its workspace, a link to A/host content, foreign ownership metadata, or output after cancellation/expiry                                        | Output is rejected/quarantined without path/body disclosure; no object promotion, artifact/build/preview record, event, tool continuation, model call, storage/compute charge, or cost                                           | Output collector suite, workspace/object inventory, checksum and DB diff, sandbox/tool/cost ledgers                                  | Sandbox + Artifact + Security QA       | R4 and R7                                   | AICO-049, AICO-054, AICO-083                               | **Planned.** No sandbox output collector exists.                                                                                                                                                                                                     |
+| `A3-T-PRV-01`     | A has valid/expired/revoked/tampered previews; B has another preview and control-plane session                                                                           | B requests A preview or enumerates handles; preview code attempts control cookies/storage/private API/other preview; old URL is retried after expiry/revocation          | Same result as absent/expired without foreign metadata; isolated origin cannot reach control identity/private API/other preview; no renewed URL, cache resurrection, publish, model/tool call, mutation, or cost                 | Browser/security-header suite, origin/network trace, cache/object access audit, access-grant and state diff                          | Preview Platform + Security QA         | R4 and R7                                   | AICO-007, AICO-057, AICO-083                               | **Planned.** Preview service is not implemented.                                                                                                                                                                                                     |
+| `A3-T-EXP-01`     | A owns final and non-final export versions; source includes synthetic secret/foreign/prompt markers; B has no access                                                     | B requests A export; requests pre-approval/stale/tampered package; or attempts to include forbidden path/type/content                                                    | Same as absent or generic invalid package; no package/body/manifest/checksum/URL disclosure; no export publication/download event, object write, provider/tool call, budget, storage charge, or cost                             | Export allowlist/secret-seeding suite, package manifest/checksum scan, object/state/event/budget diff                                | Export + Security QA                   | R6 and R7                                   | AICO-069, AICO-070, AICO-071, AICO-082                     | **Planned.** Export generation/download is not implemented.                                                                                                                                                                                          |
+| `A3-T-TEL-01`     | Synthetic foreign-content, prompt/completion, attachment/source, credential, signed-URL, and hidden-reasoning canaries are injected at API/worker/provider/tool failures | Trigger success, denial, exception, retry, and crash paths; query logs, traces, metrics, dashboards, CI output, and debug evidence                                       | Prohibited values never reach any sink; metrics have bounded labels and no tenant content/high-cardinality foreign IDs; denial signal remains useful; no replay/mutation/provider/tool/cost effect from diagnostics              | Sink-capture contract tests with canary scan and schema rejection counts across API/worker/provider/tool/sandbox                     | Observability + Security QA            | R2-R7                                       | AICO-020, AICO-056, AICO-072, AICO-077, AICO-082           | **Planned.** Contracts prohibit these fields, but no complete multi-sink executable canary suite exists.                                                                                                                                             |
+| `A3-T-BKP-01`     | Encrypted isolated backup contains both tenants, versions, hold/deletion states, and object metadata; restore target has no production routes                            | Restore under a stale/mis-scoped tenant context; query A as B; replay restored outbox/continuation; compare object references/checksums                                  | Restored tenant scope remains intact and foreign queries match absent; no cross-tenant row/object visibility, duplicate continuation/event/invocation, signed URL, mutation, or cost; uncertain/incomplete restore stays blocked | Backup manifest, restore logs, integrity/tenant query suite, event/inbox/invocation/budget reconciliation, object checksum report    | Platform Operations + Security QA      | R6 and R7                                   | AICO-078, AICO-082, AICO-089                               | **Planned.** Migration/restart fixtures are not backup/restore evidence.                                                                                                                                                                             |
+| `A3-T-DEL-01`     | A deletion/expiry state spans rows, objects, attachments, context, preview, export, telemetry, provider references, and backups; no hold                                 | Race deletion with read, signed-access issuance, worker claim/provider/tool use, duplicate deletion, and later restore                                                   | After deletion starts, new access/dispatch/grants fail generically; job is tenant-scoped/idempotent; no resurrection or dangling access; only policy-permitted non-content evidence remains; zero new provider/tool/cost effect  | Lifecycle job report, multi-store tombstone/inventory, access-grant revocation, worker/provider/tool ledgers, restore reconciliation | Privacy Platform + Security QA         | R6 and R7                                   | AICO-076, AICO-078, AICO-082                               | **Planned.** Deletion lifecycle is not implemented; final durations remain DEC-013.                                                                                                                                                                  |
+| `A3-T-HOLD-01`    | Equivalent held and unheld synthetic objects exist; hold authority is separate from ordinary tenant API                                                                  | Tenant/user attempts delete/expiry bypass, hold discovery, cross-tenant hold, release without authority, or restore that loses hold                                      | Held content is not deleted; unauthorized caller cannot learn hold existence or alter it; B cannot hold/release A; release is audited and does not itself publish/access content; no provider/tool/signed-URL/cost effect        | Hold-policy authorization suite, immutable hold ledger, deletion reconciliation, restored-state comparison, safe audit scan          | Legal/Security + Privacy Platform + QA | R6 and R7                                   | AICO-076, AICO-078, AICO-082                               | **Planned.** Legal/security-hold service and final policy do not exist. Architecture must not invent legal authority or duration.                                                                                                                    |
+| `A3-T-URL-01`     | A has operation-, audience-, object-version-, and expiry-bound URL; B, tampered, expired, revoked, deleted, and stale URLs are prepared                                  | Reuse URL across tenant/object/operation; modify claims; use after expiry, revocation, cancellation, deletion, or supersession; race revocation with fetch               | Uniform denial with no ownership/existence detail; no body/metadata/cache hit/new URL/download event; revocation prevents new origin authorization; no business/model/tool/budget/cost effect                                    | URL policy/unit tests, origin access logs, cache bypass/revocation race report, access-grant and event diff                          | Storage/Preview/Export + Security QA   | R4/R6 and R7                                | AICO-057, AICO-071, AICO-076, AICO-083                     | **Planned.** No signed-access endpoint exists.                                                                                                                                                                                                       |
+| `A3-T-WRK-01`     | A/B tasks and attempts exist; one task is stale/deleted/terminal; fake provider and tool adapters have exact call/cost ledgers                                           | Worker claims with foreign/stale tenant reference; provider/tool request swaps tenant, resource digest, attempt, policy version, or expiry immediately before invocation | Claim/action fails generically before adapter call; exact current tenant/task/attempt/policy binding is required; zero invocation, tokens, tool effect, ledger reservation/consumption, transition, event, or cost               | Claim/policy/context race suite, fake provider/tool ledgers, task/attempt/event/budget diff                                          | Runtime + Policy + Security QA         | R2/R4 and R7                                | AICO-026, AICO-031, AICO-032, AICO-050, AICO-082           | **Partial reusable evidence:** AICO-002 resilience fixtures prove lease revalidation and stable provider-effect behavior, not the complete tenant/context/policy matrix.                                                                             |
+| `A3-T-STALE-01`   | B tenant is suspended/deleted after authentication and after work/access preparation; cached/stale context and grants exist                                              | Submit API command, worker/provider/tool action, object read, preview/export URL, or replay using the stale/deleted tenant                                               | Current authoritative status denies without revealing deletion details to unauthorized actors; cached scope/grant cannot authorize; no state/event/outbox/access/provider/tool/budget/cost effect                                | Revocation race suite across API/worker/object/access services, adapter ledgers, cache and state diff                                | Identity + Platform + Security QA      | R1-R7                                       | AICO-012, AICO-015, AICO-057, AICO-071, AICO-076, AICO-082 | **Planned.** Dev auth and current fixtures do not prove tenant suspension/deletion revocation.                                                                                                                                                       |
+| `A3-T-ENUM-01`    | Harness has valid A/B IDs plus random, sequential-looking, malformed, deleted, and expired identifiers                                                                   | B probes row/object/attachment/preview/export/hold identifiers at bounded deterministic volume and varies method, range, filter, cursor, and conditional headers         | Foreign and absent resources have equivalent status/schema/header class and bounded latency distribution; lists/cursors/counts contain only B; no signed URL, body, mutation, provider/tool call, rate-budget bypass, or cost    | Enumeration property test, response equivalence report, pagination/cursor suite, bounded timing analysis, side-effect diff           | API + Security QA                      | R1 and R7                                   | AICO-015, AICO-034, AICO-071, AICO-082                     | **Planned.** The current single foreign-run smoke assertion does not establish enumeration resistance.                                                                                                                                               |
+| `A3-T-REPLAY-01`  | Cross-tenant, stale, deleted, denied, and valid control requests use stable idempotency keys; duplicate events/jobs are available                                        | Retry concurrently and sequentially; change only transport correlation; reuse a key with changed tenant/business digest; replay deletion/expiry/access/event delivery    | One valid logical result at most; denials never become allows; changed digest conflicts generically; no duplicate row/object/grant/event/continuation/provider/tool/budget/cost effect                                           | Idempotency/inbox/job race suite, stable response digest, table/object/event/provider/tool/budget counts                             | Backend/Runtime + Security QA          | R1-R7                                       | AICO-015, AICO-025, AICO-027, AICO-071, AICO-076, AICO-082 | **Partial reusable evidence:** HTTP smoke and AICO-002 prove selected command/event/provider replays, not every AICO-003 surface or cross-tenant replay.                                                                                             |
+
+## Non-waivable checks
+
+The following checks cannot be skipped, quarantined, marked advisory, accepted by a
+manual spot check, or waived by schedule pressure:
+
+- `A3-T-ROW-01`, `A3-T-OBJ-01`, `A3-T-CTX-01`, `A3-T-ATT-01`,
+  `A3-T-TEL-01`, `A3-T-STALE-01`, `A3-T-ENUM-01`, and `A3-T-REPLAY-01`
+  when their surfaces enter the candidate release;
+- `A3-T-SBX-IN-01` and `A3-T-SBX-OUT-01` before any generated execution;
+- `A3-T-PRV-01` and the applicable `A3-T-URL-01` path before any preview;
+- `A3-T-EXP-01` and the applicable `A3-T-URL-01` path before any export;
+- `A3-T-BKP-01` before external alpha restore readiness is claimed; and
+- `A3-T-DEL-01` plus `A3-T-HOLD-01` before deletion, retention, or hold is
+  enabled or promised.
+
+Any confirmed cross-tenant disclosure, prohibited sink value, unauthorized external
+side effect, or missing side-effect ledger is Critical and blocks promotion. A test
+surface that exists without its applicable executable case also blocks promotion.
+
+## Fixture privacy and deterministic execution
+
+- Fixtures use generated UUIDs, reserved `example.test` identities, synthetic bodies,
+  and canary secrets that have never been valid. They contain no founder, production,
+  shared developer, or externally sourced tenant data.
+- Tests run from a clean checkout through foreground commands against disposable,
+  uniquely named Docker Compose services and volumes. They use pinned images,
+  migrations, clocks/expiry controls, deterministic fake provider/tool/scanner
+  adapters, bounded retries, and explicit teardown. No ambient cloud account,
+  long-lived process, shared bucket, or developer database is permitted.
+- Paid services and external model/provider/tool calls are prohibited. Network access
+  is limited to the disposable local Docker topology. An attempted paid/external call
+  is itself a blocking test failure.
+- Every run records repository SHA, dirty/clean state, test/fixture version, service
+  image digests, migration version, policy/manifest versions, UTC start/end, case
+  outcomes, owner, and evidence checksums. A retry does not overwrite the first
+  failure.
+
+## Evidence retention and redaction
+
+Evidence retains only the minimum safe material: case ID, manifest/version refs,
+bounded timestamps/durations, response class/digest, aggregate before/after counts,
+safe denial reason class, and checksums of synthetic fixtures. Raw request/response
+bodies, object/attachment/source content, prompts/completions, hidden reasoning,
+credentials, authorization/cookies, signed URLs, raw storage keys, and foreign tenant
+metadata are prohibited.
+
+CI console output and retained artifacts are scanned for every synthetic canary before
+publication. A positive scan fails closed; Security owns the unredacted investigation
+in a separately authorized, expiring evidence store. Release evidence is immutable,
+access-restricted, checksummed, tied to the exact SHA, and retained under the versioned
+evidence policy. DEC-013 remains open, so this plan does not state a final duration.
+Expired evidence is deleted or held by the policy engine; a legal/security hold may
+preserve authorized evidence but never makes it generally readable.
+
+## Trace and exit criteria
+
+This plan supports `A3-TRACE-01` by linking each threat to a stable ID, current proof
+status, evidence owner, gate, and later implementation issue. The AICO-003 architecture
+review may accept the plan while planned product surfaces remain unimplemented only if
+those gaps stay explicit and release-blocking. Acceptance of this document does not
+mark AICO-015, AICO-017, AICO-039, AICO-057, AICO-071, AICO-076, AICO-078,
+AICO-082, or AICO-083 complete.
+
+AICO-003 threat-plan exit requires:
+
+1. Architecture, Product/Security, and QA/Security accept this exact plan and its
+   non-waivable rules.
+2. The AICO-003 document validator and canonical `npm run verify:ci` pass on the exact
+   clean reviewed SHA with no paid service call.
+3. Current executable evidence (`test/smoke.mjs`, `scripts/storage-fixture.mjs`, and
+   the applicable AICO-002 replay/lease evidence) is linked honestly as partial proof;
+   it is not relabeled as complete coverage.
+4. Every planned case retains a named evidence owner, release gate, and implementing
+   issue; missing ownership is blocking.
+5. No unresolved Critical finding, waiver, skipped required case, fixture privacy
+   violation, evidence-redaction failure, or unknown external side effect remains.
+
+For each later gate, exit requires all cases applicable to the implemented candidate
+to pass on its exact clean SHA, independent QA/Security review of the retained evidence,
+and a trace update. Any post-approval code, policy, fixture, or evidence change requires
+fresh deterministic execution and approval.
