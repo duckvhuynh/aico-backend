@@ -27,6 +27,7 @@
     "test:cov": "jest --coverage --runInBand",
     "test:e2e": "jest --config test/jest-e2e.json --runInBand",
     "test:smoke": "node test/smoke.mjs",
+    "test:workflow-resilience": "node scripts/workflow-resilience-fixture.mjs",
     "typecheck": "tsc --noEmit --incremental false",
     "test:contracts": "jest --runInBand --testPathPatterns=contract.spec.ts",
     "verify:architecture": "node scripts/validate-aico-002-adr.mjs",

@@ -26,6 +26,7 @@ export const workerConfig = registerAs('worker', () => ({
   pollIntervalMs: Number.parseInt(process.env.WORKER_POLL_INTERVAL_MS ?? '500', 10),
   leaseSeconds: Number.parseInt(process.env.WORKER_LEASE_SECONDS ?? '30', 10),
   modelProvider: process.env.MODEL_PROVIDER ?? 'deterministic',
+  workflowVersion: process.env.WORKFLOW_VERSION ?? 'prototype-run/v1',
 }));
 
 export const objectStorageConfig = registerAs('objectStorage', () => ({

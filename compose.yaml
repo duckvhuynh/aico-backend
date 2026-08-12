@@ -11,6 +11,7 @@ x-app-environment: &app-environment
   JWT_AUDIENCE: aico-control-plane
   LOG_LEVEL: info
   MODEL_PROVIDER: deterministic
+  WORKFLOW_VERSION: ${AICO_WORKFLOW_VERSION:-prototype-run/v1}
   OBJECT_STORAGE_ENDPOINT: http://minio:9000
   OBJECT_STORAGE_REGION: us-east-1
   OBJECT_STORAGE_BUCKET: aico-local

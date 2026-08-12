@@ -14,8 +14,17 @@ interface ClaimedTask {
   type: string;
   attempt_count: number;
   input_manifest: Record<string, unknown>;
+  workflow_version: string;
   lease_token: string;
+  attempt_id: string;
+  attempt_number: number;
+  effect_key: string;
 }
+
+type ClaimCandidate = Omit<
+  ClaimedTask,
+  'lease_token' | 'attempt_id' | 'attempt_number' | 'effect_key'
+>;
 
 interface ContextRow {
   goal: Record<string, unknown>;
@@ -40,94 +49,44 @@ export class OrchestrationWorkerService {
     this.logger.setContext(OrchestrationWorkerService.name);
   }
 
-  async processOnce(): Promise<boolean> {
-    const claim = await this.claimTask();
+  async processOnce(runId?: string): Promise<boolean> {
+    const claim = await this.claimTask(runId);
     if (!claim) {
       return false;
     }
-    const attemptId = newId();
-    const attemptNumber = claim.attempt_count + 1;
     try {
       const context = await this.loadContext(claim.company_id, claim.run_id);
-      await this.authorizeAndStartAttempt(claim, attemptId, attemptNumber);
+      if (!(await this.isLeaseCurrent(claim))) {
+        await this.abandonAttempt(claim.attempt_id, 'STALE_BEFORE_INVOCATION');
+        return true;
+      }
+      if (!(await this.beginModelInvocation(claim))) {
+        await this.blockUnknownModelOutcome(claim);
+        return true;
+      }
       const result = await this.modelProvider.invoke({
         task_type: claim.type,
-        attempt_id: attemptId,
+        attempt_id: claim.attempt_id,
+        idempotency_key: claim.effect_key,
         context: {
           goal: context.goal,
           company: { purpose: context.purpose, target_customer: context.target_customer },
         },
       });
-      await this.completeTask(claim, attemptId, attemptNumber, result);
+      await this.completeTask(claim, claim.attempt_id, claim.attempt_number, result);
       return true;
     } catch (error: unknown) {
-      await this.failTask(claim, attemptId, error);
+      await this.failTask(claim, claim.attempt_id, error);
       return true;
     }
   }
 
-  private async authorizeAndStartAttempt(
-    claim: ClaimedTask,
-    attemptId: string,
-    attemptNumber: number,
-  ): Promise<void> {
-    await this.dataSource.transaction(async (manager) => {
-      const policyDecisionId = newId();
-      await manager.query(
-        `
-          INSERT INTO policy_decisions
-            (id, company_id, run_id, task_id, attempt_id, actor_type, actor_id, action,
-             resource_digest, context_digest, policy_version, result, reason_code, expires_at)
-          VALUES ($1, $2, $3, $4, $5, 'EMPLOYEE', 'EMP-PM/v1', 'model.invoke',
-                  $6, $7, 'mvp-v1', 'ALLOW', 'deterministic_provider_allowed',
-                  now() + interval '30 seconds')
-        `,
-        [
-          policyDecisionId,
-          claim.company_id,
-          claim.run_id,
-          claim.id,
-          attemptId,
-          canonicalDigest({ provider: 'deterministic', task_type: claim.type }),
-          canonicalDigest(claim.input_manifest),
-        ],
-      );
-      await manager.query(
-        `
-          INSERT INTO task_attempts
-            (id, company_id, run_id, task_id, attempt_number, idempotency_key, input_manifest,
-             runtime_manifest, status)
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'RUNNING')
-        `,
-        [
-          attemptId,
-          claim.company_id,
-          claim.run_id,
-          claim.id,
-          attemptNumber,
-          newId(),
-          JSON.stringify(claim.input_manifest),
-          JSON.stringify({
-            workflow_version: 'prototype-run/v1',
-            policy_version: 'mvp-v1',
-            policy_decision_id: policyDecisionId,
-            employee_key: 'EMP-PM',
-            employee_version: 1,
-            instruction_version: 'pm-v1',
-            output_schema_version: 'product-brief-v1',
-            rubric_version: 'pm-v1',
-            provider: 'deterministic',
-          }),
-        ],
-      );
-    });
-  }
-
-  private async claimTask(): Promise<ClaimedTask | null> {
+  private async claimTask(runId?: string): Promise<ClaimedTask | null> {
     return this.dataSource.transaction(async (manager) => {
-      const rows = await manager.query<Array<Omit<ClaimedTask, 'lease_token'>>>(
+      const rows = await manager.query<ClaimCandidate[]>(
         `
-          SELECT t.id, t.company_id, t.run_id, t.type, t.attempt_count, t.input_manifest
+          SELECT t.id, t.company_id, t.run_id, t.type, t.attempt_count, t.input_manifest,
+                 r.workflow_version
           FROM tasks t
           JOIN runs r ON r.id = t.run_id AND r.company_id = t.company_id
           WHERE (
@@ -136,14 +95,24 @@ export class OrchestrationWorkerService {
             )
             AND r.state NOT IN ('CANCELED', 'FAILED', 'COMPLETED')
             AND r.cancellation_requested_at IS NULL
+            AND ($1::uuid IS NULL OR t.run_id = $1)
           ORDER BY t.priority DESC, t.created_at, t.id
           FOR UPDATE OF t SKIP LOCKED
           LIMIT 1
         `,
+        [runId ?? null],
       );
       const candidate = rows[0];
       if (candidate) {
         const leaseToken = newId();
+        const attemptId = newId();
+        const attemptNumber = candidate.attempt_count + 1;
+        const policyDecisionId = newId();
+        const effectKey = canonicalDigest({
+          provider: 'deterministic',
+          task_id: candidate.id,
+          task_type: candidate.type,
+        });
         await manager.query(
           `
             UPDATE tasks
@@ -164,16 +133,233 @@ export class OrchestrationWorkerService {
         );
         await manager.query(
           `
+            INSERT INTO policy_decisions
+              (id, company_id, run_id, task_id, attempt_id, actor_type, actor_id, action,
+               resource_digest, context_digest, policy_version, result, reason_code, expires_at)
+            VALUES ($1, $2, $3, $4, $5, 'EMPLOYEE', 'EMP-PM/v1', 'model.invoke',
+                    $6, $7, 'mvp-v1', 'ALLOW', 'deterministic_provider_allowed',
+                    now() + interval '30 seconds')
+          `,
+          [
+            policyDecisionId,
+            candidate.company_id,
+            candidate.run_id,
+            candidate.id,
+            attemptId,
+            canonicalDigest({ provider: 'deterministic', task_type: candidate.type }),
+            canonicalDigest(candidate.input_manifest),
+          ],
+        );
+        await manager.query(
+          `
+            INSERT INTO task_attempts
+              (id, company_id, run_id, task_id, attempt_number, idempotency_key, input_manifest,
+               runtime_manifest, status)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'RUNNING')
+          `,
+          [
+            attemptId,
+            candidate.company_id,
+            candidate.run_id,
+            candidate.id,
+            attemptNumber,
+            attemptId,
+            JSON.stringify(candidate.input_manifest),
+            JSON.stringify({
+              workflow_version: candidate.workflow_version,
+              policy_version: 'mvp-v1',
+              policy_decision_id: policyDecisionId,
+              employee_key: 'EMP-PM',
+              employee_version: 1,
+              instruction_version: 'pm-v1',
+              output_schema_version: 'product-brief-v1',
+              rubric_version: 'pm-v1',
+              provider: 'deterministic',
+              lease_token: leaseToken,
+            }),
+          ],
+        );
+        await manager.query(
+          `
+            INSERT INTO model_invocation_effects
+              (effect_key, company_id, run_id, task_id, attempt_id, provider, status)
+            VALUES ($1, $2, $3, $4, $5, 'deterministic', 'RUNNING')
+            ON CONFLICT (company_id, run_id, task_id) DO NOTHING
+          `,
+          [effectKey, candidate.company_id, candidate.run_id, candidate.id, attemptId],
+        );
+        await manager.query(
+          `
             UPDATE runs SET state = 'QUALIFYING', stage = 'PRODUCT', row_version = row_version + 1,
                             updated_at = now()
             WHERE id = $1 AND state = 'DRAFT'
           `,
           [candidate.run_id],
         );
-        return { ...candidate, lease_token: leaseToken };
+        const runner = manager.queryRunner;
+        if (!runner) {
+          throw new Error('Transactional query runner is unavailable');
+        }
+        await this.events.append(runner, {
+          companyId: candidate.company_id,
+          runId: candidate.run_id,
+          type: 'task_started',
+          actorType: 'EMPLOYEE',
+          actorId: 'EMP-PM',
+          actorVersion: '1',
+          correlationId: candidate.run_id,
+          causationId: attemptId,
+          payload: {
+            task_id: candidate.id,
+            attempt_id: attemptId,
+            attempt_number: attemptNumber,
+            lease_token: leaseToken,
+            worker_id: this.workerId,
+          },
+        });
+        return {
+          ...candidate,
+          lease_token: leaseToken,
+          attempt_id: attemptId,
+          attempt_number: attemptNumber,
+          effect_key: effectKey,
+        };
       }
       return null;
     });
+  }
+
+  private async isLeaseCurrent(claim: ClaimedTask): Promise<boolean> {
+    const rows = await this.dataSource.query<Array<{ current: boolean }>>(
+      `
+        SELECT (
+          t.state = 'RUNNING'
+          AND t.lease_token = $3
+          AND t.lease_expires_at > now()
+          AND r.state NOT IN ('CANCELED', 'FAILED', 'COMPLETED')
+          AND r.cancellation_requested_at IS NULL
+        ) AS current
+        FROM tasks t
+        JOIN runs r ON r.id = t.run_id AND r.company_id = t.company_id
+        WHERE t.company_id = $1 AND t.id = $2
+      `,
+      [claim.company_id, claim.id, claim.lease_token],
+    );
+    return rows[0]?.current === true;
+  }
+
+  private async beginModelInvocation(claim: ClaimedTask): Promise<boolean> {
+    return this.dataSource.transaction(async (manager) => {
+      const rows = await manager.query<Array<{ status: string; invocation_count: number }>>(
+        `
+          SELECT status, invocation_count
+          FROM model_invocation_effects
+          WHERE effect_key = $1
+          FOR UPDATE
+        `,
+        [claim.effect_key],
+      );
+      const current = rows[0];
+      if (!current || current.status !== 'RUNNING' || current.invocation_count !== 0) {
+        return false;
+      }
+      await manager.query(
+        `UPDATE model_invocation_effects SET invocation_count = 1 WHERE effect_key = $1`,
+        [claim.effect_key],
+      );
+      return true;
+    });
+  }
+
+  private async blockUnknownModelOutcome(claim: ClaimedTask): Promise<void> {
+    await this.dataSource.transaction(async (manager) => {
+      const rows = await manager.query<
+        Array<{ task_state: string; lease_token: string | null; run_state: string }>
+      >(
+        `
+          SELECT t.state AS task_state, t.lease_token, r.state AS run_state
+          FROM tasks t
+          JOIN runs r ON r.id = t.run_id AND r.company_id = t.company_id
+          WHERE t.company_id = $1 AND t.id = $2
+          FOR UPDATE OF t, r
+        `,
+        [claim.company_id, claim.id],
+      );
+      const current = rows[0];
+      if (
+        !current ||
+        current.task_state !== 'RUNNING' ||
+        current.lease_token !== claim.lease_token ||
+        ['CANCELED', 'FAILED', 'COMPLETED'].includes(current.run_state)
+      ) {
+        await manager.query(
+          `
+            UPDATE task_attempts
+            SET status = 'ABANDONED', result_class = 'STALE_RECONCILIATION', completed_at = now()
+            WHERE id = $1 AND status = 'RUNNING'
+          `,
+          [claim.attempt_id],
+        );
+        return;
+      }
+      await manager.query(
+        `
+          UPDATE task_attempts
+          SET status = 'ABANDONED', result_class = 'UNKNOWN_EXTERNAL_OUTCOME', completed_at = now()
+          WHERE id = $1 AND status = 'RUNNING'
+        `,
+        [claim.attempt_id],
+      );
+      await manager.query(
+        `
+          UPDATE tasks
+          SET state = 'BLOCKED', blocker_code = 'model_outcome_reconciliation_required',
+              lease_owner = NULL, lease_token = NULL, lease_expires_at = NULL,
+              row_version = row_version + 1, updated_at = now()
+          WHERE id = $1 AND lease_token = $2 AND state = 'RUNNING'
+        `,
+        [claim.id, claim.lease_token],
+      );
+      await manager.query(
+        `
+          UPDATE runs
+          SET state = 'BLOCKED', blocking_reason_code = 'model_outcome_reconciliation_required',
+              row_version = row_version + 1, updated_at = now()
+          WHERE company_id = $1 AND id = $2
+            AND state NOT IN ('CANCELED', 'FAILED', 'COMPLETED')
+            AND cancellation_requested_at IS NULL
+        `,
+        [claim.company_id, claim.run_id],
+      );
+      const runner = manager.queryRunner;
+      if (!runner) throw new Error('Transactional query runner is unavailable');
+      await this.events.append(runner, {
+        companyId: claim.company_id,
+        runId: claim.run_id,
+        type: 'model_outcome_reconciliation_required',
+        actorType: 'SYSTEM',
+        actorId: 'orchestration-worker/v1',
+        correlationId: claim.run_id,
+        causationId: claim.attempt_id,
+        payload: {
+          task_id: claim.id,
+          attempt_id: claim.attempt_id,
+          effect_key: claim.effect_key,
+          reason_code: 'UNKNOWN_EXTERNAL_OUTCOME',
+        },
+      });
+    });
+  }
+
+  private async abandonAttempt(attemptId: string, resultClass: string): Promise<void> {
+    await this.dataSource.query(
+      `
+        UPDATE task_attempts
+        SET status = 'ABANDONED', result_class = $2, completed_at = now()
+        WHERE id = $1 AND status = 'RUNNING'
+      `,
+      [attemptId, resultClass],
+    );
   }
 
   private async loadContext(companyId: string, runId: string): Promise<ContextRow> {
@@ -220,8 +406,16 @@ export class OrchestrationWorkerService {
         ['CANCELED', 'FAILED', 'COMPLETED'].includes(current.run_state)
       ) {
         await runner.query(
-          `UPDATE task_attempts SET status = 'ABANDONED', result_class = 'STALE_COMPLETION', completed_at = now() WHERE id = $1`,
+          `UPDATE task_attempts SET status = 'ABANDONED', result_class = 'STALE_COMPLETION', completed_at = now() WHERE id = $1 AND status = 'RUNNING'`,
           [attemptId],
+        );
+        await runner.query(
+          `
+            UPDATE model_invocation_effects
+            SET status = 'UNKNOWN', completed_at = now()
+            WHERE effect_key = $1 AND status = 'RUNNING'
+          `,
+          [claim.effect_key],
         );
         return;
       }
@@ -270,6 +464,15 @@ export class OrchestrationWorkerService {
       );
       await runner.query(
         `
+          UPDATE model_invocation_effects
+          SET status = 'SUCCEEDED', output_digest = $2, usage = $3,
+              completed_at = now()
+          WHERE effect_key = $1 AND status = 'RUNNING'
+        `,
+        [claim.effect_key, canonicalDigest(result.content), JSON.stringify(result.usage)],
+      );
+      await runner.query(
+        `
           UPDATE tasks
           SET state = 'SUCCEEDED', lease_owner = NULL, lease_token = NULL, lease_expires_at = NULL,
               completed_at = now(), updated_at = now(), row_version = row_version + 1
@@ -314,31 +517,95 @@ export class OrchestrationWorkerService {
       'Task execution failed',
     );
     await this.dataSource.transaction(async (manager) => {
+      const locks = await manager.query<
+        Array<{ task_state: string; lease_token: string | null; run_state: string }>
+      >(
+        `
+          SELECT t.state AS task_state, t.lease_token, r.state AS run_state
+          FROM tasks t
+          JOIN runs r ON r.id = t.run_id AND r.company_id = t.company_id
+          WHERE t.company_id = $1 AND t.id = $2
+          FOR UPDATE OF t, r
+        `,
+        [claim.company_id, claim.id],
+      );
+      const current = locks[0];
+      if (
+        !current ||
+        current.task_state !== 'RUNNING' ||
+        current.lease_token !== claim.lease_token ||
+        ['CANCELED', 'FAILED', 'COMPLETED'].includes(current.run_state)
+      ) {
+        await manager.query(
+          `
+            UPDATE task_attempts
+            SET status = 'ABANDONED', result_class = 'STALE_FAILURE', completed_at = now()
+            WHERE id = $1 AND status = 'RUNNING'
+          `,
+          [attemptId],
+        );
+        await manager.query(
+          `
+            UPDATE model_invocation_effects
+            SET status = 'UNKNOWN', completed_at = now()
+            WHERE effect_key = $1 AND status = 'RUNNING'
+          `,
+          [claim.effect_key],
+        );
+        return;
+      }
       await manager.query(
         `
           UPDATE task_attempts
-          SET status = 'FAILED', result_class = 'TERMINAL_SYSTEM', completed_at = now()
-          WHERE id = $1
+          SET status = 'FAILED', result_class = 'UNKNOWN_EXTERNAL_OUTCOME', completed_at = now()
+          WHERE id = $1 AND status = 'RUNNING'
         `,
         [attemptId],
       );
       await manager.query(
         `
+          UPDATE model_invocation_effects
+          SET status = 'UNKNOWN', completed_at = now()
+          WHERE effect_key = $1 AND status = 'RUNNING'
+        `,
+        [claim.effect_key],
+      );
+      await manager.query(
+        `
           UPDATE tasks
-          SET state = 'FAILED', blocker_code = 'worker_execution_failed', lease_owner = NULL,
+          SET state = 'BLOCKED', blocker_code = 'model_outcome_reconciliation_required', lease_owner = NULL,
               lease_token = NULL, lease_expires_at = NULL, updated_at = now()
-          WHERE id = $1 AND lease_token = $2
+          WHERE id = $1 AND lease_token = $2 AND state = 'RUNNING'
         `,
         [claim.id, claim.lease_token],
       );
       await manager.query(
         `
-          UPDATE runs SET state = 'FAILED', stage = 'TERMINAL', failure_reason_code = 'worker_execution_failed',
+          UPDATE runs SET state = 'BLOCKED', blocking_reason_code = 'model_outcome_reconciliation_required',
                           updated_at = now(), row_version = row_version + 1
           WHERE id = $1 AND company_id = $2
+            AND state NOT IN ('CANCELED', 'FAILED', 'COMPLETED')
+            AND cancellation_requested_at IS NULL
         `,
         [claim.run_id, claim.company_id],
       );
+      const runner = manager.queryRunner;
+      if (!runner) throw new Error('Transactional query runner is unavailable');
+      await this.events.append(runner, {
+        companyId: claim.company_id,
+        runId: claim.run_id,
+        type: 'model_outcome_reconciliation_required',
+        actorType: 'SYSTEM',
+        actorId: 'orchestration-worker/v1',
+        correlationId: claim.run_id,
+        causationId: attemptId,
+        payload: {
+          task_id: claim.id,
+          attempt_id: attemptId,
+          effect_key: claim.effect_key,
+          reason_code: 'UNKNOWN_EXTERNAL_OUTCOME',
+        },
+      });
     });
   }
 }

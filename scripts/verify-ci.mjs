@@ -66,6 +66,18 @@ try {
       OBJECT_STORAGE_SECRET_KEY: 'local-minio-secret',
     },
   });
+  gate('workflow-resilience-start', 'docker', [
+    'compose',
+    '-p',
+    project,
+    'up',
+    '-d',
+    '--wait',
+    'api',
+  ]);
+  gate('workflow-resilience', 'node', ['scripts/workflow-resilience-fixture.mjs'], {
+    env: { AICO_BASE_URL: `http://127.0.0.1:${apiPort}/api/v1` },
+  });
   gate('http-smoke-start', 'docker', [
     'compose',
     '-p',
