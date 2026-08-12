@@ -1,11 +1,11 @@
 # ADR-007: Tenant, Object-Storage, and Retention Selection
 
-**Status:** Proposed for AICO-003 owner acceptance  
-**Date:** 2026-08-12  
-**Decision owner:** Pending human Architecture owner acceptance  
-**Decision evidence:** Pending  
-**Parent:** `duckvhuynh/aicompanyos#3`  
-**Implementation child:** `duckvhuynh/aico-backend#10`  
+**Status:** Proposed for AICO-003 owner acceptance
+**Date:** 2026-08-12
+**Decision owner:** Pending human Architecture owner acceptance
+**Decision evidence:** Pending
+**Parent:** `duckvhuynh/aicompanyos#3`
+**Implementation child:** `duckvhuynh/aico-backend#10`
 **Product trace:** Goal G-05; SRS TD-002, TD-006, and TD-009; SRS-FR-092; SRS-NFR-008–010 and 013–016; PRD-NFR-004–008; PRD-OQ-004; DEC-013
 
 ## 1. Context and decision boundary
