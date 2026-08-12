@@ -1,6 +1,6 @@
 # ADR-001: MVP System Architecture
 
-**Status:** Proposed for MVP baseline  
+**Status:** Proposed system architecture; durable workflow selection is governed by proposed ADR-006 pending AICO-002 owner acceptance
 **Date:** 2026-08-12  
 **Owners:** Software Architecture + Backend Engineering  
 **Decision horizon:** Private-alpha MVP  

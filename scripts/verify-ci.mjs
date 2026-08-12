@@ -35,6 +35,7 @@ try {
         process.env.PR_BODY?.trim() || readFileSync('test/fixtures/valid-pr-body.md', 'utf8'),
     },
   });
+  gate('architecture', 'npm', ['run', 'verify:architecture']);
   gate('fail-closed', 'npm', ['run', 'verify:fail-closed']);
   gate('format', 'npm', ['run', 'format:check']);
   gate('lint', 'npm', ['run', 'lint']);

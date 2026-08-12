@@ -1,6 +1,7 @@
 export const verificationGates = [
   'install',
   'governance',
+  'architecture',
   'fail-closed',
   'format',
   'lint',
