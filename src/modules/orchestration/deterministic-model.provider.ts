@@ -7,6 +7,13 @@ export class DeterministicModelProvider implements ModelProviderPort {
     if (input.task_type !== 'CREATE_PRODUCT_BRIEF') {
       throw new Error(`The deterministic provider does not support ${input.task_type}`);
     }
+    const delayMs = Number.parseInt(process.env.DETERMINISTIC_MODEL_DELAY_MS ?? '0', 10);
+    if (Number.isFinite(delayMs) && delayMs > 0) {
+      await new Promise<void>((resolve) => setTimeout(resolve, delayMs));
+    }
+    if (process.env.DETERMINISTIC_MODEL_FAIL === 'true') {
+      throw new Error('Injected deterministic provider failure');
+    }
     const goal = input.context.goal as Record<string, unknown>;
     const company = input.context.company as Record<string, unknown>;
     return {

@@ -55,8 +55,17 @@ try {
     'postgres',
     'minio',
   ]);
-  gate('object-init', 'docker', ['compose', '-p', project, 'up', '-d', 'minio-init']);
-  gate('object-init-wait', 'docker', ['compose', '-p', project, 'wait', 'minio-init']);
+  gate('object-init', 'docker', [
+    'compose',
+    '-p',
+    project,
+    'up',
+    '--no-deps',
+    '--abort-on-container-exit',
+    '--exit-code-from',
+    'minio-init',
+    'minio-init',
+  ]);
   gate('migrations', 'node', ['scripts/migration-fixture.mjs']);
   gate('storage', 'node', ['scripts/storage-fixture.mjs'], {
     env: {
@@ -65,6 +74,18 @@ try {
       OBJECT_STORAGE_ACCESS_KEY: 'aico',
       OBJECT_STORAGE_SECRET_KEY: 'local-minio-secret',
     },
+  });
+  gate('workflow-resilience-start', 'docker', [
+    'compose',
+    '-p',
+    project,
+    'up',
+    '-d',
+    '--wait',
+    'api',
+  ]);
+  gate('workflow-resilience', 'node', ['scripts/workflow-resilience-fixture.mjs'], {
+    env: { AICO_BASE_URL: `http://127.0.0.1:${apiPort}/api/v1` },
   });
   gate('http-smoke-start', 'docker', [
     'compose',

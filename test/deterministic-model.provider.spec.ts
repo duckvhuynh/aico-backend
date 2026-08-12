@@ -6,6 +6,7 @@ describe('DeterministicModelProvider', () => {
     const result = await provider.invoke({
       task_type: 'CREATE_PRODUCT_BRIEF',
       attempt_id: '019c0000-0000-7000-8000-000000000020',
+      idempotency_key: 'deterministic-effect-key',
       context: {
         company: { purpose: 'Help consultants', target_customer: 'Consultants' },
         goal: {

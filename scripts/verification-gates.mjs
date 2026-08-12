@@ -15,5 +15,6 @@ export const verificationGates = [
   'object-init',
   'migrations',
   'storage',
+  'workflow-resilience',
   'http-smoke',
 ];

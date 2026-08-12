@@ -17,6 +17,9 @@ export const configurationSchema = Joi.object({
   WORKER_POLL_INTERVAL_MS: Joi.number().integer().min(50).max(60_000).default(500),
   WORKER_LEASE_SECONDS: Joi.number().integer().min(5).max(900).default(30),
   MODEL_PROVIDER: Joi.string().valid('deterministic').default('deterministic'),
+  WORKFLOW_VERSION: Joi.string()
+    .pattern(/^prototype-run\/v[1-9][0-9]*$/)
+    .default('prototype-run/v1'),
   OBJECT_STORAGE_ENDPOINT: Joi.string().uri().required(),
   OBJECT_STORAGE_REGION: Joi.string().required(),
   OBJECT_STORAGE_BUCKET: Joi.string().min(3).required(),

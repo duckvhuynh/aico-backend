@@ -1,6 +1,7 @@
 export interface ModelInvocation {
   task_type: string;
   attempt_id: string;
+  idempotency_key: string;
   context: Record<string, unknown>;
 }
 

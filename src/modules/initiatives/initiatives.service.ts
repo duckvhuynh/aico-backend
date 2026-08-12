@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 import { DomainError } from '../../common/domain/domain-error';
@@ -31,6 +32,7 @@ export class InitiativesService {
     private readonly commands: CommandExecutor,
     private readonly events: DomainEventService,
     private readonly goalScope: GoalScopePolicy,
+    private readonly config: ConfigService,
   ) {}
 
   async create(
@@ -112,6 +114,7 @@ export class InitiativesService {
       throw this.companyNotFound();
     }
     const companyId = actor.companyId;
+    const workflowVersion = this.config.getOrThrow<string>('worker.workflowVersion');
     this.goalScope.assertSupported(dto);
     return this.commands.run({
       actorId: actor.id,
@@ -194,9 +197,9 @@ export class InitiativesService {
             INSERT INTO runs
               (id, company_id, initiative_id, context_snapshot_id, state, stage,
                workflow_version, policy_version)
-            VALUES ($1, $2, $3, $4, 'DRAFT', 'INTAKE', 'prototype-run/v1', 'mvp-v1')
+            VALUES ($1, $2, $3, $4, 'DRAFT', 'INTAKE', $5, 'mvp-v1')
           `,
-          [runId, companyId, initiativeId, contextSnapshotId],
+          [runId, companyId, initiativeId, contextSnapshotId, workflowVersion],
         );
         await runner.query(
           `INSERT INTO run_event_counters (company_id, run_id, next_sequence) VALUES ($1, $2, 1)`,
@@ -217,7 +220,7 @@ export class InitiativesService {
               context_snapshot_id: contextSnapshotId,
               company_profile_version_id: profileRows[0].current_profile_version_id,
               goal_version_id: goalVersionId,
-              workflow_version: 'prototype-run/v1',
+              workflow_version: workflowVersion,
               policy_version: 'mvp-v1',
             }),
           ],
@@ -260,7 +263,7 @@ export class InitiativesService {
               stage: 'INTAKE',
               version: 1,
               context_snapshot_id: contextSnapshotId,
-              workflow_version: 'prototype-run/v1',
+              workflow_version: workflowVersion,
               policy_version: 'mvp-v1',
             },
           },
