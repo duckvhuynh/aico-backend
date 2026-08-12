@@ -1,6 +1,6 @@
 # ADR-002: Governed Multi-Agent Runtime and Durable Orchestration
 
-- **Status:** Accepted runtime constraints; durable workflow technology selection remains proposed in ADR-006 pending AICO-002 owner acceptance
+- **Status:** Accepted runtime constraints; durable workflow technology selection is governed by accepted ADR-006
 - **Date:** 2026-08-12
 - **Owners:** Multi-Agent Systems Architecture, Backend Engineering
 - **Decision scope:** AICO-002, AICO-005, AICO-006, AICO-022 through AICO-033

@@ -1,9 +1,9 @@
 # ADR-006: Durable Workflow and Ordered Event Selection
 
-**Status:** Proposed — requires Architecture owner acceptance on AICO-002  
+**Status:** Accepted for AICO-002 by the Architecture Decision Owner  
 **Date:** 2026-08-12  
 **Decision owner:** Duc Huynh (`duckvhuynh`)  
-**Decision evidence:** Pending  
+**Decision evidence:** https://github.com/duckvhuynh/aico-backend/issues/6#issuecomment-5267668545  
 **Parent:** `duckvhuynh/aicompanyos#2`  
 **Implementation child:** `duckvhuynh/aico-backend#7`  
 **Product trace:** Goal G-04; MVP-CAP-006 and MVP-CAP-010; PRD-FR-025–032 and PRD-FR-052–054; SRS TD-001 and TD-006; SRS-FR-033–045 and SRS-FR-074–078; AT-006 and AT-007
@@ -181,10 +181,12 @@ The parent cannot complete until the following named evidence is linked:
 
 ## 11. Owner decision
 
-The decision owner must post `APPROVE` or `REQUEST_CHANGES` on backend issue #6 or its pull request. Acceptance must identify the human, date, selected option, and any conditions or disputed sections. After approval, change this ADR to `Accepted`, replace `Decision evidence: Pending` with the permanent GitHub URL, and run:
+Duc Huynh (`duckvhuynh`) approved Option A as Architecture Decision Owner on 2026-08-12 with no disputed sections. The decision is conditional on backend issue #7 passing all named AICO-002 evidence; failure reopens this decision. Permanent evidence is linked in the header.
+
+The accepted-decision completion gate is:
 
 ```text
 npm run verify:architecture:accepted
 ```
 
-Agent authorship, an `Accepted` header copied from another ADR, existing code, or a green structural check is not the Architecture owner's decision.
+Agent authorship, an `Accepted` header copied from another ADR, existing code, or a green structural check is not the Architecture owner's decision. The linked owner comment is the authority for this status.
