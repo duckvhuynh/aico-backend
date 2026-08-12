@@ -7,6 +7,7 @@ const probes = {
   'evidence-id': 'is missing evidence ID: A3-VERIFY-01',
   'aeo-gate': 'is missing AEO gate: A3-AEO-12',
   ownership: 'is missing required content: AICO-082 owns tenant/redaction and signed-access tests',
+  'tool-denial-audit': 'must preserve SRS-FR-087 PolicyDecision/denial event',
 };
 
 for (const [probe, expected] of Object.entries(probes)) {

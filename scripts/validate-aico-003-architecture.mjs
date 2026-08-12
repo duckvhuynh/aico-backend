@@ -37,6 +37,11 @@ if (probe === 'adr-status') {
     /AICO-082 owns tenant\/redaction and signed-access tests/g,
     'AICO-080 owns tenant tests',
   );
+} else if (probe === 'tool-denial-audit') {
+  documents.threat = documents.threat.replace(
+    /SRS-FR-087 PolicyDecision and denial event\/outbox/g,
+    'no event',
+  );
 } else if (probe !== undefined) {
   throw new Error(`Unknown AICO-003 validation failure probe: ${probe}`);
 }
@@ -165,6 +170,21 @@ requireText('aeo', [
 const threatIds = new Set(documents.threat.match(/\bA3-T-[A-Z0-9-]+\b/g) ?? []);
 if (threatIds.size < 12) {
   errors.push(`${paths.threat} must define at least 12 unique stable A3-T-* threat cases`);
+}
+
+for (const caseId of ['A3-T-WRK-01', 'A3-T-STALE-01']) {
+  const row = documents.threat.split('\n').find((line) => line.includes(`\`${caseId}\``));
+  if (
+    !row ||
+    !normalize(row).includes('business success') ||
+    !row.includes('SRS-FR-087') ||
+    !row.includes('PolicyDecision') ||
+    !normalize(row).includes('denial event outbox')
+  ) {
+    errors.push(
+      `${paths.threat} case ${caseId} must preserve SRS-FR-087 PolicyDecision/denial event while forbidding business-success effects`,
+    );
+  }
 }
 
 for (const evidenceId of [
