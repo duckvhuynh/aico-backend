@@ -1,0 +1,135 @@
+name: aico-backend
+
+x-app-environment: &app-environment
+  NODE_ENV: production
+  APP_ENV: local
+  DATABASE_URL: postgresql://aico:aico@postgres:5432/aico
+  DATABASE_SSL: "false"
+  AUTH_MODE: development
+  JWT_SECRET: local-development-secret-change-before-production
+  JWT_ISSUER: aico-backend
+  JWT_AUDIENCE: aico-control-plane
+  LOG_LEVEL: info
+  MODEL_PROVIDER: deterministic
+  OBJECT_STORAGE_ENDPOINT: http://minio:9000
+  OBJECT_STORAGE_REGION: us-east-1
+  OBJECT_STORAGE_BUCKET: aico-local
+  OBJECT_STORAGE_ACCESS_KEY: aico
+  OBJECT_STORAGE_SECRET_KEY: local-minio-secret
+  OBJECT_STORAGE_FORCE_PATH_STYLE: "true"
+
+services:
+  postgres:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_DB: aico
+      POSTGRES_USER: aico
+      POSTGRES_PASSWORD: aico
+    ports:
+      - "5432:5432"
+    volumes:
+      - aico-postgres-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aico -d aico"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
+
+  minio:
+    image: minio/minio:RELEASE.2025-09-07T16-13-09Z
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: aico
+      MINIO_ROOT_PASSWORD: local-minio-secret
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - aico-minio-data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
+
+  minio-init:
+    image: minio/mc:RELEASE.2025-08-13T08-35-41Z
+    environment:
+      MINIO_ROOT_USER: aico
+      MINIO_ROOT_PASSWORD: local-minio-secret
+    entrypoint:
+      - /bin/sh
+      - -c
+      - >-
+        mc alias set local http://minio:9000 "$${MINIO_ROOT_USER}" "$${MINIO_ROOT_PASSWORD}" &&
+        mc mb --ignore-existing local/aico-local &&
+        mc anonymous set none local/aico-local
+    depends_on:
+      minio:
+        condition: service_healthy
+
+  migrate:
+    build:
+      context: .
+      target: runtime
+    environment: *app-environment
+    command: ["npm", "run", "migration:run:prod"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  api:
+    build:
+      context: .
+      target: runtime
+    init: true
+    environment:
+      <<: *app-environment
+      PORT: 3000
+    command: ["node", "dist/main.js"]
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+      minio-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000/api/v1/health/ready').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 10s
+
+  worker:
+    build:
+      context: .
+      target: runtime
+    init: true
+    environment:
+      <<: *app-environment
+      WORKER_ID: docker-worker-1
+      WORKER_POLL_INTERVAL_MS: 500
+      WORKER_LEASE_SECONDS: 30
+    command: ["node", "dist/worker.js"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+      minio-init:
+        condition: service_completed_successfully
+
+volumes:
+  aico-postgres-data:
+  aico-minio-data:
