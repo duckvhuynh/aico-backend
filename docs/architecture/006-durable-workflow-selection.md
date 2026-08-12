@@ -1,9 +1,9 @@
 # ADR-006: Durable Workflow and Ordered Event Selection
 
-**Status:** Accepted for AICO-002 by the Architecture Decision Owner  
+**Status:** Accepted for AICO-002 by the Architecture Decision Owner
 **Date:** 2026-08-12  
 **Decision owner:** Duc Huynh (`duckvhuynh`)  
-**Decision evidence:** https://github.com/duckvhuynh/aico-backend/issues/6#issuecomment-5267668545  
+**Decision evidence:** https://github.com/duckvhuynh/aico-backend/issues/6#issuecomment-5267668545
 **Parent:** `duckvhuynh/aicompanyos#2`  
 **Implementation child:** `duckvhuynh/aico-backend#7`  
 **Product trace:** Goal G-04; MVP-CAP-006 and MVP-CAP-010; PRD-FR-025–032 and PRD-FR-052–054; SRS TD-001 and TD-006; SRS-FR-033–045 and SRS-FR-074–078; AT-006 and AT-007
