@@ -10,8 +10,8 @@
   },
   "scripts": {
     "build": "nest build",
-    "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\" \"scripts/**/*.mjs\" \".github/**/*.{md,yml,yaml}\" \"*.md\"",
-    "format:check": "prettier --check \"src/**/*.ts\" \"test/**/*.ts\" \"scripts/**/*.mjs\" \".github/**/*.{md,yml,yaml}\" \"*.md\"",
+    "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\" \"scripts/**/*.mjs\" \".github/**/*.{md,yml,yaml}\" \"docs/delivery/**/*.md\" \"*.md\"",
+    "format:check": "prettier --check \"src/**/*.ts\" \"test/**/*.ts\" \"scripts/**/*.mjs\" \".github/**/*.{md,yml,yaml}\" \"docs/delivery/**/*.md\" \"*.md\"",
     "lint": "eslint \"{src,test}/**/*.ts\" --max-warnings=0",
     "start": "nest start",
     "start:dev": "nest start --watch",
@@ -21,12 +21,17 @@
     "migration:run": "typeorm-ts-node-commonjs migration:run -d src/infrastructure/database/data-source.ts",
     "migration:revert": "typeorm-ts-node-commonjs migration:revert -d src/infrastructure/database/data-source.ts",
     "migration:run:prod": "node node_modules/typeorm/cli.js migration:run -d dist/infrastructure/database/data-source.js",
+    "migration:revert:prod": "node node_modules/typeorm/cli.js migration:revert -d dist/infrastructure/database/data-source.js",
     "test": "jest --runInBand",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage --runInBand",
     "test:e2e": "jest --config test/jest-e2e.json --runInBand",
     "test:smoke": "node test/smoke.mjs",
-    "verify": "npm run format:check && npm run lint && npm test && npm run build"
+    "typecheck": "tsc --noEmit --incremental false",
+    "test:contracts": "jest --runInBand --testPathPatterns=contract.spec.ts",
+    "verify": "npm run format:check && npm run lint && npm run typecheck && npm test && npm run build",
+    "verify:ci": "node scripts/verify-ci.mjs",
+    "verify:fail-closed": "node scripts/prove-gates-fail-closed.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "3.1108.0",

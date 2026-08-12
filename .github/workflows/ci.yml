@@ -9,47 +9,16 @@ permissions:
   contents: read
 
 jobs:
-  governance:
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 24.18.0
-      - name: Verify parent-plan and issue traceability
-        env:
-          PR_BODY: ${{ github.event.pull_request.body }}
-        run: node scripts/check-pr-governance.mjs
-
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
           node-version: 24.18.0
           cache: npm
-      - run: npm ci
-      - run: npm run verify
-      - run: npm audit --audit-level=high
-      - run: docker compose config --quiet
-
-  docker-smoke:
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 24.18.0
-          cache: npm
-      - run: npm ci
-      - run: docker compose up --build -d --wait
-      - run: npm run test:smoke
-      - if: always()
-        run: docker compose logs --no-color api worker migrate postgres minio
-      - if: always()
-        run: docker compose down --volumes
+      - name: Run the canonical foreground verifier
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: npm run verify:ci

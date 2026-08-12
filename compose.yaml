@@ -26,7 +26,7 @@ services:
       POSTGRES_USER: aico
       POSTGRES_PASSWORD: aico
     ports:
-      - "5432:5432"
+      - "${AICO_POSTGRES_PORT:-5432}:5432"
     volumes:
       - aico-postgres-data:/var/lib/postgresql
     healthcheck:
@@ -43,8 +43,8 @@ services:
       MINIO_ROOT_USER: aico
       MINIO_ROOT_PASSWORD: local-minio-secret
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - "${AICO_MINIO_PORT:-9000}:9000"
+      - "${AICO_MINIO_CONSOLE_PORT:-9001}:9001"
     volumes:
       - aico-minio-data:/data
     healthcheck:
@@ -90,7 +90,7 @@ services:
       PORT: 3000
     command: ["node", "dist/main.js"]
     ports:
-      - "3000:3000"
+      - "${AICO_API_PORT:-3000}:3000"
     depends_on:
       postgres:
         condition: service_healthy

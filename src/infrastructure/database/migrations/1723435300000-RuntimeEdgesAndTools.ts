@@ -48,6 +48,7 @@ export class RuntimeEdgesAndTools1723435300000 implements MigrationInterface {
     await queryRunner.query(`
       DROP TABLE IF EXISTS tool_invocations;
       DROP TABLE IF EXISTS task_edges;
+      DROP INDEX IF EXISTS tasks_expired_lease_idx;
     `);
   }
 }
