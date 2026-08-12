@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: AI Company OS delivery backlog
+    url: https://github.com/duckvhuynh/aicompanyos/blob/main/docs/delivery/BACKLOG.md
+    about: Confirm that work is planned before opening a backend implementation issue.
+  - name: AI Company OS GitHub Project
+    url: https://github.com/users/duckvhuynh/projects/2
+    about: Review sequencing, dependencies, sprint, and delivery status.

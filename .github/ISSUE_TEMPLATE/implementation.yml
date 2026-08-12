@@ -1,0 +1,42 @@
+name: Planned backend implementation
+description: Track backend work authorized by the parent AI Company OS plan.
+title: '[Backend] '
+body:
+  - type: input
+    id: parent_issue
+    attributes:
+      label: Parent AICO issue
+      description: Use the full cross-repository form.
+      placeholder: duckvhuynh/aicompanyos#22
+    validations:
+      required: true
+  - type: textarea
+    id: requirements
+    attributes:
+      label: Product and architecture references
+      description: List MVP_SCOPE, PRD, SRS, AICO, ADR, and contract identifiers.
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Planned outcome
+      description: State the bounded outcome without expanding the parent issue.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria and evidence plan
+      description: Define observable criteria and how each will be verified.
+    validations:
+      required: true
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Scope confirmation
+      options:
+        - label: This work exists in the parent backlog and GitHub Project.
+          required: true
+        - label: This work does not add a capability excluded from the MVP.
+          required: true

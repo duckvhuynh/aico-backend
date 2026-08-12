@@ -6,6 +6,12 @@ The implemented slice takes a local founder from Company/Profile creation throug
 
 This repository is a backend foundation, not the full 16-week MVP. The parent delivery backlog remains authoritative for later approval, Designer, Engineer sandbox, QA/rework, preview, and export capabilities.
 
+## Delivery governance
+
+Every backend change must trace to an approved parent issue in the [AI Company OS delivery backlog](https://github.com/duckvhuynh/aicompanyos/blob/main/docs/delivery/BACKLOG.md) and [GitHub Project 2](https://github.com/users/duckvhuynh/projects/2). The parent [MVP scope](https://github.com/duckvhuynh/aicompanyos/blob/main/docs/product/MVP_SCOPE.md), [PRD](https://github.com/duckvhuynh/aicompanyos/blob/main/docs/product/PRD.md), and [SRS](https://github.com/duckvhuynh/aicompanyos/blob/main/docs/product/SRS.md) are the product authority.
+
+Read [CONTRIBUTING.md](CONTRIBUTING.md) before starting work. Backend pull requests are automatically rejected when they do not reference a parent issue in the form `duckvhuynh/aicompanyos#<number>` and complete the required traceability, acceptance-evidence, and MVP-scope sections.
+
 ## Architecture
 
 - one NestJS codebase with separate `api`, `worker`, and one-shot `migrate` processes;
@@ -72,4 +78,3 @@ The smoke test verifies readiness, authentication, company creation, identical-c
 ## GitHub traceability
 
 Architecture and implementation commits use parent issue references in the form `duckvhuynh/aicompanyos#<issue>`. The current foundation primarily implements or advances AICO-002/#2, AICO-003/#3, AICO-005/#5, AICO-006/#6, AICO-009/#9, AICO-010/#10, AICO-011/#11, AICO-013/#13, AICO-015/#15, AICO-016/#16, and AICO-022–025/#22–25.
-
