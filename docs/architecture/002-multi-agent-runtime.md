@@ -1,6 +1,6 @@
 # ADR-002: Governed Multi-Agent Runtime and Durable Orchestration
 
-- **Status:** Accepted for the first MVP
+- **Status:** Accepted runtime constraints; durable workflow technology selection is governed by accepted ADR-006
 - **Date:** 2026-08-12
 - **Owners:** Multi-Agent Systems Architecture, Backend Engineering
 - **Decision scope:** AICO-002, AICO-005, AICO-006, AICO-022 through AICO-033
@@ -295,4 +295,3 @@ Required automated suites:
 | Provider abstraction and typed output | AICO-005, AICO-032 | SRS-FR-013 through 016, 090 through 091 |
 | Atomic bounded budgets | AICO-033 | SRS-FR-095; NFR-025 through 027 |
 | Evaluation and rework semantics | AICO-024, AICO-032 through AICO-033 | SRS-FR-061 through 069 |
-

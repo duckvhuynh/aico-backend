@@ -29,7 +29,9 @@
     "test:smoke": "node test/smoke.mjs",
     "typecheck": "tsc --noEmit --incremental false",
     "test:contracts": "jest --runInBand --testPathPatterns=contract.spec.ts",
-    "verify": "npm run format:check && npm run lint && npm run typecheck && npm test && npm run build",
+    "verify:architecture": "node scripts/validate-aico-002-adr.mjs",
+    "verify:architecture:accepted": "node scripts/validate-aico-002-adr.mjs --require-accepted",
+    "verify": "npm run verify:architecture && npm run format:check && npm run lint && npm run typecheck && npm test && npm run build",
     "verify:ci": "node scripts/verify-ci.mjs",
     "verify:fail-closed": "node scripts/prove-gates-fail-closed.mjs"
   },
