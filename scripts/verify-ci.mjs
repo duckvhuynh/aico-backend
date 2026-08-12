@@ -55,8 +55,17 @@ try {
     'postgres',
     'minio',
   ]);
-  gate('object-init', 'docker', ['compose', '-p', project, 'up', '-d', 'minio-init']);
-  gate('object-init-wait', 'docker', ['compose', '-p', project, 'wait', 'minio-init']);
+  gate('object-init', 'docker', [
+    'compose',
+    '-p',
+    project,
+    'up',
+    '--no-deps',
+    '--abort-on-container-exit',
+    '--exit-code-from',
+    'minio-init',
+    'minio-init',
+  ]);
   gate('migrations', 'node', ['scripts/migration-fixture.mjs']);
   gate('storage', 'node', ['scripts/storage-fixture.mjs'], {
     env: {
