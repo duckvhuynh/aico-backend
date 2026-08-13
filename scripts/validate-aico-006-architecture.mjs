@@ -48,6 +48,15 @@ if (probe === 'adr-status') {
   );
 } else if (probe === 'downstream-ownership') {
   documents.evidence = documents.evidence.replace(/AICO-031/g, 'REMOVED-031');
+} else if (probe === 'event-vocabulary') {
+  documents.contract = documents.contract.replace(/approval\.decided/g, 'gate_approved');
+} else if (probe === 'deny-binding') {
+  documents.contract = documents.contract.replace(/DenyBindingV1/g, 'AllowBindingV1');
+} else if (probe === 'replay-authority') {
+  documents.contract = documents.contract.replace(
+    /replay-after-revocation/gi,
+    'replay-without-auth',
+  );
 } else if (probe !== undefined) {
   throw new Error(`Unknown AICO-006 validation failure probe: ${probe}`);
 }
@@ -89,6 +98,11 @@ requireText('adr', [
   'AICO-031',
   'AICO-041',
   'AICO-042',
+  'approval.decided',
+  'policy.decided',
+  'tagged',
+  'redacted DENY',
+  'replay-after-revocation',
 ]);
 
 requireText('contract', [
@@ -125,6 +139,13 @@ requireText('contract', [
   'uuid',
   'timestamptz',
   'composite tenant',
+  'PolicyDecisionPort',
+  'approval.decided',
+  'policy.decided',
+  'AllowBindingV1',
+  'DenyBindingV1',
+  'maximum_uses: 0',
+  'replay-after-revocation',
 ]);
 
 requireText('threat', [
@@ -150,7 +171,35 @@ requireText('threat', [
   'AICO-041',
   'AICO-042',
   'non-waivable',
+  'approval.decided',
+  'policy.decided',
+  'replay-after-revocation',
 ]);
+
+for (const [name, document] of Object.entries({
+  adr: documents.adr,
+  contract: documents.contract,
+  threat: documents.threat,
+})) {
+  for (const forbidden of [
+    'gate_approved',
+    'gate_revision_requested',
+    'policy_denied',
+    'policy_decision_recorded',
+    'PolicyEvaluatorPort',
+  ]) {
+    if (document.includes(forbidden)) {
+      errors.push(`${paths[name]} contains forbidden conflicting term: ${forbidden}`);
+    }
+  }
+}
+
+const runStageDefinition = documents.contract
+  .split('\n')
+  .find((line) => line.includes('type RunStage') || line.includes('| `RunStage`'));
+if (!runStageDefinition || runStageDefinition.includes('TERMINAL')) {
+  errors.push(`${paths.contract} RunStage must use exactly INTAKE/PRODUCT/DESIGN/BUILD/QA/FINAL`);
+}
 
 const threatIds = new Set(documents.threat.match(/\bA6-T-[A-Z0-9-]+\b/g) ?? []);
 if (threatIds.size < 30) {

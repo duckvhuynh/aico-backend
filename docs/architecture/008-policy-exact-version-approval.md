@@ -65,7 +65,7 @@ The MVP uses an application-owned registry of explicit, deterministic TypeScript
 - a typed normalizer that rejects unknown fields and canonicalizes parameters;
 - one explicit rule function returning `ALLOW` or `DENY` plus a stable internal reason code;
 - a public-safe reason mapping separate from the internal reason;
-- declared resource, attempt, approval, budget, environment, maximum-use, and expiry requirements; and
+- declared resource, attempt, approval, budget, environment, and, for `ALLOW` only, maximum-use and expiry requirements; and
 - unit, mutation, race, and negative-matrix fixtures.
 
 The application depends on a replaceable inward-facing port:
@@ -89,6 +89,8 @@ The first rule set contains at least:
 
 `gate.gate-01.approve/v1` unlocks only Design work from the exact approved Product Brief. `task.design.dispatch/v1` performs a separate action-time check before a Designer task is claimed. Neither action authorizes build, network, deployment, export, another gate, or an entire session.
 
+ADR-008 uses the accepted `AGENT_RUNTIME.md` vocabulary without aliases. The only Run stages are `INTAKE`, `PRODUCT`, `DESIGN`, `BUILD`, `QA`, and `FINAL`. Failed, canceled, and completed are Run states; there is no terminal Run stage. The only policy/approval event types used by this decision are `policy.decided` and `approval.decided`.
+
 This selection is `A6-ADR-01`.
 
 ## 6. Complete action-time input contract
@@ -100,7 +102,7 @@ The normalized `PolicyEvaluationInput` is a versioned discriminated union. The h
 | Contract and time    | Input schema version; action schema key/version; database evaluation time; requested expiry/maximum use only when action schema permits it                                                                                                                                                |
 | Actor                | Actor kind and ID; verified auth subject reference; active session ID/version; authentication strength; session/founder revocation version; founder ownership version, or immutable Employee Definition ID/version/status and assigned role; operator capability version where applicable |
 | Tenant               | Server-derived `company_id`; Company status and `row_version`; current founder-owner ID; tenant-scope resolution outcome                                                                                                                                                                  |
-| Workflow             | Run ID; workflow definition version; context snapshot ID; Run state, stage, `row_version`, and current policy baseline; cancellation and operator-kill status/version                                                                                                                     |
+| Workflow             | Run ID; workflow definition version; context snapshot ID; Run state; one exact `RunStage` value from `INTAKE/PRODUCT/DESIGN/BUILD/QA/FINAL`; `row_version`; current policy baseline; cancellation and operator-kill status/version                                                        |
 | Work                 | Task ID/type/state/`row_version`; Attempt ID/number/state; assigned Employee Definition version; lease token digest and lease expiry when the action is attempt-bound                                                                                                                     |
 | Gate and approvals   | Gate key, Gate Instance ID/status/`row_version`; expected Run state/version; exact pending Artifact ID and Artifact Version ID; artifact type/schema/checksum/status; required approval decision IDs/versions and their subject versions                                                  |
 | Action and resource  | Stable action key/version; resource kind; exact tenant-owned resource ID and immutable version ID; tool key/version when applicable; canonical validated parameter digest; intended logical invocation/continuation key                                                                   |
@@ -117,7 +119,75 @@ This contract is `A6-INPUT-01`.
 
 ## 7. Decision output and allow binding
 
-A persisted `PolicyDecision` contains a UUID, outcome, stable internal and public-safe reason codes, server-derived Company scope, actor/employee version, action key/version, exact resource/version or non-disclosing resource class, Attempt ID where applicable, canonical parameter/resource/context digests, approval/budget/environment versions, Policy Version ID/digest, Policy Targeting Version ID, issue/expiry times, maximum uses, correlation/causation IDs, and evidence classification.
+A persisted `PolicyDecision` is a tagged union, not one shape with misleading nullable authority fields:
+
+```ts
+type PolicyReasonCode =
+  | 'RULE_MATCHED'
+  | 'ROLE_FORBIDDEN'
+  | 'WRONG_STAGE'
+  | 'APPROVAL_MISSING'
+  | 'STALE_VERSION'
+  | 'RESOURCE_OUT_OF_SCOPE'
+  | 'BUDGET_UNAVAILABLE'
+  | 'ENVIRONMENT_UNSAFE'
+  | 'TENANT_MISMATCH'
+  | 'INVALID_CONTEXT';
+
+interface PolicyDecisionBase {
+  decisionId: UUID;
+  policyVersionId: UUID;
+  policyDigest: Sha256;
+  policyTargetingVersionId: UUID;
+  actor: ActorRef;
+  action: string;
+  inputDigest: Sha256;
+  reasonCode: PolicyReasonCode;
+  evaluatedAt: Rfc3339Utc;
+  correlationId: UUID;
+  causationId?: UUID;
+}
+
+type PolicyDecision =
+  | (PolicyDecisionBase & {
+      result: 'ALLOW';
+      reasonCode: 'RULE_MATCHED';
+      binding: {
+        companyId: UUID;
+        runId: UUID;
+        taskId?: UUID;
+        attemptId?: UUID;
+        stage: 'INTAKE' | 'PRODUCT' | 'DESIGN' | 'BUILD' | 'QA' | 'FINAL';
+        runState: RunState;
+        resourceType: string;
+        resourceId: UUID;
+        resourceVersion: string;
+        parameterDigest: Sha256;
+        approvalDigest: Sha256;
+        budgetDigest?: Sha256;
+        environmentDigest: Sha256;
+      };
+      maximumUses: PositiveInt;
+      expiresAt: Rfc3339Utc;
+    })
+  | (PolicyDecisionBase & {
+      result: 'DENY';
+      reasonCode: Exclude<PolicyReasonCode, 'RULE_MATCHED'>;
+      binding: {
+        subjectCompanyId?: UUID;
+        runId?: UUID;
+        stage?: 'INTAKE' | 'PRODUCT' | 'DESIGN' | 'BUILD' | 'QA' | 'FINAL';
+        safeResourceClass: string;
+        suppliedReferenceDigest?: Sha256;
+      };
+      maximumUses?: never;
+      expiresAt?: never;
+    });
+```
+
+An `ALLOW` therefore contains the complete positive authority binding and a positive maximum use count. A `DENY` authorizes nothing: it has no positive maximum-use or expiry fields, carries only a redacted denial binding, and may omit a possible victim Run/resource ID. An in-scope `runId` may be retained only after the actor's Company and the Run's Company are proven equal. Policy source details, foreign identifiers, and sensitive input content never enter the redacted binding.
+
+The closed deny reasons are the accepted runtime names: `ROLE_FORBIDDEN`, `WRONG_STAGE`, `APPROVAL_MISSING`, `STALE_VERSION`, `RESOURCE_OUT_OF_SCOPE`, `BUDGET_UNAVAILABLE`, `ENVIRONMENT_UNSAFE`, `TENANT_MISMATCH`, and `INVALID_CONTEXT`. New names or changed meanings require a new policy/contract version. `RULE_MATCHED` is allow-only and conveys no authority beyond the tagged `ALLOW` binding.
 
 An `ALLOW` is valid only if all stored bindings still match at use time:
 
@@ -131,6 +201,8 @@ An `ALLOW` is valid only if all stored bindings still match at use time:
 The allow UUID is an internal reference, not a bearer capability. A client, model, transcript, or session cannot present it to widen authority. A side-effecting Tool Invocation references and consumes its matching allow in an invocation-intent transaction; a retry reconciles the same logical invocation or obtains a new decision rather than reusing a stale grant. Reads may use a separately declared maximum-use rule, but there is no session-wide allow.
 
 For the exact founder decision, the allow is evaluated, persisted, referenced by the founder decision, and consumed by that decision in the same transaction. It cannot be replayed for another gate or version.
+
+Every persisted result appends the canonical ordered `policy.decided` event and its outbox row. Its redacted payload includes `policyDecisionId`, `result`, `reasonCode`, action, policy/targeting versions, safe subject/resource classes, and causal references. An `ALLOW` that completes a founder gate command is followed in the same transaction by `approval.decided`; a `DENY` never emits `approval.decided`.
 
 This contract is `A6-ALLOW-01`.
 
@@ -151,7 +223,7 @@ The action is allowed only when all of the following are true at the locked data
 - the effective policy/action/workflow versions are supported and current; and
 - the command's idempotency key/digest is unused or an identical replay.
 
-The successful transaction appends `APPROVE`, marks the Gate Instance `APPROVED`, creates the immutable `PRODUCT_BRIEF` approved-version binding, transitions the Run from `AWAITING_BRIEF_APPROVAL` to `DESIGNING`, and inserts one `START_DESIGN_FROM_BRIEF` continuation bound to the exact Product Brief version. The material ordered event is `gate_approved`; it references both the Policy Decision and Founder Gate Decision and has one transactional outbox row.
+The successful transaction appends `APPROVE`, marks the Gate Instance `APPROVED`, creates the immutable `PRODUCT_BRIEF` approved-version binding, transitions the Run from `AWAITING_BRIEF_APPROVAL` to `DESIGNING`, and inserts one `START_DESIGN_FROM_BRIEF` continuation bound to the exact Product Brief version. After the preceding `policy.decided` `ALLOW`, it appends the canonical ordered `approval.decided` event and outbox row. The payload has `decision: APPROVE`, the Policy Decision and Founder Gate Decision IDs, exact gate/artifact version, prior/resulting Run state and stage, approved-binding ID, and continuation-intent ID.
 
 The continuation is only durable intent. A worker must still recheck cancellation, exact approved binding, current policy, dependencies, and budget before creating/claiming Designer work. `APPROVE` does not invoke a model, tool, provider, or sandbox inside the decision transaction.
 
@@ -159,7 +231,7 @@ The continuation is only durable intent. A worker must still recheck cancellatio
 
 The same founder, Company, Run, Gate Instance, exact-version, expected-state, policy, and idempotency checks apply. Revision requires bounded schema-valid feedback with a digest and classification; it cannot alter the reviewed Artifact Version.
 
-The successful transaction appends `REQUEST_REVISION`, stores the immutable feedback reference/content, marks the Gate Instance `REVISION_REQUESTED`, transitions the Run from `AWAITING_BRIEF_APPROVAL` to the accepted workflow's `QUALIFYING` revision checkpoint, and inserts one `REVISE_PRODUCT_BRIEF` continuation bound to the reviewed version and feedback. It creates no approved binding and unlocks no Designer/build work. The material ordered event is `gate_revision_requested` with one outbox row.
+The successful transaction appends `REQUEST_REVISION`, stores the immutable feedback reference/content, marks the Gate Instance `REVISION_REQUESTED`, transitions the Run from `AWAITING_BRIEF_APPROVAL` to the accepted workflow's `QUALIFYING` revision checkpoint, and inserts one `REVISE_PRODUCT_BRIEF` continuation bound to the reviewed version and feedback. It creates no approved binding and unlocks no Designer/build work. After the preceding `policy.decided` `ALLOW`, it appends the canonical ordered `approval.decided` event and outbox row. The payload has `decision: REQUEST_REVISION`, the same exact-version/causal fields, a redacted feedback reference/digest, no approved-binding ID, and the revision continuation-intent ID.
 
 A later PM revision task may publish a new immutable Product Brief and a new Gate Instance under AICO-039/AICO-045. Neither the reviewed version nor its decision is updated or deleted.
 
@@ -167,29 +239,33 @@ A later PM revision task may publish a new immutable Product Brief and a new Gat
 
 The command handler uses `READ COMMITTED` with explicit row locks, uniqueness constraints, and optimistic `row_version` checks. All decision commands use the same documented lock order to avoid deadlocks:
 
-1. claim or lock the scoped idempotency record for actor, command type, and key;
-2. lock the authenticated session/founder authority and Company ownership rows;
-3. lock the effective Policy Targeting row/version;
-4. lock the tenant-scoped Run row;
-5. lock its exact Gate Instance and read its immutable Artifact Version through same-Company composite keys;
-6. lock the affected approved-binding/continuation logical key when it exists;
-7. lock the Run event counter; and
-8. finalize the command receipt before commit.
+1. after credential verification, lock the current session/founder authority and server-resolved Company ownership rows, then revalidate active session, founder status, Company status, current ownership, and their revocation/row versions;
+2. only for that still-authorized founder/Company, claim or lock the scoped idempotency record for actor, command type, and key;
+3. if a completed record has the same canonical request digest, return its stored safe receipt/status and original correlation after commit without locking or re-evaluating the now-changed Run, Gate Instance, Artifact Version, policy target, or continuation state;
+4. if the key is new, lock the effective Policy Targeting pointer/version;
+5. lock the tenant-scoped Run row;
+6. lock its exact Gate Instance and read its immutable Artifact Version through same-Company composite keys;
+7. lock the affected approved-binding/continuation logical key when it exists;
+8. lock the Run event counter when new ordered events will be appended; and
+9. finalize the command receipt before commit.
+
+The replay shortcut is deliberately after current authority validation but before post-success business preconditions. A committed approval has already moved the Run and closed the Gate Instance, so re-evaluating those stale expected values would incorrectly reject a valid retry. Conversely, a revoked session, inactive founder, changed Company owner, or inactive Company cannot retrieve an earlier success merely by replaying its key: current-authority validation denies before receipt lookup and exposes no receipt IDs or result. A safely established but no-longer-authorized subject receives a redacted `ROLE_FORBIDDEN` result/evidence where policy auditing applies; a revoked or unauthenticated session receives only the safe authentication error and platform telemetry.
 
 Within that transaction the handler:
 
-1. compares the canonical request digest with any idempotency receipt;
-2. validates actor ownership, exact Company/Run/Gate/Artifact relationships, expected Run state and `row_version`, Gate Instance `row_version`, decision kind, feedback schema, cancellation/kill state, and immutable version state;
+1. handles the authority-checked idempotency branch above: identical completed replay returns early; a changed digest returns `IDEMPOTENCY_KEY_REUSED`; an in-progress row serializes or returns a safe in-progress result;
+2. for a new command, validates exact Company/Run/Gate/Artifact relationships, expected Run state/stage and `row_version`, Gate Instance `row_version`, decision kind, feedback schema, cancellation/kill state, and immutable version state;
 3. resolves the effective compatible Policy Version and action schema from the locked targeting version;
 4. assembles the complete action-time input and invokes the pure `PolicyDecisionPort`;
-5. persists the immutable Policy Decision;
-6. on `ALLOW`, appends one Founder Gate Decision and only the transition/binding/continuation permitted by Section 8;
-7. assigns the next Run event sequence by locking `run_event_counters`, appends the material event, and inserts the same event envelope into the outbox; and
-8. stores the safe command result/digest for replay and commits.
+5. persists the tagged immutable Policy Decision, appends ordered `policy.decided`, and inserts its outbox row;
+6. on `DENY`, creates no founder/business effect, stores the safe idempotent denial result, and commits only the evidence permitted by Section 11;
+7. on `ALLOW`, appends one Founder Gate Decision and only the transition/binding/continuation permitted by Section 8;
+8. appends the next ordered `approval.decided` event with `APPROVE` or `REQUEST_REVISION` in its payload and inserts its outbox row; and
+9. stores the safe command receipt/digest for replay and commits.
 
 If any constraint, event, outbox, continuation, or receipt write fails, none commits. No event is published and no external adapter is called before commit. A crash after commit but before response is recovered by the idempotency receipt; a crash after outbox publication but before acknowledgement is handled by inbox deduplication under ADR-006/AICO-025.
 
-An identical key and request digest returns the original safe result without a new policy/founder decision, transition, continuation, event, or outbox row. Reusing a key with a changed digest returns `IDEMPOTENCY_KEY_REUSED` and has no business effect. Two valid commands with different keys serialize on the Run/Gate locks; only the first can close the pending Gate Instance.
+An identical key and request digest, presented by the still-current founder/owner, returns the original safe result without a new policy/founder decision, transition, continuation, event, or outbox row and without failing on the successful command's now-stale gate/artifact preconditions. Reusing a key with a changed digest returns `IDEMPOTENCY_KEY_REUSED` and has no business effect. Replay after revocation or ownership loss is denied before receipt disclosure. Two valid commands with different keys serialize on the Run/Gate locks; only the first can close the pending Gate Instance.
 
 This transaction contract is `A6-TX-01`.
 
@@ -200,7 +276,7 @@ The domain model is deliberately small:
 - `PolicyVersion`: immutable evaluator/rule release and compatibility metadata;
 - `PolicyTargetingVersion`: immutable environment/cohort targeting decision, including emergency deny/kill state;
 - `PolicyInput`: normalized action-time facts at explicit schema versions;
-- `PolicyDecision`: immutable allow/deny verdict and bindings;
+- `PolicyDecision`: immutable tagged `ALLOW` authority binding or redacted `DENY` evidence binding;
 - `GateInstance`: one gate over one exact artifact version with optimistic version;
 - `FounderGateDecision`: append-only `APPROVE` or `REQUEST_REVISION` fact;
 - `ApprovedArtifactBinding`: immutable Run/gate-role to exact Artifact Version link; and
@@ -208,20 +284,20 @@ The domain model is deliberately small:
 
 The implementation migrations owned by later issues use the following logical shape:
 
-| Table                            | Required columns                                                                                                                                                                                                                                                                                                                                                                                       | Keys and invariants                                                                                                                                                                                                                                                                                      |
-| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `policy_versions`                | `id uuid`, policy key, semantic version, input/output/action-schema versions, evaluator/source/application revision, rules/package digests, compatibility range, publication state, `published_at timestamptz`, `created_at timestamptz`                                                                                                                                                               | UUID PK; immutable after publication; unique policy key/version and digest; checked `DRAFT/PUBLISHED` publication state; pause/kill/rollback is targeting state rather than a mutation of the published version; no silent replacement                                                                   |
-| `policy_targets`                 | `id uuid`, environment/cohort key, current Policy Targeting Version ID, `row_version bigint`, `created_at/updated_at timestamptz`                                                                                                                                                                                                                                                                      | UUID PK; one explicitly addressed mutable pointer per environment/cohort; checked positive row version; locked for action-time resolution and targeting changes; never infer current by maximum semantic version                                                                                         |
-| `policy_targeting_versions`      | `id uuid`, environment/cohort, target Policy Version ID, targeting version, state, reason, actor/evidence refs, `effective_at timestamptz`, `created_at timestamptz`                                                                                                                                                                                                                                   | append-only; unique environment/cohort/version; checked `ACTIVE/PAUSED/DENY_ALL/ROLLED_BACK` state; an active target must reference a published compatible Policy Version                                                                                                                                |
-| `policy_decisions`               | `id uuid`, `company_id uuid NOT NULL`, optional same-tenant Run/Task/Attempt refs, actor kind/ID and employee version, action key/version, resource kind/ID/version or safe class, resource/parameter/context/approval/budget/environment digests/versions, Policy and Targeting Version IDs, outcome/reasons, max uses, `issued_at/expires_at timestamptz`, correlation/causation IDs, classification | unique `(company_id,id)`; append-only; composite tenant FKs for every present tenant ref; text checks for actor/outcome/reason/action domains; `ALLOW` requires exact action/resource/parameter, targeting, positive max use, and `expires_at > issued_at`; denial cannot be referenced by an invocation |
-| `gate_instances`                 | `id uuid`, `company_id uuid NOT NULL`, Run ID, gate key, exact Artifact/Artifact Version IDs, expected Run state, status, `row_version bigint`, `opened_at/decided_at timestamptz`                                                                                                                                                                                                                     | unique `(company_id,id)`; all composite FKs share Company/Run; checked `row_version > 0`; partial unique one `PENDING` gate key per Run; status transitions only `PENDING -> APPROVED/REVISION_REQUESTED/CANCELED`                                                                                       |
-| `founder_gate_decisions`         | `id uuid`, `company_id uuid NOT NULL`, Run/Gate/Artifact/Artifact Version/Founder/Policy Decision IDs, decision, expected Run/Gate versions, feedback/digest/classification, command/idempotency refs, `created_at timestamptz`                                                                                                                                                                        | append-only; unique Gate Instance and command result; composite tenant FKs; checked `APPROVE/REQUEST_REVISION`; revision requires nonblank bounded validated feedback while approval feedback is optional; no update/delete grant to runtime role                                                        |
-| `run_approved_artifact_bindings` | `id uuid`, `company_id uuid NOT NULL`, Run ID, binding key, exact Artifact Version ID, Gate and Founder Decision IDs, `created_at timestamptz`                                                                                                                                                                                                                                                         | immutable; unique Run/binding key; composite tenant/exact-version FKs; only `APPROVE` may create `PRODUCT_BRIEF`                                                                                                                                                                                         |
-| `continuation_intents`           | `id uuid`, `company_id uuid NOT NULL`, Run/Gate/Founder Decision IDs, type, exact input Artifact Version/feedback refs, state, logical idempotency key, `created_at/claimed_at/completed_at timestamptz`                                                                                                                                                                                               | unique same-tenant logical key; checked type/state; no cross-Run refs; claimed under lease/revalidation; one logical continuation per decision                                                                                                                                                           |
+| Table                            | Required columns                                                                                                                                                                                                                                                                                                                                                                                                                                            | Keys and invariants                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `policy_versions`                | `id uuid`, policy key, semantic version, input/output/action-schema versions, evaluator/source/application revision, rules/package digests, compatibility range, publication state, `published_at timestamptz`, `created_at timestamptz`                                                                                                                                                                                                                    | UUID PK; immutable after publication; unique policy key/version and digest; checked `DRAFT/PUBLISHED` publication state; pause/kill/rollback is targeting state rather than a mutation of the published version; no silent replacement                                                                                                                                                                                                 |
+| `policy_targets`                 | `id uuid`, environment/cohort key, current Policy Targeting Version ID, `row_version bigint`, `created_at/updated_at timestamptz`                                                                                                                                                                                                                                                                                                                           | UUID PK; one explicitly addressed mutable pointer per environment/cohort; checked positive row version; locked for action-time resolution and targeting changes; never infer current by maximum semantic version                                                                                                                                                                                                                       |
+| `policy_targeting_versions`      | `id uuid`, environment/cohort, target Policy Version ID, targeting version, state, reason, actor/evidence refs, `effective_at timestamptz`, `created_at timestamptz`                                                                                                                                                                                                                                                                                        | append-only; unique environment/cohort/version; checked `ACTIVE/PAUSED/DENY_ALL/ROLLED_BACK` state; an active target must reference a published compatible Policy Version                                                                                                                                                                                                                                                              |
+| `policy_decisions`               | `id uuid`; nullable subject `company_id` and provably same-tenant Run/Task/Attempt refs; actor kind/ID and employee version; action key/version; nullable exact resource ID/version plus safe resource class; supplied-reference/resource/parameter/context/approval/budget/environment digests/versions; Policy and Targeting Version IDs; result/reason; nullable max uses; `issued_at/expires_at timestamptz`; correlation/causation IDs; classification | append-only tagged-row checks: `ALLOW` requires Company/Run, exact action/resource/version/parameter, targeting, positive max uses, and `expires_at > issued_at`; `DENY` requires `max_uses IS NULL` and `expires_at IS NULL`, permits victim Run/resource IDs to be null, and cannot be referenced by an invocation; every present tenant ref uses a composite tenant FK; reason/result combination uses the Section 7 closed catalog |
+| `gate_instances`                 | `id uuid`, `company_id uuid NOT NULL`, Run ID, gate key, exact Artifact/Artifact Version IDs, expected Run state, status, `row_version bigint`, `opened_at/decided_at timestamptz`                                                                                                                                                                                                                                                                          | unique `(company_id,id)`; all composite FKs share Company/Run; checked `row_version > 0`; partial unique one `PENDING` gate key per Run; status transitions only `PENDING -> APPROVED/REVISION_REQUESTED/CANCELED`                                                                                                                                                                                                                     |
+| `founder_gate_decisions`         | `id uuid`, `company_id uuid NOT NULL`, Run/Gate/Artifact/Artifact Version/Founder/Policy Decision IDs, decision, expected Run/Gate versions, feedback/digest/classification, command/idempotency refs, `created_at timestamptz`                                                                                                                                                                                                                             | append-only; unique Gate Instance and command result; composite tenant FKs; checked `APPROVE/REQUEST_REVISION`; revision requires nonblank bounded validated feedback while approval feedback is optional; no update/delete grant to runtime role                                                                                                                                                                                      |
+| `run_approved_artifact_bindings` | `id uuid`, `company_id uuid NOT NULL`, Run ID, binding key, exact Artifact Version ID, Gate and Founder Decision IDs, `created_at timestamptz`                                                                                                                                                                                                                                                                                                              | immutable; unique Run/binding key; composite tenant/exact-version FKs; only `APPROVE` may create `PRODUCT_BRIEF`                                                                                                                                                                                                                                                                                                                       |
+| `continuation_intents`           | `id uuid`, `company_id uuid NOT NULL`, Run/Gate/Founder Decision IDs, type, exact input Artifact Version/feedback refs, state, logical idempotency key, `created_at/claimed_at/completed_at timestamptz`                                                                                                                                                                                                                                                    | unique same-tenant logical key; checked type/state; no cross-Run refs; claimed under lease/revalidation; one logical continuation per decision                                                                                                                                                                                                                                                                                         |
 
 Existing `runs`, `artifact_versions`, `events`, `outbox_messages`, `idempotency_records`, and `run_event_counters` remain authoritative under accepted ADRs. Authorization columns are relational; JSON is permitted only for schema-validated versioned evidence that is not used to establish ownership, state, ordering, or joins.
 
-All externally visible/application-generated IDs are UUIDv7 stored as PostgreSQL `uuid`. All instants are `timestamptz`; expiry comparison uses database time. Domain labels are `text` with meaningful `CHECK` constraints or migration-controlled enums, not arbitrary strings or artificial `varchar(n)` limits. Tenant-owned indexes begin with `company_id`. Every child-to-tenant-owned-parent relation repeats `company_id` in a composite foreign key, and material exact-version uniqueness is settled by database constraints rather than ID shape.
+All externally visible/application-generated IDs are UUIDv7 stored as PostgreSQL `uuid`. All instants are `timestamptz`; expiry comparison uses database time. Domain labels are `text` with meaningful `CHECK` constraints or migration-controlled enums, not arbitrary strings or artificial `varchar(n)` limits. Tenant-owned indexes begin with `company_id`. Every child-to-tenant-owned-parent relation repeats `company_id` in a composite foreign key, and material exact-version uniqueness is settled by database constraints rather than ID shape. Platform-scoped or redacted foreign-target denials with no safe Company binding are stored in their separately authorized security-evidence boundary rather than fabricating a tenant key.
 
 This persistence contract is `A6-SCHEMA-01`.
 
@@ -229,24 +305,25 @@ This persistence contract is `A6-SCHEMA-01`.
 
 "Zero side effects" means zero unauthorized business state change, gate/approval, artifact mutation, continuation/task, budget consumption, provider/tool/sandbox call, external event, or cost. It does not suppress the scoped/redacted security evidence required by PRD-FR-060 and SRS-FR-087.
 
-For an authenticated actor and a provably same-Company Run, denial appends one tenant-scoped `PolicyDecision` and one safe `policy_denied` event/outbox in the denial transaction. For an authenticated employee attempting a foreign/unknown resource, the decision is scoped to the employee's verified Company with no victim Run FK or foreign identifier; its linked company-security event records only the action/resource class, stable generic reason, supplied-reference keyed digest, policy versions, actor version, and causality. It never writes to or exposes the possible victim Run. A known operator with no Company receives a platform-security audit event rather than a tenant row. Unauthenticated, malformed, or schema-unparseable traffic is rejected by the authentication/validation boundary and recorded only in safe platform security telemetry because no trustworthy policy subject/tenant exists.
+For an authenticated actor and a provably same-Company Run, denial appends one tenant-scoped tagged `DENY` Policy Decision and one safe canonical `policy.decided` event/outbox in the denial transaction. For an authenticated employee attempting a foreign/unknown resource, the redacted denial binding is scoped to the employee's verified Company with no victim Run FK or foreign identifier; its `policy.decided` payload records only the action/resource class, stable generic reason, keyed digest of the supplied reference, policy versions, actor version, and causality. It never writes to or exposes the possible victim Run. A known operator with no Company receives a platform-security audit event rather than a tenant row. Unauthenticated, malformed, or schema-unparseable traffic is rejected by the authentication/validation boundary and recorded only in safe platform security telemetry because no trustworthy policy subject/tenant exists.
 
-Internal reason codes are detailed enough to investigate (`ACTOR_FORBIDDEN`, `TENANT_SCOPE_MISMATCH`, `STATE_STALE`, `GATE_MISMATCH`, `RESOURCE_VERSION_STALE`, `POLICY_VERSION_UNSUPPORTED`, `ALLOW_EXPIRED`, `RUN_CANCELED`). Public responses remain non-disclosing (`action_denied`, `resource_not_found`, `precondition_failed`, or `conflict`) and never reveal another tenant, current foreign version, policy source, credentials, or hidden content. Metrics use only bounded action/outcome/reason cohorts; high-cardinality IDs stay in authorized events/logs/traces.
+Internal denial reasons use only the Section 7 accepted runtime vocabulary. Examples map employee/operator authority to `ROLE_FORBIDDEN`; an invalid Run stage, canceled Run, or terminal Run state to `WRONG_STAGE`; stale Run/Gate/Artifact/allow versions or expiry to `STALE_VERSION`; wrong gate/resource/parameter binding to `RESOURCE_OUT_OF_SCOPE`; unsupported/missing policy targeting to `INVALID_CONTEXT` or `ENVIRONMENT_UNSAFE`; and a foreign tenant to `TENANT_MISMATCH`. Public responses remain non-disclosing (`action_denied`, `resource_not_found`, `precondition_failed`, or `conflict`) and never reveal another tenant, current foreign version, policy source, credentials, or hidden content. Metrics use only bounded action/outcome/reason cohorts; high-cardinality IDs stay in authorized events/logs/traces.
 
-| Attempt                                                                                                                | Required result                                                                                                       | Permitted evidence only                                                                                                 |
-| ---------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| Employee/model tries to approve or request revision                                                                    | Deny; no Founder Gate Decision, transition, approved binding, continuation, tool, or cost                             | One scoped/redacted SRS-FR-087 Policy Decision and linked denial event/outbox                                           |
-| Operator/support tool tries to approve                                                                                 | Deny even if the operator may kill a Run; no founder impersonation                                                    | Platform-security audit with no tenant content unless separately authorized to view that Company                        |
-| Direct HTTP/API call bypasses the UI                                                                                   | Normal authentication, tenant resolution, policy, exact-version, and transaction checks; UI visibility grants nothing | Same evidence as the resulting allow/deny                                                                               |
-| Ordinary runtime code tries to bypass the handler/repository port or update history                                    | Composition/import checks and database grants/constraints reject it; no supported direct mutation path                | Architecture/security violation signal; never fabricate a Policy Decision after an untrusted raw SQL attempt            |
-| Stale Artifact Version, stale expected Run/Gate version, mutable-latest reference, or repeated decision with a new key | Deny; current exact version/gate remains pending or already decided; no second business effect                        | Same-Run safe denial decision/event                                                                                     |
-| Wrong Company or foreign Run/Gate/Artifact reference                                                                   | Non-disclosing not-found/deny; no victim read/write/event, approval, continuation, or timing-sensitive detail         | Requester-scoped or platform security evidence with no foreign ID/content                                               |
-| Wrong Run state, Gate, Artifact type, resource, action, workflow version, or Policy Version                            | Deny before transition/invocation                                                                                     | Safe reason-coded denial decision/event when actor and scope are trustworthy                                            |
-| Identical idempotency replay                                                                                           | Return the original safe result; exactly one logical effect                                                           | Original evidence only; replay metadata may increment an operational counter                                            |
-| Same key with changed request digest                                                                                   | Conflict; no new business effect                                                                                      | Safe idempotency/security evidence without request content                                                              |
-| Expired, altered, already-consumed, wrong-attempt, wrong-parameter, or superseded-target allow                         | ToolGateway denies before adapter invocation                                                                          | New safe denial decision/event tied to the attempted use, never reuse the old allow                                     |
-| Canceled/terminal/killed Run or revoked session/employee/policy                                                        | Deny; no reopening, dispatch, adapter call, or new continuation                                                       | Safe current-state denial evidence                                                                                      |
-| Policy evaluator error, unsupported input/output major, missing targeting, or database uncertainty                     | Fail closed; no protected effect                                                                                      | Persist denial only if the transaction/evidence boundary is trustworthy; otherwise safe availability/security telemetry |
+| Attempt                                                                                                                | Required result                                                                                                                                               | Permitted evidence only                                                                                                                        |
+| ---------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| Employee/model tries to approve or request revision                                                                    | Deny; no Founder Gate Decision, transition, approved binding, continuation, tool, or cost                                                                     | One scoped/redacted SRS-FR-087 Policy Decision and linked denial event/outbox                                                                  |
+| Operator/support tool tries to approve                                                                                 | Deny even if the operator may kill a Run; no founder impersonation                                                                                            | Platform-security audit with no tenant content unless separately authorized to view that Company                                               |
+| Direct HTTP/API call bypasses the UI                                                                                   | Normal authentication, tenant resolution, policy, exact-version, and transaction checks; UI visibility grants nothing                                         | Same evidence as the resulting allow/deny                                                                                                      |
+| Ordinary runtime code tries to bypass the handler/repository port or update history                                    | Composition/import checks and database grants/constraints reject it; no supported direct mutation path                                                        | Architecture/security violation signal; never fabricate a Policy Decision after an untrusted raw SQL attempt                                   |
+| Stale Artifact Version, stale expected Run/Gate version, mutable-latest reference, or repeated decision with a new key | Deny; current exact version/gate remains pending or already decided; no second business effect                                                                | Same-Run safe denial decision/event                                                                                                            |
+| Wrong Company or foreign Run/Gate/Artifact reference                                                                   | Non-disclosing not-found/deny; no victim read/write/event, approval, continuation, or timing-sensitive detail                                                 | Requester-scoped or platform security evidence with no foreign ID/content                                                                      |
+| Wrong Run state, Gate, Artifact type, resource, action, workflow version, or Policy Version                            | Deny before transition/invocation                                                                                                                             | Safe reason-coded denial decision/event when actor and scope are trustworthy                                                                   |
+| Identical idempotency replay by the still-current founder/owner                                                        | After current authority locks pass, return the original safe result without rechecking the now-closed Gate/current Artifact state; exactly one logical effect | Original evidence only; replay metadata may increment an operational counter                                                                   |
+| Identical replay after session/founder revocation, ownership change, or Company inactivation                           | Deny before idempotency receipt disclosure; never return the old success or use its stale authority                                                           | Safe authentication/platform evidence, or redacted `ROLE_FORBIDDEN` `policy.decided` evidence only when subject/Company scope remains provable |
+| Same key with changed request digest                                                                                   | Conflict; no new business effect                                                                                                                              | Safe idempotency/security evidence without request content                                                                                     |
+| Expired, altered, already-consumed, wrong-attempt, wrong-parameter, or superseded-target allow                         | ToolGateway denies before adapter invocation                                                                                                                  | New safe denial decision/event tied to the attempted use, never reuse the old allow                                                            |
+| Canceled/terminal/killed Run or revoked session/employee/policy                                                        | Deny; no reopening, dispatch, adapter call, or new continuation                                                                                               | Safe current-state denial evidence                                                                                                             |
+| Policy evaluator error, unsupported input/output major, missing targeting, or database uncertainty                     | Fail closed; no protected effect                                                                                                                              | Persist denial only if the transaction/evidence boundary is trustworthy; otherwise safe availability/security telemetry                        |
 
 This matrix is `A6-DENY-01`; its scoped/redacted evidence rules are `A6-AUDIT-01`.
 
@@ -260,7 +337,7 @@ This matrix is `A6-DENY-01`; its scoped/redacted evidence rules are `A6-AUDIT-01
 - **Budget race:** a no-cost gate action records the action schema's explicit `NOT_APPLICABLE`; it does not reserve budget or imply future budget eligibility. Tool/dispatch actions lock or conditionally reserve the required budget before invocation intent, so concurrent workers cannot oversubscribe.
 - **Clock/expiry:** issue and expiry instants use PostgreSQL time. Application clock skew cannot extend authority. Expired allows are never refreshed implicitly.
 - **Transaction failure:** failure before commit leaves no acknowledged decision, transition, event, outbox, or continuation. Event/outbox/receipt failure rolls back the material mutation.
-- **Commit uncertainty:** the caller retries with the same key/digest and receives the stored result. It never guesses whether approval succeeded.
+- **Commit uncertainty:** the caller retries with the same key/digest. Current founder/Company authority is locked and revalidated first; if still authorized, the handler returns the stored result without rechecking post-success Gate/Artifact state. If authority was revoked, replay denies without receipt disclosure. The caller never guesses whether approval succeeded.
 - **Outbox uncertainty:** publication is at least once; consumers deduplicate by Event ID/inbox receipt. A continuation is additionally unique by logical decision key.
 - **Database unavailable:** no durable Policy Decision means no privileged Tool Invocation or founder decision may proceed. Readiness/capability degrades and the action fails closed.
 - **External-effect uncertainty:** gate decisions perform no external call. For later tool actions, a persisted invocation intent and provider/tool idempotency key are reconciled; unknown outcome becomes `BLOCKED`, never blind replay.

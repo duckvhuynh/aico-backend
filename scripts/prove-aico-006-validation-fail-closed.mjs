@@ -12,6 +12,9 @@ const probes = {
   'model-authority':
     'is missing required content: model response, a transcript, green CI on another SHA, or an unreviewed demo is not acceptance or authority',
   'downstream-ownership': 'is missing required content: AICO-031',
+  'event-vocabulary': 'is missing required content: approval.decided',
+  'deny-binding': 'is missing required content: DenyBindingV1',
+  'replay-authority': 'is missing required content: replay-after-revocation',
 };
 
 for (const [probe, expected] of Object.entries(probes)) {
