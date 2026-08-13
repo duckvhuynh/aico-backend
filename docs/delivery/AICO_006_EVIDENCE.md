@@ -64,6 +64,27 @@ The architecture must make one claim provable: only an authenticated founder dec
 
 These facts reduce proof cost but do not complete AICO-006. The worker currently inserts a hard-coded `ALLOW` for deterministic model invocation. No production founder decision command, deny-by-default evaluator, exact GATE-01 transaction, revision transaction, or complete negative matrix exists.
 
+## Bounded proof child #13 candidate
+
+The internal, test-only proof candidate is implemented under `test/aico-006-spike/**` and runs through:
+
+```text
+npm run test:policy-approval-proof
+```
+
+Canonical `npm run verify:ci` invokes the same foreground proof after migrations and before API/worker runtime smoke tests. The runner creates a validated disposable PostgreSQL schema and schema-derived read-only runtime role, seeds two synthetic companies, executes every stable `A6-T-*` case, emits a machine-readable result manifest, then removes the schema, role, and Docker volume.
+
+The candidate asserts:
+
+- all 33 accepted threat cases execute with no skip;
+- 13 pre-commit write-boundary failpoints roll back completely, while the distinct commit-before-response case recovers through authority-first idempotent replay;
+- all 14 accepted control-removal mutations are applied to isolated copies of the real service/UoW/schema and killed by the intended A6 case; compilation failures, unrelated failures, or exception failpoints do not count;
+- exact `APPROVE` and `REQUEST_REVISION` outcomes, authorized replay, revoked replay, changed-payload conflict, and concurrent winner behavior;
+- constrained-role direct DML rejection, immutable evidence, tagged/redacted DENY, exact six-stage vocabulary, policy/workflow pinning, append-only rollout/rollback evidence, forced pre-commit process death, replacement-process reconstruction, crash-before-ack outbox deduplication, forged-message quarantine, and schema-wide canary-free evidence;
+- zero model, provider, tool, external, budget, or Designer execution effects.
+
+This is child #13 architecture proof only. It is not a production migration, Nest runtime module, controller, public decision API, UI, production session policy, production database-role deployment, or AICO-031/AICO-041/AICO-042 completion. Exact candidate SHA, hosted canonical run, Product review, and attributable QA/Security approval remain required before this evidence can close child #13 or parent AICO-006.
+
 ## Downstream ownership and non-goals
 
 | Retained gap                                    | Required contract now                                                                                                              | Later owner        |

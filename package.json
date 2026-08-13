@@ -28,6 +28,8 @@
     "test:e2e": "jest --config test/jest-e2e.json --runInBand",
     "test:smoke": "node test/smoke.mjs",
     "test:workflow-resilience": "node scripts/workflow-resilience-fixture.mjs",
+    "test:policy-approval-proof": "jest --runInBand --runTestsByPath test/policy-approval-proof.integration.spec.ts",
+    "test:policy-approval-control-mutations": "node scripts/prove-aico-006-control-mutations.mjs",
     "typecheck": "tsc --noEmit --incremental false",
     "test:contracts": "jest --runInBand --testPathPatterns=contract.spec.ts",
     "verify:tenant-architecture": "node scripts/validate-aico-003-architecture.mjs && node scripts/prove-aico-003-validation-fail-closed.mjs",
