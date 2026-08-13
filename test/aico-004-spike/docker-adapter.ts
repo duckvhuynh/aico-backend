@@ -12,7 +12,10 @@ import {
   type SandboxProofRequest,
   type SandboxReason,
 } from './contracts';
-import { ACCEPTED_DEPENDENCY_BUNDLE_DIGEST } from './fixture';
+import {
+  ACCEPTED_DEPENDENCY_BUNDLE_CONFIG_DIGEST,
+  ACCEPTED_DEPENDENCY_BUNDLE_DIGEST,
+} from './fixture';
 import type { SandboxProofAdapter } from './proof-service';
 
 const IMAGE_TAG = 'aicompanyos/prototype-dependencies:aico004-proof';
@@ -233,7 +236,10 @@ export function materializeAcceptedSandboxImage(): void {
   const forceMaterialization =
     process.env.AICO004_FORCE_IMAGE_MATERIALIZATION === 'true' &&
     !forcedImageMaterializationCompleted;
-  if (currentId === ACCEPTED_DEPENDENCY_BUNDLE_DIGEST && !forceMaterialization) return;
+  const acceptedRuntimeImage =
+    currentId === ACCEPTED_DEPENDENCY_BUNDLE_DIGEST ||
+    currentId === ACCEPTED_DEPENDENCY_BUNDLE_CONFIG_DIGEST;
+  if (acceptedRuntimeImage && !forceMaterialization) return;
   const temporaryDirectory = mkdtempSync(join(tmpdir(), 'aico004-oci-'));
   const archive = join(temporaryDirectory, 'dependency-image.oci.tar');
   const builderName = `aico004-proof-${process.pid}-${randomUUID().slice(0, 8)}`;
@@ -251,19 +257,22 @@ export function materializeAcceptedSandboxImage(): void {
     ]);
     builderCreated = true;
     docker(['buildx', 'inspect', builderName, '--bootstrap']);
-    docker([
-      'buildx',
-      'build',
+    const buildArguments = [
       '--builder',
       builderName,
-      '--output',
-      `type=oci,dest=${archive},rewrite-timestamp=true`,
       '--provenance=false',
       '--sbom=false',
       '--build-arg',
       'SOURCE_DATE_EPOCH=0',
       '--file',
       IMAGE_DOCKERFILE,
+    ] as const;
+    docker([
+      'buildx',
+      'build',
+      ...buildArguments,
+      '--output',
+      `type=oci,dest=${archive},rewrite-timestamp=true`,
       IMAGE_CONTEXT,
     ]);
     const index = JSON.parse(
@@ -272,8 +281,21 @@ export function materializeAcceptedSandboxImage(): void {
     if (index.manifests?.[0]?.digest !== ACCEPTED_DEPENDENCY_BUNDLE_DIGEST) {
       throw new Error('Rebuilt OCI image does not match the frozen AICO-004 digest.');
     }
-    docker(['load', '--input', archive]);
-    docker(['tag', ACCEPTED_DEPENDENCY_BUNDLE_DIGEST, IMAGE_TAG]);
+    docker([
+      'buildx',
+      'build',
+      ...buildArguments,
+      '--output',
+      `type=docker,name=${IMAGE_TAG},rewrite-timestamp=true`,
+      IMAGE_CONTEXT,
+    ]);
+    const materializedId = docker(['image', 'inspect', IMAGE_TAG, '--format', '{{.Id}}']);
+    if (
+      materializedId !== ACCEPTED_DEPENDENCY_BUNDLE_DIGEST &&
+      materializedId !== ACCEPTED_DEPENDENCY_BUNDLE_CONFIG_DIGEST
+    ) {
+      throw new Error('Docker runtime image does not match the frozen AICO-004 config digest.');
+    }
     forcedImageMaterializationCompleted = true;
   } finally {
     if (builderCreated) docker(['buildx', 'rm', builderName], true);
