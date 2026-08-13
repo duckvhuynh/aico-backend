@@ -10,7 +10,7 @@
     "verification_claim": "BASIC_AUTOMATED_SMOKE_ONLY_NO_CONFORMANCE_CLAIM",
     "visible_focus": true
   },
-  "canonical_artifact_set_digest": "17df9844b2581496bc075a22a104583d0164f172ed0757c0e7d33872143ab9c5",
+  "canonical_artifact_set_digest": "239c8f6c14dfebabffe0c3ad52b23744e2ac879aff1fff717848a5b768386f9d",
   "canonical_artifacts": {
     "base_image": {
       "artifact_key": "base-image",
@@ -27,9 +27,9 @@
       "artifact_key": "dependency-bundle-image",
       "artifact_kind": "DEPENDENCY_BUNDLE_OCI_IMAGE",
       "canonical_ref": "aico-artifact:aico-004/dependency-bundle-image/1.0.0-candidate.1",
-      "digest": "b748ce96d54e53619db121d3991492b7c3d801895a6a590e9b98507a066e2fb0",
+      "digest": "352c7508e8f0f8fd27c4556012a54be061c3df880846e874fc4238d7e7259f0c",
       "expected_media_type": "application/vnd.oci.image.manifest.v1+json",
-      "immutable_ref": "aicompanyos/prototype-dependencies@sha256:b748ce96d54e53619db121d3991492b7c3d801895a6a590e9b98507a066e2fb0",
+      "immutable_ref": "aicompanyos/prototype-dependencies@sha256:352c7508e8f0f8fd27c4556012a54be061c3df880846e874fc4238d7e7259f0c",
       "materialization_owner": "AICO-004",
       "materialization_status": "MATERIALIZED_CANDIDATE",
       "productization_owner": "AICO-047"
@@ -627,7 +627,7 @@
       }
     ]
   },
-  "manifest_digest": "8f4b44d666a0025c0dece74fa56e42389f5f39f936b4e207d75885d5c5b7eaf1",
+  "manifest_digest": "3e74bcfd085cdfbad0353cee9cabc8530099f33fe789644a3974f4766aa30445",
   "manifest_id": "aico-fixed-react-ts-design",
   "manifest_version": "1.0.0-candidate.1",
   "owner_decisions": {

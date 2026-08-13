@@ -443,6 +443,7 @@ try {
     invocation: rawBuildMetadata['buildx.build.provenance']?.invocation?.parameters ?? {},
   });
   const dockerfilePath = join(dependencyImageRoot, 'Dockerfile');
+  const dockerignorePath = join(artifactRoot, '.dockerignore');
   const archiveDigest = sha256(readFileSync(archivePath));
   const lockDigest = sha256(packageLockBytes);
   const sbomDigest = sha256(readFileSync(sbomPath));
@@ -459,6 +460,8 @@ try {
     },
     buildRecipe: 'Dockerfile',
     buildRecipeDigest: sha256(readFileSync(dockerfilePath)),
+    buildContextPolicy: '.dockerignore',
+    buildContextPolicyDigest: sha256(readFileSync(dockerignorePath)),
     dependencyInstall: 'npm ci --ignore-scripts --no-audit --no-fund',
     generatedRuntimeInstallAllowed: false,
     networkAtGeneratedRuntime: 'NONE',
