@@ -1,0 +1,40 @@
+{
+  "baseImage": {
+    "indexDigest": "sha256:6f7b03f7c2c8e2e784dcf9295400527b9b1270fd37b7e9a7285cf83b6951452d",
+    "platformDigest": "sha256:d45d78e7929b46875bbd4e29bea672d5bc48186c6c3588306521c815e78352d6",
+    "reference": "docker.io/library/node:24.18.0-bookworm-slim"
+  },
+  "buildContextPolicy": ".dockerignore",
+  "buildContextPolicyDigest": "74e5b3b405bd49002e501ef2edffe38902d71459f239fc379fc904cbc4d64b78",
+  "builder": "moby/buildkit:v0.27.0@sha256:054d632d0d7e94b11cdc6048674773499a5170cf7d8ce0c326daaff6be43c8e0",
+  "buildRecipe": "Dockerfile",
+  "buildRecipeDigest": "2da1f6976cf90abc01888b76e754fad834a2380320339a5d93c228e913c95410",
+  "builtAt": "1970-01-01T00:00:00Z",
+  "candidateImageDigest": "sha256:352c7508e8f0f8fd27c4556012a54be061c3df880846e874fc4238d7e7259f0c",
+  "candidateImageMediaType": "application/vnd.oci.image.manifest.v1+json",
+  "candidateImageReference": "aicompanyos/prototype-dependencies:1.0.0-candidate.1",
+  "dependencyInstall": "npm ci --ignore-scripts --no-audit --no-fund",
+  "generatedRuntimeInstallAllowed": false,
+  "inputs": {
+    "licenseReportDigest": "8274a74a33a1349b7e8985fa4559250c19b9377887ec9a7a213fcc769d71124a",
+    "packageLockDigest": "22e0e8531a72cc2848ef14b2d73ecae6a5046f9ace5791c566d74fa24186eb99",
+    "sbomDigest": "0a196c462b695861e3f86584a088baa1b6fc703c373d41fd6f4d583b5de5d2fb",
+    "templateArchiveDigest": "be46961ef94b58ab5b0d383f7d27fafb639f2682ca22c559b22256d26e3f2166"
+  },
+  "networkAtGeneratedRuntime": "NONE",
+  "platform": "linux/amd64",
+  "rootfsDiffIds": [
+    "sha256:81f823b9617547261c907396f63f770deaa554748ff739bedfa650e3bb74595a",
+    "sha256:e8e8bcb08674cd0ecf9850d66bc246bb95fa086eb6c988ab48d0404501029ddc",
+    "sha256:ec5d0255c8bf10ce4313e611ec0a35f9de699c6284e69e4c4fdcc5ea6e82adbf",
+    "sha256:625ca884ca91515900d06a970e88957ac4d2e8963c4a0cc699e069ef7e3c7371",
+    "sha256:7ad824b880674ec5cd6d6ef28d7d4783bcd5194ccf30ae225d5eeed0093ff31a",
+    "sha256:08de6f1a8353450996d2069933af3be317bdcea74401d2376337f6ee1c7c19a3",
+    "sha256:a5e5ae9ee1050f25a4808e6b2b60f8d1dbeb89fa5204ef8756ac4429020d3ad8",
+    "sha256:2fe7fe70c7f1fed14e16fe5d66f063e5df3bf513d3dcb92984abd0309c25e6fe",
+    "sha256:9f133c011d982352f4cd30993a38f99dbfa3558988a60fd8df31b5df9f821161",
+    "sha256:80bee3809605c3f97bc111051d088197055d138822a06ecfbfa5597934710435"
+  ],
+  "schemaVersion": "aico.dependency-image-provenance/v1",
+  "status": "MATERIALIZED_CANDIDATE"
+}

@@ -1,0 +1,60 @@
+{
+  "builder_image": "moby/buildkit:v0.27.0@sha256:054d632d0d7e94b11cdc6048674773499a5170cf7d8ce0c326daaff6be43c8e0",
+  "config_digest": "sha256:554bd8e6c6fe17cac651ead6818fdf598089e2755f90829aa8518eea08db1ee6",
+  "contract": "aico.dependency-image-build-metadata/v1",
+  "descriptor": {
+    "annotations": {
+      "org.opencontainers.image.created": "1970-01-01T00:00:00Z"
+    },
+    "digest": "sha256:352c7508e8f0f8fd27c4556012a54be061c3df880846e874fc4238d7e7259f0c",
+    "mediaType": "application/vnd.oci.image.manifest.v1+json",
+    "platform": {
+      "architecture": "amd64",
+      "os": "linux"
+    },
+    "size": 2575
+  },
+  "invocation": {
+    "args": {
+      "build-arg:SOURCE_DATE_EPOCH": "0",
+      "cmdline": "docker/dockerfile:1.7",
+      "source": "docker/dockerfile:1.7"
+    },
+    "frontend": "gateway.v0",
+    "locals": [
+      {
+        "name": "context"
+      },
+      {
+        "name": "dockerfile"
+      }
+    ]
+  },
+  "materials": [
+    {
+      "digest": {
+        "sha256": "a57df69d0ea827fb7266491f2813635de6f17269be881f696fbfdf2d83dda33e"
+      },
+      "uri": "pkg:docker/docker/dockerfile@1.7"
+    },
+    {
+      "digest": {
+        "sha256": "d45d78e7929b46875bbd4e29bea672d5bc48186c6c3588306521c815e78352d6"
+      },
+      "uri": "pkg:docker/node@24.18.0-bookworm-slim?digest=sha256:d45d78e7929b46875bbd4e29bea672d5bc48186c6c3588306521c815e78352d6&platform=linux%2Famd64"
+    }
+  ],
+  "platform": {
+    "architecture": "amd64",
+    "os": "linux"
+  },
+  "reproducibility": {
+    "oci_rewrite_timestamp": true,
+    "removed_generated_paths": [
+      "/root/.npm",
+      "/tmp/node-compile-cache",
+      "/tmp/*"
+    ]
+  },
+  "source_date_epoch": 0
+}

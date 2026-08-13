@@ -1,0 +1,1530 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aicompanyos.dev/schemas/sandbox-execution.v1.schema.json",
+  "title": "AI Company OS Sandbox Execution Contract v1",
+  "description": "Strict credential-free request, execution receipt, and termination contracts for the fixed prototype build pipeline.",
+  "oneOf": [
+    { "$ref": "#/$defs/designDecisionManifest" },
+    { "$ref": "#/$defs/sandboxExecutionRequest" },
+    { "$ref": "#/$defs/sandboxExecutionReceipt" },
+    { "$ref": "#/$defs/sandboxTerminationRequest" },
+    { "$ref": "#/$defs/sandboxTerminationReceipt" }
+  ],
+  "$defs": {
+    "uuid": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "ociDigest": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "rfc3339Utc": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "Z$"
+    },
+    "semanticVersion": {
+      "type": "string",
+      "pattern": "^[1-9][0-9]*\\.[0-9]+\\.[0-9]+(?:-[a-z0-9.-]+)?$",
+      "maxLength": 80
+    },
+    "versionToken": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._/-]{0,79}$"
+    },
+    "logicalIdempotencyKey": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{15,199}$"
+    },
+    "safeIdentifier": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._/-]{0,127}$"
+    },
+    "relativeOutputPath": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 240,
+      "pattern": "^(?!/)(?!\\.)(?!.*\\/\\.)(?!.*\\.\\.)(?!.*\\\\)(?!.*//)[A-Za-z0-9][A-Za-z0-9._/-]*$"
+    },
+    "gitCommit": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{40}$"
+    },
+    "designDecisionBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "version",
+        "manifest_digest",
+        "canonical_artifact_set_digest",
+        "decision_status",
+        "semantic_sha",
+        "decision_child"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/safeIdentifier" },
+        "version": { "$ref": "#/$defs/semanticVersion" },
+        "manifest_digest": { "$ref": "#/$defs/sha256" },
+        "canonical_artifact_set_digest": { "$ref": "#/$defs/sha256" },
+        "decision_status": { "const": "ACCEPTED" },
+        "semantic_sha": { "$ref": "#/$defs/gitCommit" },
+        "decision_child": { "const": "duckvhuynh/aico-backend#16" }
+      }
+    },
+    "acceptedDecisionEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "decided_by", "evidence_ref", "decided_at", "semantic_sha"],
+      "properties": {
+        "status": { "const": "ACCEPTED" },
+        "decided_by": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "evidence_ref": {
+          "type": "string",
+          "pattern": "^https://github\\.com/duckvhuynh/aico-backend/(?:pull|issues)/[1-9][0-9]*(?:#issuecomment-[1-9][0-9]*)?$",
+          "maxLength": 300
+        },
+        "decided_at": { "$ref": "#/$defs/rfc3339Utc" },
+        "semantic_sha": { "$ref": "#/$defs/gitCommit" }
+      }
+    },
+    "decisionEvidence": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["status"],
+          "properties": {
+            "status": { "const": "PENDING" }
+          }
+        },
+        { "$ref": "#/$defs/acceptedDecisionEvidence" }
+      ]
+    },
+    "routeDefinition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["route_id", "path", "screen_id", "navigation_label", "inventory_ordinal"],
+      "properties": {
+        "route_id": { "$ref": "#/$defs/safeIdentifier" },
+        "path": {
+          "type": "string",
+          "pattern": "^/(?:[a-z0-9]+(?:-[a-z0-9]+)*/?)*$",
+          "maxLength": 120
+        },
+        "screen_id": { "$ref": "#/$defs/safeIdentifier" },
+        "navigation_label": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40
+        },
+        "inventory_ordinal": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 5
+        }
+      }
+    },
+    "screenDefinition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["screen_id", "route_id", "title", "purpose", "region_ids"],
+      "properties": {
+        "screen_id": { "$ref": "#/$defs/safeIdentifier" },
+        "route_id": { "$ref": "#/$defs/safeIdentifier" },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "purpose": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 500
+        },
+        "region_ids": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 12,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/safeIdentifier" }
+        }
+      }
+    },
+    "stateDefinition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "state_id",
+        "screen_id",
+        "state_kind",
+        "intent",
+        "visible_region_ids",
+        "interaction_ids"
+      ],
+      "properties": {
+        "state_id": { "$ref": "#/$defs/safeIdentifier" },
+        "screen_id": { "$ref": "#/$defs/safeIdentifier" },
+        "state_kind": { "enum": ["LOADING", "EMPTY", "ERROR", "SUCCESS"] },
+        "intent": {
+          "type": "string",
+          "minLength": 5,
+          "maxLength": 300
+        },
+        "visible_region_ids": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 12,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/safeIdentifier" }
+        },
+        "interaction_ids": {
+          "type": "array",
+          "maxItems": 20,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/safeIdentifier" }
+        }
+      }
+    },
+    "designInventory": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["routes", "screens", "states"],
+      "properties": {
+        "routes": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 5,
+          "items": { "$ref": "#/$defs/routeDefinition" }
+        },
+        "screens": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 5,
+          "items": { "$ref": "#/$defs/screenDefinition" }
+        },
+        "states": {
+          "type": "array",
+          "minItems": 4,
+          "maxItems": 20,
+          "items": { "$ref": "#/$defs/stateDefinition" }
+        }
+      }
+    },
+    "primaryFlowStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ordinal",
+        "route_id",
+        "screen_id",
+        "entry_state_id",
+        "interaction_id",
+        "outcome_state_id",
+        "expected_outcome"
+      ],
+      "properties": {
+        "ordinal": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 20
+        },
+        "route_id": { "$ref": "#/$defs/safeIdentifier" },
+        "screen_id": { "$ref": "#/$defs/safeIdentifier" },
+        "entry_state_id": { "$ref": "#/$defs/safeIdentifier" },
+        "interaction_id": { "$ref": "#/$defs/safeIdentifier" },
+        "outcome_state_id": { "$ref": "#/$defs/safeIdentifier" },
+        "expected_outcome": {
+          "type": "string",
+          "minLength": 5,
+          "maxLength": 300
+        }
+      }
+    },
+    "primaryFlow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["flow_id", "name", "steps"],
+      "properties": {
+        "flow_id": { "$ref": "#/$defs/safeIdentifier" },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "steps": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 20,
+          "items": { "$ref": "#/$defs/primaryFlowStep" }
+        }
+      }
+    },
+    "interactionDefinition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "interaction_id",
+        "screen_id",
+        "control_role",
+        "accessible_name",
+        "trigger",
+        "from_state_id",
+        "to_state_id",
+        "keyboard_operation",
+        "feedback"
+      ],
+      "properties": {
+        "interaction_id": { "$ref": "#/$defs/safeIdentifier" },
+        "screen_id": { "$ref": "#/$defs/safeIdentifier" },
+        "control_role": {
+          "enum": ["BUTTON", "LINK", "TEXT_FIELD", "SELECT", "CHECKBOX", "RADIO", "TAB"]
+        },
+        "accessible_name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "trigger": { "enum": ["ACTIVATE", "CHANGE", "SUBMIT", "SELECT"] },
+        "from_state_id": { "$ref": "#/$defs/safeIdentifier" },
+        "to_state_id": { "$ref": "#/$defs/safeIdentifier" },
+        "keyboard_operation": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "feedback": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 300
+        }
+      }
+    },
+    "responsiveContract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["compact", "expanded", "layout"],
+      "properties": {
+        "compact": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["maximum_width_px", "navigation_pattern", "columns"],
+          "properties": {
+            "maximum_width_px": {
+              "type": "integer",
+              "minimum": 320,
+              "maximum": 1023
+            },
+            "navigation_pattern": { "enum": ["BOTTOM_BAR", "MENU_BUTTON", "TOP_BAR_WRAP"] },
+            "columns": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 4
+            }
+          }
+        },
+        "expanded": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["minimum_width_px", "navigation_pattern", "columns"],
+          "properties": {
+            "minimum_width_px": {
+              "type": "integer",
+              "minimum": 600,
+              "maximum": 1920
+            },
+            "navigation_pattern": { "enum": ["SIDEBAR", "TOP_BAR"] },
+            "columns": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 12
+            }
+          }
+        },
+        "layout": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["content_maximum_width_px", "region_order", "gutter_token"],
+          "properties": {
+            "content_maximum_width_px": {
+              "type": "integer",
+              "minimum": 320,
+              "maximum": 1920
+            },
+            "region_order": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 12,
+              "uniqueItems": true,
+              "items": { "$ref": "#/$defs/safeIdentifier" }
+            },
+            "gutter_token": { "const": "space.layout-gutter" }
+          }
+        }
+      }
+    },
+    "designTokens": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["color", "typography", "spacing", "shape", "motion"],
+      "properties": {
+        "color": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "background",
+            "surface",
+            "text_primary",
+            "text_muted",
+            "action",
+            "danger",
+            "border",
+            "focus"
+          ],
+          "properties": {
+            "background": { "type": "string", "pattern": "^#[A-Fa-f0-9]{6}$" },
+            "surface": { "type": "string", "pattern": "^#[A-Fa-f0-9]{6}$" },
+            "text_primary": { "type": "string", "pattern": "^#[A-Fa-f0-9]{6}$" },
+            "text_muted": { "type": "string", "pattern": "^#[A-Fa-f0-9]{6}$" },
+            "action": { "type": "string", "pattern": "^#[A-Fa-f0-9]{6}$" },
+            "danger": { "type": "string", "pattern": "^#[A-Fa-f0-9]{6}$" },
+            "border": { "type": "string", "pattern": "^#[A-Fa-f0-9]{6}$" },
+            "focus": { "type": "string", "pattern": "^#[A-Fa-f0-9]{6}$" }
+          }
+        },
+        "typography": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "font_family",
+            "base_size_px",
+            "line_height_ratio",
+            "regular_weight",
+            "strong_weight"
+          ],
+          "properties": {
+            "font_family": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 160
+            },
+            "base_size_px": {
+              "type": "integer",
+              "minimum": 14,
+              "maximum": 24
+            },
+            "line_height_ratio": {
+              "type": "number",
+              "minimum": 1.2,
+              "maximum": 2
+            },
+            "regular_weight": {
+              "type": "integer",
+              "minimum": 300,
+              "maximum": 500
+            },
+            "strong_weight": {
+              "type": "integer",
+              "minimum": 600,
+              "maximum": 800
+            }
+          }
+        },
+        "spacing": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["unit_px", "layout_gutter_units", "section_gap_units"],
+          "properties": {
+            "unit_px": { "type": "integer", "minimum": 2, "maximum": 16 },
+            "layout_gutter_units": { "type": "integer", "minimum": 1, "maximum": 8 },
+            "section_gap_units": { "type": "integer", "minimum": 1, "maximum": 12 }
+          }
+        },
+        "shape": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["control_radius_px", "surface_radius_px", "focus_width_px"],
+          "properties": {
+            "control_radius_px": { "type": "integer", "minimum": 0, "maximum": 32 },
+            "surface_radius_px": { "type": "integer", "minimum": 0, "maximum": 48 },
+            "focus_width_px": { "type": "integer", "minimum": 2, "maximum": 8 }
+          }
+        },
+        "motion": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["standard_duration_ms", "reduced_motion_behavior"],
+          "properties": {
+            "standard_duration_ms": { "type": "integer", "minimum": 0, "maximum": 500 },
+            "reduced_motion_behavior": { "const": "DISABLE_NON_ESSENTIAL" }
+          }
+        }
+      }
+    },
+    "accessibilityContract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "target",
+        "verification_claim",
+        "semantic_html",
+        "keyboard_operable",
+        "visible_focus",
+        "programmatic_labels",
+        "minimum_text_contrast",
+        "minimum_large_text_contrast",
+        "reduced_motion"
+      ],
+      "properties": {
+        "target": { "const": "WCAG_2_2_AA" },
+        "verification_claim": {
+          "const": "BASIC_AUTOMATED_SMOKE_ONLY_NO_CONFORMANCE_CLAIM"
+        },
+        "semantic_html": { "const": true },
+        "keyboard_operable": { "const": true },
+        "visible_focus": { "const": true },
+        "programmatic_labels": { "const": true },
+        "minimum_text_contrast": { "const": 4.5 },
+        "minimum_large_text_contrast": { "const": 3 },
+        "reduced_motion": { "const": "PREFERS_REDUCED_MOTION" }
+      }
+    },
+    "prototypeWarning": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["text", "placement", "dismissible", "visible_in_all_states", "semantic_role"],
+      "properties": {
+        "text": { "const": "Prototype only - not a live production system." },
+        "placement": { "const": "PERSISTENT_GLOBAL" },
+        "dismissible": { "const": false },
+        "visible_in_all_states": { "const": true },
+        "semantic_role": { "const": "NOTE" }
+      }
+    },
+    "canonicalArtifactRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "artifact_key",
+        "artifact_kind",
+        "canonical_ref",
+        "materialization_owner",
+        "productization_owner",
+        "materialization_status",
+        "expected_media_type"
+      ],
+      "properties": {
+        "artifact_key": { "$ref": "#/$defs/safeIdentifier" },
+        "artifact_kind": {
+          "enum": [
+            "TEMPLATE_ARCHIVE",
+            "PACKAGE_LOCK",
+            "CYCLONEDX_SBOM",
+            "LICENSE_REPORT",
+            "BASE_OCI_IMAGE",
+            "DEPENDENCY_BUNDLE_OCI_IMAGE"
+          ]
+        },
+        "canonical_ref": {
+          "type": "string",
+          "pattern": "^aico-artifact:[A-Za-z0-9][A-Za-z0-9._:/-]{2,239}$"
+        },
+        "materialization_owner": { "const": "AICO-004" },
+        "productization_owner": { "const": "AICO-047" },
+        "materialization_status": {
+          "enum": ["PENDING_AICO_004_MATERIALIZATION", "MATERIALIZED_CANDIDATE", "DECISION_FROZEN"]
+        },
+        "expected_media_type": {
+          "enum": [
+            "application/gzip",
+            "application/json",
+            "application/vnd.cyclonedx+json",
+            "application/vnd.oci.image.manifest.v1+json"
+          ]
+        },
+        "immutable_ref": {
+          "type": "string",
+          "pattern": "^(?:[a-z0-9]+(?:[._-][a-z0-9]+)*(?:/[a-z0-9]+(?:[._-][a-z0-9]+)*)+@sha256:[a-f0-9]{64}|objects/[A-Za-z0-9][A-Za-z0-9._/-]{1,238}|docs/architecture/artifacts/aico-004/[A-Za-z0-9][A-Za-z0-9._/-]{1,198})$"
+        },
+        "digest": { "$ref": "#/$defs/sha256" }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "materialization_status": {
+                "enum": ["MATERIALIZED_CANDIDATE", "DECISION_FROZEN"]
+              }
+            },
+            "required": ["materialization_status"]
+          },
+          "then": {
+            "required": ["immutable_ref", "digest"],
+            "properties": {
+              "immutable_ref": {
+                "type": "string",
+                "pattern": "^(?:[a-z0-9]+(?:[._-][a-z0-9]+)*(?:/[a-z0-9]+(?:[._-][a-z0-9]+)*)+@sha256:[a-f0-9]{64}|objects/[A-Za-z0-9][A-Za-z0-9._/-]{1,238}|docs/architecture/artifacts/aico-004/[A-Za-z0-9][A-Za-z0-9._/-]{1,198})$"
+              },
+              "digest": { "$ref": "#/$defs/sha256" }
+            }
+          }
+        }
+      ]
+    },
+    "decisionFrozenArtifactRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "artifact_key",
+        "artifact_kind",
+        "canonical_ref",
+        "materialization_owner",
+        "productization_owner",
+        "materialization_status",
+        "expected_media_type",
+        "immutable_ref",
+        "digest"
+      ],
+      "properties": {
+        "artifact_key": { "$ref": "#/$defs/safeIdentifier" },
+        "artifact_kind": {
+          "enum": [
+            "TEMPLATE_ARCHIVE",
+            "PACKAGE_LOCK",
+            "CYCLONEDX_SBOM",
+            "LICENSE_REPORT",
+            "BASE_OCI_IMAGE",
+            "DEPENDENCY_BUNDLE_OCI_IMAGE"
+          ]
+        },
+        "canonical_ref": {
+          "type": "string",
+          "pattern": "^aico-artifact:[A-Za-z0-9][A-Za-z0-9._:/-]{2,239}$"
+        },
+        "materialization_owner": { "const": "AICO-004" },
+        "productization_owner": { "const": "AICO-047" },
+        "materialization_status": { "const": "DECISION_FROZEN" },
+        "expected_media_type": {
+          "enum": [
+            "application/gzip",
+            "application/json",
+            "application/vnd.cyclonedx+json",
+            "application/vnd.oci.image.manifest.v1+json"
+          ]
+        },
+        "immutable_ref": {
+          "type": "string",
+          "pattern": "^(?:[a-z0-9]+(?:[._-][a-z0-9]+)*(?:/[a-z0-9]+(?:[._-][a-z0-9]+)*)+@sha256:[a-f0-9]{64}|objects/[A-Za-z0-9][A-Za-z0-9._/-]{1,238}|docs/architecture/artifacts/aico-004/[A-Za-z0-9][A-Za-z0-9._/-]{1,198})$"
+        },
+        "digest": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "canonicalArtifactSet": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "template_archive",
+        "package_lock",
+        "sbom",
+        "license_report",
+        "base_image",
+        "dependency_bundle_image"
+      ],
+      "properties": {
+        "template_archive": { "$ref": "#/$defs/canonicalArtifactRef" },
+        "package_lock": { "$ref": "#/$defs/canonicalArtifactRef" },
+        "sbom": { "$ref": "#/$defs/canonicalArtifactRef" },
+        "license_report": { "$ref": "#/$defs/canonicalArtifactRef" },
+        "base_image": { "$ref": "#/$defs/canonicalArtifactRef" },
+        "dependency_bundle_image": { "$ref": "#/$defs/canonicalArtifactRef" }
+      }
+    },
+    "decisionFrozenArtifactSet": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "template_archive",
+        "package_lock",
+        "sbom",
+        "license_report",
+        "base_image",
+        "dependency_bundle_image"
+      ],
+      "properties": {
+        "template_archive": { "$ref": "#/$defs/decisionFrozenArtifactRef" },
+        "package_lock": { "$ref": "#/$defs/decisionFrozenArtifactRef" },
+        "sbom": { "$ref": "#/$defs/decisionFrozenArtifactRef" },
+        "license_report": { "$ref": "#/$defs/decisionFrozenArtifactRef" },
+        "base_image": { "$ref": "#/$defs/decisionFrozenArtifactRef" },
+        "dependency_bundle_image": { "$ref": "#/$defs/decisionFrozenArtifactRef" }
+      }
+    },
+    "designDecisionManifest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract",
+        "schema_version",
+        "manifest_id",
+        "manifest_version",
+        "decision_status",
+        "decision_child",
+        "productization_owner",
+        "owner_decisions",
+        "inventory",
+        "primary_flow",
+        "responsive",
+        "tokens",
+        "interactions",
+        "accessibility",
+        "prototype_warning",
+        "canonical_artifacts",
+        "canonical_artifact_set_digest",
+        "manifest_digest"
+      ],
+      "properties": {
+        "contract": { "const": "aico.sandbox-design-decision-manifest" },
+        "schema_version": { "const": "1.0" },
+        "manifest_id": { "$ref": "#/$defs/safeIdentifier" },
+        "manifest_version": { "$ref": "#/$defs/semanticVersion" },
+        "decision_status": { "enum": ["PROPOSED", "ACCEPTED"] },
+        "decision_child": { "const": "duckvhuynh/aico-backend#16" },
+        "productization_owner": { "const": "AICO-047" },
+        "semantic_sha": { "$ref": "#/$defs/gitCommit" },
+        "owner_decisions": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["engineering_design", "architecture_security_platform"],
+          "properties": {
+            "engineering_design": { "$ref": "#/$defs/decisionEvidence" },
+            "architecture_security_platform": { "$ref": "#/$defs/decisionEvidence" }
+          }
+        },
+        "inventory": { "$ref": "#/$defs/designInventory" },
+        "primary_flow": { "$ref": "#/$defs/primaryFlow" },
+        "responsive": { "$ref": "#/$defs/responsiveContract" },
+        "tokens": { "$ref": "#/$defs/designTokens" },
+        "interactions": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 50,
+          "items": { "$ref": "#/$defs/interactionDefinition" }
+        },
+        "accessibility": { "$ref": "#/$defs/accessibilityContract" },
+        "prototype_warning": { "$ref": "#/$defs/prototypeWarning" },
+        "canonical_artifacts": { "$ref": "#/$defs/canonicalArtifactSet" },
+        "canonical_artifact_set_digest": { "$ref": "#/$defs/sha256" },
+        "manifest_digest": { "$ref": "#/$defs/sha256" }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "decision_status": { "const": "ACCEPTED" } },
+            "required": ["decision_status"]
+          },
+          "then": {
+            "required": ["semantic_sha"],
+            "properties": {
+              "semantic_sha": { "$ref": "#/$defs/gitCommit" },
+              "owner_decisions": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["engineering_design", "architecture_security_platform"],
+                "properties": {
+                  "engineering_design": { "$ref": "#/$defs/acceptedDecisionEvidence" },
+                  "architecture_security_platform": {
+                    "$ref": "#/$defs/acceptedDecisionEvidence"
+                  }
+                }
+              },
+              "canonical_artifacts": { "$ref": "#/$defs/decisionFrozenArtifactSet" }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "decision_status": { "const": "PROPOSED" } },
+            "required": ["decision_status"]
+          },
+          "then": {
+            "not": { "required": ["semantic_sha"] }
+          }
+        }
+      ]
+    },
+    "artifactVersionRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version", "digest"],
+      "properties": {
+        "id": { "$ref": "#/$defs/uuid" },
+        "version": { "type": "integer", "minimum": 1, "maximum": 2147483647 },
+        "digest": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "versionedRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version", "digest"],
+      "properties": {
+        "id": { "$ref": "#/$defs/uuid" },
+        "version": { "$ref": "#/$defs/versionToken" },
+        "digest": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "executionScope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "company_id",
+        "run_id",
+        "task_id",
+        "attempt_id",
+        "employee_definition_version_id"
+      ],
+      "properties": {
+        "company_id": { "$ref": "#/$defs/uuid" },
+        "run_id": { "$ref": "#/$defs/uuid" },
+        "task_id": { "$ref": "#/$defs/uuid" },
+        "attempt_id": { "$ref": "#/$defs/uuid" },
+        "employee_definition_version_id": { "$ref": "#/$defs/uuid" }
+      }
+    },
+    "gate02Binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "gate",
+        "product_brief",
+        "product_brief_approval_id",
+        "design_specification",
+        "design_approval_id"
+      ],
+      "properties": {
+        "gate": { "const": "GATE-02" },
+        "product_brief": { "$ref": "#/$defs/artifactVersionRef" },
+        "product_brief_approval_id": { "$ref": "#/$defs/uuid" },
+        "design_specification": { "$ref": "#/$defs/artifactVersionRef" },
+        "design_approval_id": { "$ref": "#/$defs/uuid" }
+      }
+    },
+    "executionPolicyBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "decision_id",
+        "policy_version",
+        "action",
+        "result",
+        "resource_digest",
+        "context_digest",
+        "evaluated_at",
+        "expires_at"
+      ],
+      "properties": {
+        "decision_id": { "$ref": "#/$defs/uuid" },
+        "policy_version": { "$ref": "#/$defs/versionToken" },
+        "action": { "const": "sandbox.execute" },
+        "result": { "const": "ALLOW" },
+        "resource_digest": { "$ref": "#/$defs/sha256" },
+        "context_digest": { "$ref": "#/$defs/sha256" },
+        "evaluated_at": { "$ref": "#/$defs/rfc3339Utc" },
+        "expires_at": { "$ref": "#/$defs/rfc3339Utc" }
+      }
+    },
+    "terminationPolicyBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "decision_id",
+        "policy_version",
+        "action",
+        "result",
+        "resource_digest",
+        "context_digest",
+        "evaluated_at",
+        "expires_at"
+      ],
+      "properties": {
+        "decision_id": { "$ref": "#/$defs/uuid" },
+        "policy_version": { "$ref": "#/$defs/versionToken" },
+        "action": { "const": "sandbox.terminate" },
+        "result": { "const": "ALLOW" },
+        "resource_digest": { "$ref": "#/$defs/sha256" },
+        "context_digest": { "$ref": "#/$defs/sha256" },
+        "evaluated_at": { "$ref": "#/$defs/rfc3339Utc" },
+        "expires_at": { "$ref": "#/$defs/rfc3339Utc" }
+      }
+    },
+    "templateBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version", "manifest_digest", "archive_digest"],
+      "properties": {
+        "id": { "$ref": "#/$defs/uuid" },
+        "version": { "$ref": "#/$defs/semanticVersion" },
+        "manifest_digest": { "$ref": "#/$defs/sha256" },
+        "archive_digest": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "dependencyBundleBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version", "manifest_digest", "lockfile_digest", "oci_image_digest"],
+      "properties": {
+        "id": { "$ref": "#/$defs/uuid" },
+        "version": { "$ref": "#/$defs/semanticVersion" },
+        "manifest_digest": { "$ref": "#/$defs/sha256" },
+        "lockfile_digest": { "$ref": "#/$defs/sha256" },
+        "oci_image_digest": { "$ref": "#/$defs/ociDigest" }
+      }
+    },
+    "sandboxProfileBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version", "manifest_digest", "runtime_class"],
+      "properties": {
+        "id": { "$ref": "#/$defs/uuid" },
+        "version": { "$ref": "#/$defs/semanticVersion" },
+        "manifest_digest": { "$ref": "#/$defs/sha256" },
+        "runtime_class": {
+          "enum": ["RUNSC", "RUNC_LOCAL_PROOF"]
+        }
+      }
+    },
+    "commandProfileBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version", "manifest_digest"],
+      "properties": {
+        "id": { "$ref": "#/$defs/uuid" },
+        "version": { "$ref": "#/$defs/semanticVersion" },
+        "manifest_digest": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "versionBindings": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "workflow_version",
+        "design_decision",
+        "template",
+        "dependency_bundle",
+        "sandbox_profile",
+        "command_profile",
+        "task_plan",
+        "source_snapshot"
+      ],
+      "properties": {
+        "workflow_version": { "$ref": "#/$defs/versionToken" },
+        "design_decision": { "$ref": "#/$defs/designDecisionBinding" },
+        "template": { "$ref": "#/$defs/templateBinding" },
+        "dependency_bundle": { "$ref": "#/$defs/dependencyBundleBinding" },
+        "sandbox_profile": { "$ref": "#/$defs/sandboxProfileBinding" },
+        "command_profile": { "$ref": "#/$defs/commandProfileBinding" },
+        "task_plan": { "$ref": "#/$defs/versionedRef" },
+        "source_snapshot": { "$ref": "#/$defs/versionedRef" }
+      }
+    },
+    "commandSequence": {
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 5,
+      "prefixItems": [
+        { "const": "FORMAT_CHECK" },
+        { "const": "LINT" },
+        { "const": "TYPECHECK" },
+        { "const": "TEST" },
+        { "const": "PRODUCTION_BUILD" }
+      ],
+      "items": false
+    },
+    "resourceLimits": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "wall_time_ms",
+        "cpu_time_ms",
+        "memory_bytes",
+        "pids",
+        "workspace_bytes",
+        "max_files",
+        "max_file_bytes",
+        "output_bytes",
+        "log_bytes_per_command"
+      ],
+      "properties": {
+        "wall_time_ms": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 900000
+        },
+        "cpu_time_ms": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 600000
+        },
+        "memory_bytes": {
+          "type": "integer",
+          "minimum": 16777216,
+          "maximum": 2147483648
+        },
+        "pids": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 128
+        },
+        "workspace_bytes": {
+          "type": "integer",
+          "minimum": 1048576,
+          "maximum": 1073741824
+        },
+        "max_files": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10000
+        },
+        "max_file_bytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 67108864
+        },
+        "output_bytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 268435456
+        },
+        "log_bytes_per_command": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1048576
+        }
+      }
+    },
+    "allowedMediaTypes": {
+      "type": "array",
+      "minItems": 9,
+      "maxItems": 9,
+      "prefixItems": [
+        { "const": "text/html" },
+        { "const": "text/css" },
+        { "const": "application/javascript" },
+        { "const": "application/json" },
+        { "const": "image/svg+xml" },
+        { "const": "image/png" },
+        { "const": "image/jpeg" },
+        { "const": "image/webp" },
+        { "const": "font/woff2" }
+      ],
+      "items": false
+    },
+    "outputPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "output_directory",
+        "complete_manifest_required",
+        "symlinks_allowed",
+        "max_files",
+        "max_file_bytes",
+        "max_total_bytes",
+        "allowed_media_types"
+      ],
+      "properties": {
+        "output_directory": { "const": "dist" },
+        "complete_manifest_required": { "const": true },
+        "symlinks_allowed": { "const": false },
+        "max_files": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10000
+        },
+        "max_file_bytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 67108864
+        },
+        "max_total_bytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 268435456
+        },
+        "allowed_media_types": { "$ref": "#/$defs/allowedMediaTypes" }
+      }
+    },
+    "sandboxExecutionRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract",
+        "schema_version",
+        "execution_id",
+        "logical_idempotency_key",
+        "request_digest",
+        "correlation_id",
+        "causation_id",
+        "scope",
+        "gate_02",
+        "policy",
+        "versions",
+        "commands",
+        "limits",
+        "output_policy",
+        "deadline_at",
+        "requested_at"
+      ],
+      "properties": {
+        "contract": { "const": "aico.sandbox-execution-request" },
+        "schema_version": { "const": "1.0" },
+        "execution_id": { "$ref": "#/$defs/uuid" },
+        "logical_idempotency_key": { "$ref": "#/$defs/logicalIdempotencyKey" },
+        "request_digest": { "$ref": "#/$defs/sha256" },
+        "correlation_id": { "$ref": "#/$defs/uuid" },
+        "causation_id": { "$ref": "#/$defs/uuid" },
+        "scope": { "$ref": "#/$defs/executionScope" },
+        "gate_02": { "$ref": "#/$defs/gate02Binding" },
+        "policy": { "$ref": "#/$defs/executionPolicyBinding" },
+        "versions": { "$ref": "#/$defs/versionBindings" },
+        "commands": { "$ref": "#/$defs/commandSequence" },
+        "limits": { "$ref": "#/$defs/resourceLimits" },
+        "output_policy": { "$ref": "#/$defs/outputPolicy" },
+        "deadline_at": { "$ref": "#/$defs/rfc3339Utc" },
+        "requested_at": { "$ref": "#/$defs/rfc3339Utc" }
+      }
+    },
+    "boundedEvidenceRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["object_id", "digest", "size_bytes", "truncated", "redaction_version"],
+      "properties": {
+        "object_id": { "$ref": "#/$defs/uuid" },
+        "digest": { "$ref": "#/$defs/sha256" },
+        "size_bytes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1048576
+        },
+        "truncated": { "type": "boolean" },
+        "redaction_version": { "$ref": "#/$defs/versionToken" }
+      }
+    },
+    "commandReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract",
+        "schema_version",
+        "receipt_type",
+        "execution_id",
+        "ordinal",
+        "command_id",
+        "command_profile_digest",
+        "outcome",
+        "reason",
+        "started_at",
+        "completed_at",
+        "duration_ms",
+        "cpu_time_ms",
+        "peak_memory_bytes",
+        "receipt_digest"
+      ],
+      "properties": {
+        "contract": { "const": "aico.sandbox-command-receipt" },
+        "schema_version": { "const": "1.0" },
+        "receipt_type": { "const": "COMMAND" },
+        "execution_id": { "$ref": "#/$defs/uuid" },
+        "ordinal": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4
+        },
+        "command_id": {
+          "enum": ["FORMAT_CHECK", "LINT", "TYPECHECK", "TEST", "PRODUCTION_BUILD"]
+        },
+        "command_profile_digest": { "$ref": "#/$defs/sha256" },
+        "outcome": {
+          "enum": ["SUCCEEDED", "FAILED", "CANCELED", "TIMED_OUT"]
+        },
+        "reason": {
+          "enum": [
+            "COMMAND_SUCCEEDED",
+            "NONZERO_EXIT",
+            "COMMAND_CANCELED",
+            "COMMAND_TIMED_OUT",
+            "RESOURCE_LIMIT_EXCEEDED",
+            "SECURITY_POLICY_VIOLATION",
+            "EVIDENCE_REDACTION_FAILED"
+          ]
+        },
+        "exit_code": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 255
+        },
+        "started_at": { "$ref": "#/$defs/rfc3339Utc" },
+        "completed_at": { "$ref": "#/$defs/rfc3339Utc" },
+        "duration_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 900000
+        },
+        "cpu_time_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 600000
+        },
+        "peak_memory_bytes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483648
+        },
+        "stdout": { "$ref": "#/$defs/boundedEvidenceRef" },
+        "stderr": { "$ref": "#/$defs/boundedEvidenceRef" },
+        "receipt_digest": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "securitySignal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "occurred_at", "count", "evidence_digest"],
+      "properties": {
+        "code": {
+          "enum": [
+            "HOST_PATH_ATTEMPT",
+            "CROSS_WORKSPACE_ATTEMPT",
+            "PATH_TRAVERSAL_ATTEMPT",
+            "SYMLINK_ATTEMPT",
+            "MOUNT_OR_DEVICE_ATTEMPT",
+            "PRIVILEGE_ATTEMPT",
+            "PROCESS_ESCAPE_ATTEMPT",
+            "EGRESS_ATTEMPT",
+            "IDENTITY_MATERIAL_DETECTED",
+            "EVIDENCE_REDACTION_FAILED"
+          ]
+        },
+        "occurred_at": { "$ref": "#/$defs/rfc3339Utc" },
+        "count": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10000
+        },
+        "evidence_digest": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "outputFile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "media_type", "size_bytes", "digest"],
+      "properties": {
+        "path": { "$ref": "#/$defs/relativeOutputPath" },
+        "media_type": {
+          "enum": [
+            "text/html",
+            "text/css",
+            "application/javascript",
+            "application/json",
+            "image/svg+xml",
+            "image/png",
+            "image/jpeg",
+            "image/webp",
+            "font/woff2"
+          ]
+        },
+        "size_bytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 67108864
+        },
+        "digest": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "outputManifest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract",
+        "schema_version",
+        "complete",
+        "files",
+        "file_count",
+        "total_bytes",
+        "aggregate_digest",
+        "staging_object_id"
+      ],
+      "properties": {
+        "contract": { "const": "aico.sandbox-output-manifest" },
+        "schema_version": { "const": "1.0" },
+        "complete": { "const": true },
+        "files": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 10000,
+          "items": { "$ref": "#/$defs/outputFile" }
+        },
+        "file_count": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10000
+        },
+        "total_bytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 268435456
+        },
+        "aggregate_digest": { "$ref": "#/$defs/sha256" },
+        "staging_object_id": { "$ref": "#/$defs/uuid" }
+      }
+    },
+    "runtimeAttestation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "executor_version",
+        "runtime_class",
+        "runtime_version",
+        "oci_image_digest",
+        "sandbox_profile_digest",
+        "uid",
+        "gid",
+        "root_filesystem_read_only",
+        "all_capabilities_dropped",
+        "no_new_privileges",
+        "egress_denied",
+        "workload_credentials_present",
+        "host_mounts_present"
+      ],
+      "properties": {
+        "executor_version": { "$ref": "#/$defs/semanticVersion" },
+        "runtime_class": {
+          "enum": ["RUNSC", "RUNC_LOCAL_PROOF"]
+        },
+        "runtime_version": { "$ref": "#/$defs/versionToken" },
+        "oci_image_digest": { "$ref": "#/$defs/ociDigest" },
+        "sandbox_profile_digest": { "$ref": "#/$defs/sha256" },
+        "uid": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295
+        },
+        "gid": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295
+        },
+        "root_filesystem_read_only": { "const": true },
+        "all_capabilities_dropped": { "const": true },
+        "no_new_privileges": { "const": true },
+        "egress_denied": { "const": true },
+        "workload_credentials_present": { "const": false },
+        "host_mounts_present": { "const": false }
+      }
+    },
+    "cleanupReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["outcome", "workspace_destroyed", "recorded_at"],
+      "properties": {
+        "outcome": {
+          "enum": ["COMPLETED", "FAILED", "PENDING"]
+        },
+        "workspace_destroyed": { "type": "boolean" },
+        "recorded_at": { "$ref": "#/$defs/rfc3339Utc" }
+      }
+    },
+    "sandboxExecutionReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract",
+        "schema_version",
+        "receipt_type",
+        "execution_id",
+        "logical_idempotency_key",
+        "request_digest",
+        "scope",
+        "outcome",
+        "reason",
+        "runtime",
+        "started_at",
+        "completed_at",
+        "duration_ms",
+        "command_receipts",
+        "security_signals",
+        "cleanup",
+        "receipt_digest"
+      ],
+      "properties": {
+        "contract": { "const": "aico.sandbox-execution-receipt" },
+        "schema_version": { "const": "1.0" },
+        "receipt_type": { "const": "EXECUTION" },
+        "execution_id": { "$ref": "#/$defs/uuid" },
+        "logical_idempotency_key": { "$ref": "#/$defs/logicalIdempotencyKey" },
+        "request_digest": { "$ref": "#/$defs/sha256" },
+        "scope": { "$ref": "#/$defs/executionScope" },
+        "outcome": {
+          "enum": ["SUCCEEDED", "FAILED", "CANCELED", "UNKNOWN"]
+        },
+        "reason": {
+          "enum": [
+            "ALL_COMMANDS_SUCCEEDED",
+            "COMMAND_FAILED",
+            "COMMAND_TIMED_OUT",
+            "EXECUTION_CANCELED",
+            "SECURITY_POLICY_VIOLATION",
+            "OUTPUT_INTEGRITY_FAILED",
+            "RESOURCE_LIMIT_EXCEEDED",
+            "RUNTIME_UNAVAILABLE",
+            "DEPENDENCY_BUNDLE_UNAVAILABLE",
+            "UNKNOWN_EXTERNAL_OUTCOME",
+            "CLEANUP_FAILED"
+          ]
+        },
+        "runtime": { "$ref": "#/$defs/runtimeAttestation" },
+        "started_at": { "$ref": "#/$defs/rfc3339Utc" },
+        "completed_at": { "$ref": "#/$defs/rfc3339Utc" },
+        "duration_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 900000
+        },
+        "command_receipts": {
+          "type": "array",
+          "minItems": 0,
+          "maxItems": 5,
+          "items": { "$ref": "#/$defs/commandReceipt" }
+        },
+        "security_signals": {
+          "type": "array",
+          "maxItems": 100,
+          "items": { "$ref": "#/$defs/securitySignal" }
+        },
+        "output_manifest": { "$ref": "#/$defs/outputManifest" },
+        "cleanup": { "$ref": "#/$defs/cleanupReceipt" },
+        "receipt_digest": { "$ref": "#/$defs/sha256" }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "outcome": { "const": "SUCCEEDED" } },
+            "required": ["outcome"]
+          },
+          "then": {
+            "required": ["output_manifest"],
+            "properties": {
+              "reason": { "const": "ALL_COMMANDS_SUCCEEDED" },
+              "output_manifest": { "$ref": "#/$defs/outputManifest" },
+              "command_receipts": {
+                "type": "array",
+                "minItems": 5,
+                "maxItems": 5,
+                "items": { "$ref": "#/$defs/commandReceipt" }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "outcome": { "const": "UNKNOWN" } },
+            "required": ["outcome"]
+          },
+          "then": {
+            "properties": {
+              "reason": { "const": "UNKNOWN_EXTERNAL_OUTCOME" }
+            }
+          }
+        }
+      ]
+    },
+    "terminationReason": {
+      "enum": [
+        "CANCELLATION_REQUESTED",
+        "LEASE_LOST",
+        "DEADLINE_EXCEEDED",
+        "SECURITY_SIGNAL",
+        "OPERATOR_KILL",
+        "RUN_TERMINAL"
+      ]
+    },
+    "sandboxTerminationRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract",
+        "schema_version",
+        "termination_id",
+        "execution_id",
+        "logical_idempotency_key",
+        "request_digest",
+        "correlation_id",
+        "causation_id",
+        "scope",
+        "policy",
+        "reason",
+        "requested_at"
+      ],
+      "properties": {
+        "contract": { "const": "aico.sandbox-termination-request" },
+        "schema_version": { "const": "1.0" },
+        "termination_id": { "$ref": "#/$defs/uuid" },
+        "execution_id": { "$ref": "#/$defs/uuid" },
+        "logical_idempotency_key": { "$ref": "#/$defs/logicalIdempotencyKey" },
+        "request_digest": { "$ref": "#/$defs/sha256" },
+        "correlation_id": { "$ref": "#/$defs/uuid" },
+        "causation_id": { "$ref": "#/$defs/uuid" },
+        "scope": { "$ref": "#/$defs/executionScope" },
+        "policy": { "$ref": "#/$defs/terminationPolicyBinding" },
+        "reason": { "$ref": "#/$defs/terminationReason" },
+        "requested_at": { "$ref": "#/$defs/rfc3339Utc" }
+      }
+    },
+    "sandboxTerminationReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract",
+        "schema_version",
+        "receipt_type",
+        "termination_id",
+        "execution_id",
+        "logical_idempotency_key",
+        "request_digest",
+        "scope",
+        "outcome",
+        "reason",
+        "descendants_terminated",
+        "requested_at",
+        "recorded_at",
+        "cleanup",
+        "receipt_digest"
+      ],
+      "properties": {
+        "contract": { "const": "aico.sandbox-termination-receipt" },
+        "schema_version": { "const": "1.0" },
+        "receipt_type": { "const": "TERMINATION" },
+        "termination_id": { "$ref": "#/$defs/uuid" },
+        "execution_id": { "$ref": "#/$defs/uuid" },
+        "logical_idempotency_key": { "$ref": "#/$defs/logicalIdempotencyKey" },
+        "request_digest": { "$ref": "#/$defs/sha256" },
+        "scope": { "$ref": "#/$defs/executionScope" },
+        "outcome": {
+          "enum": ["TERMINATED", "ALREADY_TERMINAL", "NOT_FOUND", "UNKNOWN"]
+        },
+        "reason": { "$ref": "#/$defs/terminationReason" },
+        "descendants_terminated": { "type": "boolean" },
+        "requested_at": { "$ref": "#/$defs/rfc3339Utc" },
+        "recorded_at": { "$ref": "#/$defs/rfc3339Utc" },
+        "cleanup": { "$ref": "#/$defs/cleanupReceipt" },
+        "receipt_digest": { "$ref": "#/$defs/sha256" }
+      }
+    }
+  }
+}

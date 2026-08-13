@@ -17,6 +17,6 @@
     "forceConsistentCasingInFileNames": true,
     "noImplicitOverride": true,
     "noFallthroughCasesInSwitch": true
-  }
+  },
+  "exclude": ["docs/architecture/artifacts/aico-004/template-v1"]
 }
-

@@ -1,0 +1,765 @@
+{
+  "accessibility": {
+    "keyboard_operable": true,
+    "minimum_large_text_contrast": 3,
+    "minimum_text_contrast": 4.5,
+    "programmatic_labels": true,
+    "reduced_motion": "PREFERS_REDUCED_MOTION",
+    "semantic_html": true,
+    "target": "WCAG_2_2_AA",
+    "verification_claim": "BASIC_AUTOMATED_SMOKE_ONLY_NO_CONFORMANCE_CLAIM",
+    "visible_focus": true
+  },
+  "canonical_artifact_set_digest": "479e73a18d7235fbbe1ed81dfcf4192315c2267dee81a5ea5a3869264c2929f7",
+  "canonical_artifacts": {
+    "base_image": {
+      "artifact_key": "base-image",
+      "artifact_kind": "BASE_OCI_IMAGE",
+      "canonical_ref": "aico-artifact:aico-004/base-image/1.0.0-candidate.1",
+      "digest": "d45d78e7929b46875bbd4e29bea672d5bc48186c6c3588306521c815e78352d6",
+      "expected_media_type": "application/vnd.oci.image.manifest.v1+json",
+      "immutable_ref": "docker.io/library/node@sha256:d45d78e7929b46875bbd4e29bea672d5bc48186c6c3588306521c815e78352d6",
+      "materialization_owner": "AICO-004",
+      "materialization_status": "DECISION_FROZEN",
+      "productization_owner": "AICO-047"
+    },
+    "dependency_bundle_image": {
+      "artifact_key": "dependency-bundle-image",
+      "artifact_kind": "DEPENDENCY_BUNDLE_OCI_IMAGE",
+      "canonical_ref": "aico-artifact:aico-004/dependency-bundle-image/1.0.0-candidate.1",
+      "digest": "352c7508e8f0f8fd27c4556012a54be061c3df880846e874fc4238d7e7259f0c",
+      "expected_media_type": "application/vnd.oci.image.manifest.v1+json",
+      "immutable_ref": "aicompanyos/prototype-dependencies@sha256:352c7508e8f0f8fd27c4556012a54be061c3df880846e874fc4238d7e7259f0c",
+      "materialization_owner": "AICO-004",
+      "materialization_status": "DECISION_FROZEN",
+      "productization_owner": "AICO-047"
+    },
+    "license_report": {
+      "artifact_key": "license-report",
+      "artifact_kind": "LICENSE_REPORT",
+      "canonical_ref": "aico-artifact:aico-004/license-report/1.0.0-candidate.1",
+      "digest": "8274a74a33a1349b7e8985fa4559250c19b9377887ec9a7a213fcc769d71124a",
+      "expected_media_type": "application/json",
+      "immutable_ref": "docs/architecture/artifacts/aico-004/template-v1.licenses.json",
+      "materialization_owner": "AICO-004",
+      "materialization_status": "DECISION_FROZEN",
+      "productization_owner": "AICO-047"
+    },
+    "package_lock": {
+      "artifact_key": "package-lock",
+      "artifact_kind": "PACKAGE_LOCK",
+      "canonical_ref": "aico-artifact:aico-004/package-lock/1.0.0-candidate.1",
+      "digest": "22e0e8531a72cc2848ef14b2d73ecae6a5046f9ace5791c566d74fa24186eb99",
+      "expected_media_type": "application/json",
+      "immutable_ref": "docs/architecture/artifacts/aico-004/template-v1/package-lock.json",
+      "materialization_owner": "AICO-004",
+      "materialization_status": "DECISION_FROZEN",
+      "productization_owner": "AICO-047"
+    },
+    "sbom": {
+      "artifact_key": "sbom",
+      "artifact_kind": "CYCLONEDX_SBOM",
+      "canonical_ref": "aico-artifact:aico-004/sbom/1.0.0-candidate.1",
+      "digest": "0a196c462b695861e3f86584a088baa1b6fc703c373d41fd6f4d583b5de5d2fb",
+      "expected_media_type": "application/vnd.cyclonedx+json",
+      "immutable_ref": "docs/architecture/artifacts/aico-004/template-v1.cdx.json",
+      "materialization_owner": "AICO-004",
+      "materialization_status": "DECISION_FROZEN",
+      "productization_owner": "AICO-047"
+    },
+    "template_archive": {
+      "artifact_key": "template-archive",
+      "artifact_kind": "TEMPLATE_ARCHIVE",
+      "canonical_ref": "aico-artifact:aico-004/template-archive/1.0.0-candidate.1",
+      "digest": "be46961ef94b58ab5b0d383f7d27fafb639f2682ca22c559b22256d26e3f2166",
+      "expected_media_type": "application/gzip",
+      "immutable_ref": "docs/architecture/artifacts/aico-004/template-v1.tar.gz",
+      "materialization_owner": "AICO-004",
+      "materialization_status": "DECISION_FROZEN",
+      "productization_owner": "AICO-047"
+    }
+  },
+  "contract": "aico.sandbox-design-decision-manifest",
+  "decision_child": "duckvhuynh/aico-backend#16",
+  "decision_status": "ACCEPTED",
+  "interactions": [
+    {
+      "accessible_name": "Continue",
+      "control_role": "BUTTON",
+      "feedback": "Start advances within the one local primary flow.",
+      "from_state_id": "start-success",
+      "interaction_id": "start-continue",
+      "keyboard_operation": "Tab to the button and activate with Enter or Space.",
+      "screen_id": "start-screen",
+      "to_state_id": "input-success",
+      "trigger": "ACTIVATE"
+    },
+    {
+      "accessible_name": "Retry locally",
+      "control_role": "BUTTON",
+      "feedback": "The screen restores deterministic local success without network access.",
+      "from_state_id": "start-error",
+      "interaction_id": "start-retry",
+      "keyboard_operation": "Tab to the button and activate with Enter or Space.",
+      "screen_id": "start-screen",
+      "to_state_id": "start-success",
+      "trigger": "ACTIVATE"
+    },
+    {
+      "accessible_name": "Restore fixture",
+      "control_role": "BUTTON",
+      "feedback": "The empty screen restores the deterministic local fixture.",
+      "from_state_id": "start-empty",
+      "interaction_id": "start-restore",
+      "keyboard_operation": "Tab to the button and activate with Enter or Space.",
+      "screen_id": "start-screen",
+      "to_state_id": "start-success",
+      "trigger": "ACTIVATE"
+    },
+    {
+      "accessible_name": "Continue",
+      "control_role": "BUTTON",
+      "feedback": "Input advances within the one local primary flow.",
+      "from_state_id": "input-success",
+      "interaction_id": "input-continue",
+      "keyboard_operation": "Tab to the button and activate with Enter or Space.",
+      "screen_id": "input-screen",
+      "to_state_id": "options-success",
+      "trigger": "ACTIVATE"
+    },
+    {
+      "accessible_name": "Retry locally",
+      "control_role": "BUTTON",
+      "feedback": "The screen restores deterministic local success without network access.",
+      "from_state_id": "input-error",
+      "interaction_id": "input-retry",
+      "keyboard_operation": "Tab to the button and activate with Enter or Space.",
+      "screen_id": "input-screen",
+      "to_state_id": "input-success",
+      "trigger": "ACTIVATE"
+    },
+    {
+      "accessible_name": "Restore fixture",
+      "control_role": "BUTTON",
+      "feedback": "The empty screen restores the deterministic local fixture.",
+      "from_state_id": "input-empty",
+      "interaction_id": "input-restore",
+      "keyboard_operation": "Tab to the button and activate with Enter or Space.",
+      "screen_id": "input-screen",
+      "to_state_id": "input-success",
+      "trigger": "ACTIVATE"
+    },
+    {
+      "accessible_name": "Continue",
+      "control_role": "BUTTON",
+      "feedback": "Options advances within the one local primary flow.",
+      "from_state_id": "options-success",
+      "interaction_id": "options-continue",
+      "keyboard_operation": "Tab to the button and activate with Enter or Space.",
+      "screen_id": "options-screen",
+      "to_state_id": "summary-success",
+      "trigger": "ACTIVATE"
+    },
+    {
+      "accessible_name": "Retry locally",
+      "control_role": "BUTTON",
+      "feedback": "The screen restores deterministic local success without network access.",
+      "from_state_id": "options-error",
+      "interaction_id": "options-retry",
+      "keyboard_operation": "Tab to the button and activate with Enter or Space.",
+      "screen_id": "options-screen",
+      "to_state_id": "options-success",
+      "trigger": "ACTIVATE"
+    },
+    {
+      "accessible_name": "Restore fixture",
+      "control_role": "BUTTON",
+      "feedback": "The empty screen restores the deterministic local fixture.",
+      "from_state_id": "options-empty",
+      "interaction_id": "options-restore",
+      "keyboard_operation": "Tab to the button and activate with Enter or Space.",
+      "screen_id": "options-screen",
+      "to_state_id": "options-success",
+      "trigger": "ACTIVATE"
+    },
+    {
+      "accessible_name": "Continue",
+      "control_role": "BUTTON",
+      "feedback": "Summary advances within the one local primary flow.",
+      "from_state_id": "summary-success",
+      "interaction_id": "summary-continue",
+      "keyboard_operation": "Tab to the button and activate with Enter or Space.",
+      "screen_id": "summary-screen",
+      "to_state_id": "complete-success",
+      "trigger": "ACTIVATE"
+    },
+    {
+      "accessible_name": "Retry locally",
+      "control_role": "BUTTON",
+      "feedback": "The screen restores deterministic local success without network access.",
+      "from_state_id": "summary-error",
+      "interaction_id": "summary-retry",
+      "keyboard_operation": "Tab to the button and activate with Enter or Space.",
+      "screen_id": "summary-screen",
+      "to_state_id": "summary-success",
+      "trigger": "ACTIVATE"
+    },
+    {
+      "accessible_name": "Restore fixture",
+      "control_role": "BUTTON",
+      "feedback": "The empty screen restores the deterministic local fixture.",
+      "from_state_id": "summary-empty",
+      "interaction_id": "summary-restore",
+      "keyboard_operation": "Tab to the button and activate with Enter or Space.",
+      "screen_id": "summary-screen",
+      "to_state_id": "summary-success",
+      "trigger": "ACTIVATE"
+    },
+    {
+      "accessible_name": "Restart prototype",
+      "control_role": "BUTTON",
+      "feedback": "Complete advances within the one local primary flow.",
+      "from_state_id": "complete-success",
+      "interaction_id": "complete-continue",
+      "keyboard_operation": "Tab to the button and activate with Enter or Space.",
+      "screen_id": "complete-screen",
+      "to_state_id": "start-success",
+      "trigger": "ACTIVATE"
+    },
+    {
+      "accessible_name": "Retry locally",
+      "control_role": "BUTTON",
+      "feedback": "The screen restores deterministic local success without network access.",
+      "from_state_id": "complete-error",
+      "interaction_id": "complete-retry",
+      "keyboard_operation": "Tab to the button and activate with Enter or Space.",
+      "screen_id": "complete-screen",
+      "to_state_id": "complete-success",
+      "trigger": "ACTIVATE"
+    },
+    {
+      "accessible_name": "Restore fixture",
+      "control_role": "BUTTON",
+      "feedback": "The empty screen restores the deterministic local fixture.",
+      "from_state_id": "complete-empty",
+      "interaction_id": "complete-restore",
+      "keyboard_operation": "Tab to the button and activate with Enter or Space.",
+      "screen_id": "complete-screen",
+      "to_state_id": "complete-success",
+      "trigger": "ACTIVATE"
+    }
+  ],
+  "inventory": {
+    "routes": [
+      {
+        "inventory_ordinal": 1,
+        "navigation_label": "Start",
+        "path": "/start",
+        "route_id": "start",
+        "screen_id": "start-screen"
+      },
+      {
+        "inventory_ordinal": 2,
+        "navigation_label": "Input",
+        "path": "/input",
+        "route_id": "input",
+        "screen_id": "input-screen"
+      },
+      {
+        "inventory_ordinal": 3,
+        "navigation_label": "Options",
+        "path": "/options",
+        "route_id": "options",
+        "screen_id": "options-screen"
+      },
+      {
+        "inventory_ordinal": 4,
+        "navigation_label": "Summary",
+        "path": "/summary",
+        "route_id": "summary",
+        "screen_id": "summary-screen"
+      },
+      {
+        "inventory_ordinal": 5,
+        "navigation_label": "Complete",
+        "path": "/complete",
+        "route_id": "complete",
+        "screen_id": "complete-screen"
+      }
+    ],
+    "screens": [
+      {
+        "purpose": "Introduce the bounded prototype and limitation warning.",
+        "region_ids": [
+          "prototype-warning",
+          "progress-navigation",
+          "main-content",
+          "actions"
+        ],
+        "route_id": "start",
+        "screen_id": "start-screen",
+        "title": "Start"
+      },
+      {
+        "purpose": "Capture one local-only selection without persistence.",
+        "region_ids": [
+          "prototype-warning",
+          "progress-navigation",
+          "main-content",
+          "actions"
+        ],
+        "route_id": "input",
+        "screen_id": "input-screen",
+        "title": "Input"
+      },
+      {
+        "purpose": "Compare deterministic typed fixture options.",
+        "region_ids": [
+          "prototype-warning",
+          "progress-navigation",
+          "main-content",
+          "actions"
+        ],
+        "route_id": "options",
+        "screen_id": "options-screen",
+        "title": "Options"
+      },
+      {
+        "purpose": "Review the local prototype selection and limitations.",
+        "region_ids": [
+          "prototype-warning",
+          "progress-navigation",
+          "main-content",
+          "actions"
+        ],
+        "route_id": "summary",
+        "screen_id": "summary-screen",
+        "title": "Summary"
+      },
+      {
+        "purpose": "Show the non-production completion and restart action.",
+        "region_ids": [
+          "prototype-warning",
+          "progress-navigation",
+          "main-content",
+          "actions"
+        ],
+        "route_id": "complete",
+        "screen_id": "complete-screen",
+        "title": "Complete"
+      }
+    ],
+    "states": [
+      {
+        "intent": "Present the deterministic loading variant without network access.",
+        "interaction_ids": [],
+        "screen_id": "start-screen",
+        "state_id": "start-loading",
+        "state_kind": "LOADING",
+        "visible_region_ids": [
+          "prototype-warning",
+          "main-content",
+          "actions"
+        ]
+      },
+      {
+        "intent": "Present the deterministic empty variant without network access.",
+        "interaction_ids": [
+          "start-restore"
+        ],
+        "screen_id": "start-screen",
+        "state_id": "start-empty",
+        "state_kind": "EMPTY",
+        "visible_region_ids": [
+          "prototype-warning",
+          "main-content",
+          "actions"
+        ]
+      },
+      {
+        "intent": "Present the deterministic error variant without network access.",
+        "interaction_ids": [
+          "start-retry"
+        ],
+        "screen_id": "start-screen",
+        "state_id": "start-error",
+        "state_kind": "ERROR",
+        "visible_region_ids": [
+          "prototype-warning",
+          "main-content",
+          "actions"
+        ]
+      },
+      {
+        "intent": "Present the deterministic local screen content and bounded actions.",
+        "interaction_ids": [
+          "start-continue"
+        ],
+        "screen_id": "start-screen",
+        "state_id": "start-success",
+        "state_kind": "SUCCESS",
+        "visible_region_ids": [
+          "prototype-warning",
+          "progress-navigation",
+          "main-content",
+          "actions"
+        ]
+      },
+      {
+        "intent": "Present the deterministic loading variant without network access.",
+        "interaction_ids": [],
+        "screen_id": "input-screen",
+        "state_id": "input-loading",
+        "state_kind": "LOADING",
+        "visible_region_ids": [
+          "prototype-warning",
+          "main-content",
+          "actions"
+        ]
+      },
+      {
+        "intent": "Present the deterministic empty variant without network access.",
+        "interaction_ids": [
+          "input-restore"
+        ],
+        "screen_id": "input-screen",
+        "state_id": "input-empty",
+        "state_kind": "EMPTY",
+        "visible_region_ids": [
+          "prototype-warning",
+          "main-content",
+          "actions"
+        ]
+      },
+      {
+        "intent": "Present the deterministic error variant without network access.",
+        "interaction_ids": [
+          "input-retry"
+        ],
+        "screen_id": "input-screen",
+        "state_id": "input-error",
+        "state_kind": "ERROR",
+        "visible_region_ids": [
+          "prototype-warning",
+          "main-content",
+          "actions"
+        ]
+      },
+      {
+        "intent": "Present the deterministic local screen content and bounded actions.",
+        "interaction_ids": [
+          "input-continue"
+        ],
+        "screen_id": "input-screen",
+        "state_id": "input-success",
+        "state_kind": "SUCCESS",
+        "visible_region_ids": [
+          "prototype-warning",
+          "progress-navigation",
+          "main-content",
+          "actions"
+        ]
+      },
+      {
+        "intent": "Present the deterministic loading variant without network access.",
+        "interaction_ids": [],
+        "screen_id": "options-screen",
+        "state_id": "options-loading",
+        "state_kind": "LOADING",
+        "visible_region_ids": [
+          "prototype-warning",
+          "main-content",
+          "actions"
+        ]
+      },
+      {
+        "intent": "Present the deterministic empty variant without network access.",
+        "interaction_ids": [
+          "options-restore"
+        ],
+        "screen_id": "options-screen",
+        "state_id": "options-empty",
+        "state_kind": "EMPTY",
+        "visible_region_ids": [
+          "prototype-warning",
+          "main-content",
+          "actions"
+        ]
+      },
+      {
+        "intent": "Present the deterministic error variant without network access.",
+        "interaction_ids": [
+          "options-retry"
+        ],
+        "screen_id": "options-screen",
+        "state_id": "options-error",
+        "state_kind": "ERROR",
+        "visible_region_ids": [
+          "prototype-warning",
+          "main-content",
+          "actions"
+        ]
+      },
+      {
+        "intent": "Present the deterministic local screen content and bounded actions.",
+        "interaction_ids": [
+          "options-continue"
+        ],
+        "screen_id": "options-screen",
+        "state_id": "options-success",
+        "state_kind": "SUCCESS",
+        "visible_region_ids": [
+          "prototype-warning",
+          "progress-navigation",
+          "main-content",
+          "actions"
+        ]
+      },
+      {
+        "intent": "Present the deterministic loading variant without network access.",
+        "interaction_ids": [],
+        "screen_id": "summary-screen",
+        "state_id": "summary-loading",
+        "state_kind": "LOADING",
+        "visible_region_ids": [
+          "prototype-warning",
+          "main-content",
+          "actions"
+        ]
+      },
+      {
+        "intent": "Present the deterministic empty variant without network access.",
+        "interaction_ids": [
+          "summary-restore"
+        ],
+        "screen_id": "summary-screen",
+        "state_id": "summary-empty",
+        "state_kind": "EMPTY",
+        "visible_region_ids": [
+          "prototype-warning",
+          "main-content",
+          "actions"
+        ]
+      },
+      {
+        "intent": "Present the deterministic error variant without network access.",
+        "interaction_ids": [
+          "summary-retry"
+        ],
+        "screen_id": "summary-screen",
+        "state_id": "summary-error",
+        "state_kind": "ERROR",
+        "visible_region_ids": [
+          "prototype-warning",
+          "main-content",
+          "actions"
+        ]
+      },
+      {
+        "intent": "Present the deterministic local screen content and bounded actions.",
+        "interaction_ids": [
+          "summary-continue"
+        ],
+        "screen_id": "summary-screen",
+        "state_id": "summary-success",
+        "state_kind": "SUCCESS",
+        "visible_region_ids": [
+          "prototype-warning",
+          "progress-navigation",
+          "main-content",
+          "actions"
+        ]
+      },
+      {
+        "intent": "Present the deterministic loading variant without network access.",
+        "interaction_ids": [],
+        "screen_id": "complete-screen",
+        "state_id": "complete-loading",
+        "state_kind": "LOADING",
+        "visible_region_ids": [
+          "prototype-warning",
+          "main-content",
+          "actions"
+        ]
+      },
+      {
+        "intent": "Present the deterministic empty variant without network access.",
+        "interaction_ids": [
+          "complete-restore"
+        ],
+        "screen_id": "complete-screen",
+        "state_id": "complete-empty",
+        "state_kind": "EMPTY",
+        "visible_region_ids": [
+          "prototype-warning",
+          "main-content",
+          "actions"
+        ]
+      },
+      {
+        "intent": "Present the deterministic error variant without network access.",
+        "interaction_ids": [
+          "complete-retry"
+        ],
+        "screen_id": "complete-screen",
+        "state_id": "complete-error",
+        "state_kind": "ERROR",
+        "visible_region_ids": [
+          "prototype-warning",
+          "main-content",
+          "actions"
+        ]
+      },
+      {
+        "intent": "Present the deterministic local screen content and bounded actions.",
+        "interaction_ids": [
+          "complete-continue"
+        ],
+        "screen_id": "complete-screen",
+        "state_id": "complete-success",
+        "state_kind": "SUCCESS",
+        "visible_region_ids": [
+          "prototype-warning",
+          "progress-navigation",
+          "main-content",
+          "actions"
+        ]
+      }
+    ]
+  },
+  "manifest_digest": "7bb45f0355e41164e6a3dd8abfa7e18196834609fcc3f6b8761140b3085c0198",
+  "manifest_id": "aico-fixed-react-ts-design",
+  "manifest_version": "1.0.0-candidate.1",
+  "owner_decisions": {
+    "architecture_security_platform": {
+      "status": "ACCEPTED",
+      "decided_by": "Duc Huynh",
+      "evidence_ref": "https://github.com/duckvhuynh/aico-backend/pull/18#issuecomment-5278583297",
+      "decided_at": "2026-08-13T09:35:06Z",
+      "semantic_sha": "ca766d1490613a73a93d539465f088910f6021b6"
+    },
+    "engineering_design": {
+      "status": "ACCEPTED",
+      "decided_by": "Duc Huynh",
+      "evidence_ref": "https://github.com/duckvhuynh/aico-backend/pull/18#issuecomment-5278580604",
+      "decided_at": "2026-08-13T09:34:53Z",
+      "semantic_sha": "ca766d1490613a73a93d539465f088910f6021b6"
+    }
+  },
+  "primary_flow": {
+    "flow_id": "prototype-primary-flow",
+    "name": "Five-screen local prototype flow",
+    "steps": [
+      {
+        "entry_state_id": "start-success",
+        "expected_outcome": "Advance to the local input screen with no remote effect.",
+        "interaction_id": "start-continue",
+        "ordinal": 1,
+        "outcome_state_id": "input-success",
+        "route_id": "start",
+        "screen_id": "start-screen"
+      },
+      {
+        "entry_state_id": "input-success",
+        "expected_outcome": "Advance to the local options screen with no remote effect.",
+        "interaction_id": "input-continue",
+        "ordinal": 2,
+        "outcome_state_id": "options-success",
+        "route_id": "input",
+        "screen_id": "input-screen"
+      },
+      {
+        "entry_state_id": "options-success",
+        "expected_outcome": "Advance to the local summary screen with no remote effect.",
+        "interaction_id": "options-continue",
+        "ordinal": 3,
+        "outcome_state_id": "summary-success",
+        "route_id": "options",
+        "screen_id": "options-screen"
+      },
+      {
+        "entry_state_id": "summary-success",
+        "expected_outcome": "Advance to the local complete screen with no remote effect.",
+        "interaction_id": "summary-continue",
+        "ordinal": 4,
+        "outcome_state_id": "complete-success",
+        "route_id": "summary",
+        "screen_id": "summary-screen"
+      },
+      {
+        "entry_state_id": "complete-success",
+        "expected_outcome": "Restart returns to the local start screen with no remote effect.",
+        "interaction_id": "complete-continue",
+        "ordinal": 5,
+        "outcome_state_id": "start-success",
+        "route_id": "complete",
+        "screen_id": "complete-screen"
+      }
+    ]
+  },
+  "productization_owner": "AICO-047",
+  "prototype_warning": {
+    "dismissible": false,
+    "placement": "PERSISTENT_GLOBAL",
+    "semantic_role": "NOTE",
+    "text": "Prototype only - not a live production system.",
+    "visible_in_all_states": true
+  },
+  "responsive": {
+    "compact": {
+      "columns": 1,
+      "maximum_width_px": 767,
+      "navigation_pattern": "TOP_BAR_WRAP"
+    },
+    "expanded": {
+      "columns": 1,
+      "minimum_width_px": 768,
+      "navigation_pattern": "TOP_BAR"
+    },
+    "layout": {
+      "content_maximum_width_px": 960,
+      "gutter_token": "space.layout-gutter",
+      "region_order": [
+        "prototype-warning",
+        "progress-navigation",
+        "main-content",
+        "actions"
+      ]
+    }
+  },
+  "schema_version": "1.0",
+  "semantic_sha": "ca766d1490613a73a93d539465f088910f6021b6",
+  "tokens": {
+    "color": {
+      "action": "#155f4a",
+      "background": "#f4f1ea",
+      "border": "#ccd4cf",
+      "danger": "#a23232",
+      "focus": "#5aa58e",
+      "surface": "#fffdf8",
+      "text_muted": "#62706b",
+      "text_primary": "#1c2522"
+    },
+    "motion": {
+      "reduced_motion_behavior": "DISABLE_NON_ESSENTIAL",
+      "standard_duration_ms": 160
+    },
+    "shape": {
+      "control_radius_px": 8,
+      "focus_width_px": 3,
+      "surface_radius_px": 16
+    },
+    "spacing": {
+      "layout_gutter_units": 4,
+      "section_gap_units": 6,
+      "unit_px": 4
+    },
+    "typography": {
+      "base_size_px": 16,
+      "font_family": "Inter, ui-sans-serif, system-ui, sans-serif",
+      "line_height_ratio": 1.5,
+      "regular_weight": 400,
+      "strong_weight": 700
+    }
+  }
+}
