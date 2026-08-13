@@ -1,4 +1,5 @@
 import { execFileSync, spawn } from 'node:child_process';
+import { randomUUID } from 'node:crypto';
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -17,12 +18,15 @@ import type { SandboxProofAdapter } from './proof-service';
 const IMAGE_TAG = 'aicompanyos/prototype-dependencies:aico004-proof';
 const IMAGE_CONTEXT = 'docs/architecture/artifacts/aico-004';
 const IMAGE_DOCKERFILE = `${IMAGE_CONTEXT}/dependency-image/Dockerfile`;
+const BUILDKIT_IMAGE =
+  'moby/buildkit:v0.27.0@sha256:054d632d0d7e94b11cdc6048674773499a5170cf7d8ce0c326daaff6be43c8e0';
 const LABEL = 'aico.proof=aico-004';
 const MAX_CAPTURE_BYTES = 64 * 1024;
 const ENFORCE_NETWORK_ISOLATION = true;
 const ENFORCE_CLOSED_GUEST_ENVIRONMENT = true;
 const ENFORCE_RUNTIME_LIMITS = true;
 const ENFORCE_TIMEOUT_CLASSIFICATION = true;
+let forcedImageMaterializationCompleted = false;
 
 interface ProcessResult {
   exitCode: number;
@@ -226,13 +230,32 @@ function mediaSafeInspection(volume: string): OutputEvidence {
 
 export function materializeAcceptedSandboxImage(): void {
   const currentId = docker(['image', 'inspect', IMAGE_TAG, '--format', '{{.Id}}'], true);
-  if (currentId === ACCEPTED_DEPENDENCY_BUNDLE_DIGEST) return;
+  const forceMaterialization =
+    process.env.AICO004_FORCE_IMAGE_MATERIALIZATION === 'true' &&
+    !forcedImageMaterializationCompleted;
+  if (currentId === ACCEPTED_DEPENDENCY_BUNDLE_DIGEST && !forceMaterialization) return;
   const temporaryDirectory = mkdtempSync(join(tmpdir(), 'aico004-oci-'));
   const archive = join(temporaryDirectory, 'dependency-image.oci.tar');
+  const builderName = `aico004-proof-${process.pid}-${randomUUID().slice(0, 8)}`;
+  let builderCreated = false;
   try {
     docker([
       'buildx',
+      'create',
+      '--name',
+      builderName,
+      '--driver',
+      'docker-container',
+      '--driver-opt',
+      `image=${BUILDKIT_IMAGE}`,
+    ]);
+    builderCreated = true;
+    docker(['buildx', 'inspect', builderName, '--bootstrap']);
+    docker([
+      'buildx',
       'build',
+      '--builder',
+      builderName,
       '--output',
       `type=oci,dest=${archive},rewrite-timestamp=true`,
       '--provenance=false',
@@ -251,7 +274,9 @@ export function materializeAcceptedSandboxImage(): void {
     }
     docker(['load', '--input', archive]);
     docker(['tag', ACCEPTED_DEPENDENCY_BUNDLE_DIGEST, IMAGE_TAG]);
+    forcedImageMaterializationCompleted = true;
   } finally {
+    if (builderCreated) docker(['buildx', 'rm', builderName], true);
     rmSync(temporaryDirectory, { recursive: true, force: true });
   }
 }
