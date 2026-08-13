@@ -18,6 +18,7 @@ jobs:
         with:
           node-version: 24.18.0
           cache: npm
+      - uses: docker/setup-buildx-action@v4
       - name: Run the canonical foreground verifier
         env:
           PR_BODY: ${{ github.event.pull_request.body }}
