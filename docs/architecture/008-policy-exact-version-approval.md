@@ -1,13 +1,13 @@
 # ADR-008: Deny-by-Default Policy and Exact-Version Founder Approval
 
-**Status:** Proposed for AICO-006 owner acceptance  
-**Date:** 2026-08-13  
-**Decision owner:** Pending attributable human Architecture decision  
-**Decision evidence:** Pending  
-**Product/Security acceptance owner:** Pending attributable human decision  
-**Product/Security evidence:** Pending  
-**Parent:** `duckvhuynh/aicompanyos#6`  
-**Decision child:** `duckvhuynh/aico-backend#12`  
+**Status:** Proposed for AICO-006 owner acceptance
+**Date:** 2026-08-13
+**Decision owner:** Pending attributable human Architecture decision
+**Decision evidence:** Pending
+**Product/Security acceptance owner:** Pending attributable human decision
+**Product/Security evidence:** Pending
+**Parent:** `duckvhuynh/aicompanyos#6`
+**Decision child:** `duckvhuynh/aico-backend#12`
 **Product trace:** Goals G-02 and G-05; MVP-CAP-004 and the policy portion of MVP-CAP-011; SRS TD-007; PRD-FR-016–020 and PRD-FR-059–060; SRS-FR-021–027 and SRS-FR-085–088; AT-004–005
 
 ## 1. Context and decision boundary
