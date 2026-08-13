@@ -47,29 +47,29 @@ PostgreSQL stores these values as `text` plus reviewed `CHECK` constraints rathe
 
 Every decision carries one stable reason code. Reason codes are evidence, not permission. A consumer must branch on `effect`; an unknown code fails closed.
 
-| Effect  | Closed v1 reason code                 | Meaning                                                                                            |
-| ------- | ------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| `ALLOW` | `FOUNDER_GATE_ALLOWED`        | Authenticated owner may make the supplied exact-version gate decision in the locked current state. |
+| Effect  | Closed v1 reason code          | Meaning                                                                                            |
+| ------- | ------------------------------ | -------------------------------------------------------------------------------------------------- |
+| `ALLOW` | `FOUNDER_GATE_ALLOWED`         | Authenticated owner may make the supplied exact-version gate decision in the locked current state. |
 | `ALLOW` | `PARAMETER_BOUND_TOOL_ALLOWED` | Assigned employee attempt may make this one parameter-bound tool request before expiry.            |
-| `ALLOW` | `GATE_CONTINUATION_ALLOWED`   | Workflow may claim the single continuation already authorized by a committed gate decision.        |
-| `DENY`  | `DEFAULT_DENY`                | No explicit versioned rule allowed the action.                                                     |
-| `DENY`  | `INVALID_CONTEXT`             | A required authoritative input is absent, malformed, contradictory, or unknown.                   |
-| `DENY`  | `AUTHENTICATION_REQUIRED`     | No active authenticated actor could be established.                                                |
-| `DENY`  | `ACTOR_FORBIDDEN`             | The actor class or version cannot perform the action.                                              |
-| `DENY`  | `TENANT_SCOPE_MISMATCH`       | Actor, run, task, attempt, or resource does not share the resolved tenant.                         |
-| `DENY`  | `ASSIGNMENT_MISMATCH`         | Employee definition or attempt is not the current assigned principal.                              |
-| `DENY`  | `ACTION_FORBIDDEN`            | The action key/version is not granted by the effective policy.                                    |
-| `DENY`  | `RESOURCE_BINDING_MISMATCH`   | Resource identity, digest, gate, or parameters differ from the evaluated binding.                 |
-| `DENY`  | `STATE_STALE`                 | Run, Gate Instance, Task, Attempt, or optimistic version is not current.                           |
-| `DENY`  | `GATE_MISMATCH`               | Gate key/status/exact pending subject differs from the action schema.                              |
-| `DENY`  | `RESOURCE_VERSION_STALE`      | Immutable resource/version/checksum differs from the evaluated version.                            |
-| `DENY`  | `APPROVAL_MISSING`            | A required exact-version founder decision/binding is absent.                                      |
-| `DENY`  | `POLICY_VERSION_UNSUPPORTED`  | Policy/action/targeting version is missing, incompatible, paused, or unsupported.                  |
-| `DENY`  | `BUDGET_UNAVAILABLE`          | Required versioned budget is absent or insufficient.                                              |
-| `DENY`  | `ENVIRONMENT_UNSAFE`          | Environment capability/configuration is absent, changed, killed, or incompatible.                 |
-| `DENY`  | `ALLOW_EXPIRED`               | Evaluation or protected use reached the exclusive expiry boundary.                                |
-| `DENY`  | `RUN_CANCELED`                | Cancellation is requested or the Run is canceled.                                                 |
-| `DENY`  | `RUN_TERMINAL`                | The target Run is terminal and cannot be reopened.                                                 |
+| `ALLOW` | `GATE_CONTINUATION_ALLOWED`    | Workflow may claim the single continuation already authorized by a committed gate decision.        |
+| `DENY`  | `DEFAULT_DENY`                 | No explicit versioned rule allowed the action.                                                     |
+| `DENY`  | `INVALID_CONTEXT`              | A required authoritative input is absent, malformed, contradictory, or unknown.                    |
+| `DENY`  | `AUTHENTICATION_REQUIRED`      | No active authenticated actor could be established.                                                |
+| `DENY`  | `ACTOR_FORBIDDEN`              | The actor class or version cannot perform the action.                                              |
+| `DENY`  | `TENANT_SCOPE_MISMATCH`        | Actor, run, task, attempt, or resource does not share the resolved tenant.                         |
+| `DENY`  | `ASSIGNMENT_MISMATCH`          | Employee definition or attempt is not the current assigned principal.                              |
+| `DENY`  | `ACTION_FORBIDDEN`             | The action key/version is not granted by the effective policy.                                     |
+| `DENY`  | `RESOURCE_BINDING_MISMATCH`    | Resource identity, digest, gate, or parameters differ from the evaluated binding.                  |
+| `DENY`  | `STATE_STALE`                  | Run, Gate Instance, Task, Attempt, or optimistic version is not current.                           |
+| `DENY`  | `GATE_MISMATCH`                | Gate key/status/exact pending subject differs from the action schema.                              |
+| `DENY`  | `RESOURCE_VERSION_STALE`       | Immutable resource/version/checksum differs from the evaluated version.                            |
+| `DENY`  | `APPROVAL_MISSING`             | A required exact-version founder decision/binding is absent.                                       |
+| `DENY`  | `POLICY_VERSION_UNSUPPORTED`   | Policy/action/targeting version is missing, incompatible, paused, or unsupported.                  |
+| `DENY`  | `BUDGET_UNAVAILABLE`           | Required versioned budget is absent or insufficient.                                               |
+| `DENY`  | `ENVIRONMENT_UNSAFE`           | Environment capability/configuration is absent, changed, killed, or incompatible.                  |
+| `DENY`  | `ALLOW_EXPIRED`                | Evaluation or protected use reached the exclusive expiry boundary.                                 |
+| `DENY`  | `RUN_CANCELED`                 | Cancellation is requested or the Run is canceled.                                                  |
+| `DENY`  | `RUN_TERMINAL`                 | The target Run is terminal and cannot be reopened.                                                 |
 
 External errors expose the safe codes in section 9, not raw policy reasons when doing so could reveal a foreign resource, policy internals, or protected state. Structured audit data may retain the internal reason after applying the scoping and redaction rules in section 11.
 
@@ -509,15 +509,15 @@ Safe request logs, traces, rate-limit counters, and low-cardinality denial metri
 
 ### 7.1 SRS-FR-087 denial-audit exception
 
-For a schema-valid privileged employee tool request with a safely established authenticated employee, own Company, Run, Task, and Attempt, a policy `DENY` MUST atomically create exactly:
+For a schema-valid protected action that reaches policy evaluation with a safely established authenticated actor and provably same-Company scope, a policy `DENY` MUST atomically create exactly:
 
 1. one immutable, actor-tenant-scoped, redacted `PolicyDecisionV1` with the internal reason code;
 2. one linked ordered `policy_decision_recorded` denial event; and
 3. one transactional outbox row for that event.
 
-This is the only permitted durable exception to zero unauthorized business/external effect. It MUST NOT create a `tool_invocations` row, call the tool/provider, reserve or consume budget, mutate business/run/task state, create a continuation, disclose the target, or emit a business-success event. The denial audit uses a stable `policy_request_id` so replay creates the same logical evidence once.
+This is the only permitted tenant-domain durable exception to zero unauthorized business/external effect. It MUST NOT create a Founder Gate Decision, approved binding, `tool_invocations` row, call the tool/provider, reserve or consume budget, mutate business/Run/Task/Gate state, create a continuation, disclose the target, or emit a business-success event. The denial audit uses a stable `policy_request_id` so replay creates the same logical evidence once.
 
-If authenticated own-tenant/run/task scope cannot be established safely, no tenant/run row may be guessed or written. The request is rejected at the authentication/validation boundary and only redacted security telemetry is emitted. A forged cross-tenant target on an otherwise valid own-tenant employee request is audited against the employee's own scope with categorical/digested resource data; foreign IDs or existence are never persisted in an audience-visible payload.
+For an authenticated employee targeting a foreign or unknown resource, evidence is scoped to the employee's verified Company without a victim Run FK or foreign identifier; the event uses only action/resource class, stable generic reason, keyed supplied-reference digest, actor/policy versions, and causality. A known operator without tenant scope receives a platform-security audit event rather than a tenant PolicyDecision. If authenticated subject/tenant scope cannot be established safely, no tenant/Run row may be guessed or written: the request is rejected at the authentication/validation boundary and only redacted platform security telemetry is emitted.
 
 ## 8. Restart, replay, expiry, cancellation, and evolution
 
@@ -531,12 +531,12 @@ If authenticated own-tenant/run/task scope cannot be established safely, no tena
 ### Expiry
 
 - Policy `ALLOW` lifetime is short, explicit, and policy-versioned. It is checked at action time and immediately before mutation.
-- Expired `ALLOW` is `DENY_EXPIRED`; no decision may proceed by refreshing only its timestamp. A new complete policy evaluation is required.
+- Expired `ALLOW` is `ALLOW_EXPIRED`; no decision may proceed by refreshing only its timestamp. A new complete policy evaluation is required.
 - Founder Approval and RevisionDecision records do not expire. They remain historical facts tied to exact versions. A later action may still deny their use if the Run, gate, workflow, policy, or artifact binding is no longer current.
 
 ### Cancellation and terminal state
 
-- `cancellation_requested_at` or `CANCELED` produces `DENY_CANCELED`; `FAILED` or `COMPLETED` produces `DENY_TERMINAL`.
+- `cancellation_requested_at` or `CANCELED` produces `RUN_CANCELED`; `FAILED` or `COMPLETED` produces `RUN_TERMINAL`. An effective paused/deny-all target, emergency kill, or unsafe environment produces `POLICY_VERSION_UNSUPPORTED` or `ENVIRONMENT_UNSAFE` according to the closed action schema.
 - Cancel wins if it commits before the decision lock/check. A decision that commits first may create its continuation, but a later cancel prevents claim/dispatch and cannot delete the historical decision.
 - Late policy results, HTTP retries, worker results, or outbox replays cannot reopen a canceled/terminal Run or make a continuation eligible.
 
@@ -590,7 +590,7 @@ The existing migration is a partial starting point, not proof of this contract. 
 - Cross-record ownership uses composite tenant foreign keys, including Company/Run/Artifact Version, Run/Task/Attempt, and Company/Founder ownership.
 - Timestamps use `timestamptz`; database-generated `decided_at`, `issued_at`, `occurred_at`, and receipt times share the transaction clock.
 - Immutable evidence tables expose insert/read repository methods only. Standard application roles cannot update/delete decisions, policy decisions, events, or committed receipts.
-- Runtime login roles do not own schemas or tables. A no-login owner role owns DDL; a narrowly privileged gate-writer routine/role is the only path that can insert a founder decision and perform its coupled Run, Artifact Version, continuation, event, and outbox writes. The ordinary API/worker roles receive no independent `INSERT`/`UPDATE`/`DELETE` grants that could assemble a partial gate success outside that path.
+- Runtime login roles do not own schemas or tables. A no-login owner role owns DDL. The `DecisionsModule` application handler is the only supported gate-writer surface and coordinates the pure `PolicyDecisionPort` through one `DecisionUnitOfWorkPort`; its TypeORM/SQL adapter implements the exact transaction. Composition/import tests prohibit other modules from importing write repositories, and runtime roles cannot update/delete immutable evidence.
 - Closed values use `text` plus `CHECK`; integer versions use positive checks; JSON envelopes use `jsonb` plus schema validation before insert.
 - SHA-256 digests use `text CHECK (value ~ '^[0-9a-f]{64}$')`.
 
@@ -604,28 +604,112 @@ ALTER TABLE artifact_versions
   ADD CONSTRAINT artifact_versions_company_run_id_uq
   UNIQUE (company_id, run_id, id);
 
--- Approval rows remain append-only and bind the complete founder decision.
-ALTER TABLE approvals
-  ADD COLUMN schema_version integer NOT NULL DEFAULT 1,
-  ADD COLUMN command_id uuid,
-  ADD COLUMN policy_decision_id uuid,
-  ADD COLUMN expected_run_version integer,
-  ADD COLUMN command_digest text,
-  ADD COLUMN correlation_id uuid,
-  ADD CONSTRAINT approvals_schema_v1_ck CHECK (schema_version = 1),
-  ADD CONSTRAINT approvals_gate_ck CHECK (gate IN ('GATE-01', 'GATE-02', 'GATE-03')),
-  ADD CONSTRAINT approvals_digest_ck CHECK (command_digest ~ '^[0-9a-f]{64}$'),
-  ADD CONSTRAINT approvals_company_founder_fk
-    FOREIGN KEY (company_id, actor_id) REFERENCES companies(id, founder_id),
-  ADD CONSTRAINT approvals_company_run_artifact_fk
-    FOREIGN KEY (company_id, run_id, artifact_version_id)
+-- One pending gate instance names one exact immutable artifact version.
+CREATE TABLE gate_instances (
+  id uuid PRIMARY KEY,
+  company_id uuid NOT NULL,
+  run_id uuid NOT NULL,
+  gate text NOT NULL CHECK (gate IN ('GATE-01', 'GATE-02', 'GATE-03')),
+  artifact_id uuid NOT NULL,
+  artifact_version_id uuid NOT NULL,
+  expected_run_state text NOT NULL,
+  status text NOT NULL CHECK (status IN ('PENDING', 'APPROVED', 'REVISION_REQUESTED', 'CANCELED')),
+  row_version bigint NOT NULL DEFAULT 1 CHECK (row_version > 0),
+  opened_at timestamptz NOT NULL DEFAULT now(),
+  decided_at timestamptz,
+  UNIQUE (company_id, id),
+  FOREIGN KEY (company_id, run_id) REFERENCES runs(company_id, id),
+  FOREIGN KEY (company_id, artifact_id) REFERENCES artifacts(company_id, id),
+  FOREIGN KEY (company_id, run_id, artifact_version_id)
+    REFERENCES artifact_versions(company_id, run_id, id)
+);
+
+CREATE UNIQUE INDEX gate_instances_one_pending_gate_idx
+  ON gate_instances(company_id, run_id, gate)
+  WHERE status = 'PENDING';
+
+-- Founder decisions are append-only and close one exact Gate Instance.
+CREATE TABLE founder_gate_decisions (
+  id uuid PRIMARY KEY,
+  schema_version integer NOT NULL CHECK (schema_version = 1),
+  company_id uuid NOT NULL,
+  run_id uuid NOT NULL,
+  gate_instance_id uuid NOT NULL,
+  gate text NOT NULL CHECK (gate IN ('GATE-01', 'GATE-02', 'GATE-03')),
+  artifact_version_id uuid NOT NULL,
+  founder_id uuid NOT NULL,
+  policy_decision_id uuid NOT NULL,
+  command_id uuid NOT NULL,
+  decision text NOT NULL CHECK (decision IN ('APPROVE', 'REQUEST_REVISION')),
+  expected_run_version bigint NOT NULL CHECK (expected_run_version > 0),
+  expected_gate_version bigint NOT NULL CHECK (expected_gate_version > 0),
+  command_digest text NOT NULL CHECK (command_digest ~ '^[0-9a-f]{64}$'),
+  feedback text,
+  feedback_digest text,
+  feedback_classification text,
+  idempotency_key uuid NOT NULL,
+  correlation_id uuid NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (company_id, id),
+  UNIQUE (company_id, gate_instance_id),
+  UNIQUE (company_id, command_id),
+  FOREIGN KEY (company_id, founder_id) REFERENCES companies(id, founder_id),
+  FOREIGN KEY (company_id, run_id) REFERENCES runs(company_id, id),
+  FOREIGN KEY (company_id, gate_instance_id) REFERENCES gate_instances(company_id, id),
+  FOREIGN KEY (company_id, run_id, artifact_version_id)
     REFERENCES artifact_versions(company_id, run_id, id),
-  ADD CONSTRAINT approvals_policy_fk
-    FOREIGN KEY (company_id, policy_decision_id)
-    REFERENCES policy_decisions(company_id, id),
-  ADD CONSTRAINT approvals_exact_decision_uq
-    UNIQUE (company_id, run_id, gate, artifact_version_id),
-  ADD CONSTRAINT approvals_command_uq UNIQUE (company_id, command_id);
+  FOREIGN KEY (company_id, policy_decision_id) REFERENCES policy_decisions(company_id, id),
+  CHECK (
+    (decision = 'APPROVE' AND feedback_digest IS NULL AND feedback_classification IS NULL)
+    OR
+    (decision = 'REQUEST_REVISION' AND char_length(btrim(feedback)) > 0
+      AND feedback_digest ~ '^[0-9a-f]{64}$' AND feedback_classification IS NOT NULL)
+  )
+);
+
+-- Only APPROVE creates the immutable exact-version Product Brief binding.
+CREATE TABLE run_approved_artifact_bindings (
+  id uuid PRIMARY KEY,
+  company_id uuid NOT NULL,
+  run_id uuid NOT NULL,
+  binding_key text NOT NULL CHECK (binding_key = 'PRODUCT_BRIEF'),
+  artifact_version_id uuid NOT NULL,
+  gate_instance_id uuid NOT NULL,
+  founder_gate_decision_id uuid NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (company_id, id),
+  UNIQUE (company_id, run_id, binding_key),
+  FOREIGN KEY (company_id, run_id) REFERENCES runs(company_id, id),
+  FOREIGN KEY (company_id, run_id, artifact_version_id)
+    REFERENCES artifact_versions(company_id, run_id, id),
+  FOREIGN KEY (company_id, gate_instance_id) REFERENCES gate_instances(company_id, id),
+  FOREIGN KEY (company_id, founder_gate_decision_id)
+    REFERENCES founder_gate_decisions(company_id, id)
+);
+
+-- A continuation is durable intent, never evidence that work ran.
+CREATE TABLE continuation_intents (
+  id uuid PRIMARY KEY,
+  company_id uuid NOT NULL,
+  run_id uuid NOT NULL,
+  gate_instance_id uuid NOT NULL,
+  founder_gate_decision_id uuid NOT NULL,
+  type text NOT NULL CHECK (type IN ('START_DESIGN_FROM_BRIEF', 'REVISE_PRODUCT_BRIEF')),
+  input_artifact_version_id uuid NOT NULL,
+  state text NOT NULL CHECK (state IN ('PENDING', 'CLAIMED', 'COMPLETED', 'CANCELED')),
+  logical_key text NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  claimed_at timestamptz,
+  completed_at timestamptz,
+  UNIQUE (company_id, id),
+  UNIQUE (company_id, run_id, logical_key),
+  FOREIGN KEY (company_id, run_id) REFERENCES runs(company_id, id),
+  FOREIGN KEY (company_id, gate_instance_id) REFERENCES gate_instances(company_id, id),
+  FOREIGN KEY (company_id, founder_gate_decision_id)
+    REFERENCES founder_gate_decisions(company_id, id),
+  FOREIGN KEY (company_id, run_id, input_artifact_version_id)
+    REFERENCES artifact_versions(company_id, run_id, id)
+);
 
 -- Idempotency is explicit in tenant scope and retains the original receipt.
 ALTER TABLE idempotency_records
@@ -638,42 +722,38 @@ ALTER TABLE idempotency_records
 CREATE UNIQUE INDEX idempotency_company_operation_key_uq
   ON idempotency_records(company_id, actor_id, operation, idempotency_key);
 
--- A continuation key is unique for a run and is created in the decision transaction.
-ALTER TABLE tasks ADD COLUMN continuation_key text;
-CREATE UNIQUE INDEX tasks_gate_continuation_uq
-  ON tasks(company_id, run_id, continuation_key)
-  WHERE continuation_key IS NOT NULL;
 ```
 
 Migration SQL must add new columns nullable, backfill/reconcile, validate foreign keys, then apply `NOT NULL`; the illustrative single statements above are target constraints, not a safe deployment sequence. The final schema also requires:
 
-- `policy_decisions.schema_version`, `policy_request_id`, `policy_input_digest`, `parameters_digest`, typed resource identity/version, binding columns, `issued_at`, and expiry/effect checks;
+- immutable `policy_versions` and `policy_targeting_versions`, plus an explicitly addressed and locked `policy_targets` pointer whose states include active, paused, deny-all, and rolled-back;
+- `policy_decisions.schema_version`, `policy_request_id`, `policy_input_digest`, `parameters_digest`, typed resource identity/version, Policy/Targeting Version IDs, binding columns, maximum use, `issued_at`, and expiry/effect checks;
 - unique `(company_id, policy_request_id)` to make SRS-FR-087 denial audit replay-safe;
 - composite FKs from PolicyDecision to Run, optional Task, and optional Attempt;
 - a constraint that `ALLOW` has non-null future `expires_at`, while `DENY` has null `expires_at`;
-- a tagged decision/feedback check: `REQUEST_REVISION` requires bounded nonblank feedback;
-- conditional state updates or database constraints preventing a second GATE-01 effect; and
+- a tagged Founder Gate Decision/feedback check: `REQUEST_REVISION` requires bounded nonblank classified feedback;
+- guarded Gate Instance transitions allowing only `PENDING -> APPROVED/REVISION_REQUESTED/CANCELED` and database uniqueness preventing a second GATE-01 effect; and
 - event causation linking to the decision or PolicyDecision, with outbox uniqueness already enforced by `outbox_messages.event_id`.
 
-The privileged gate-writer surface is not an alternate public API and cannot authenticate a Founder by itself. The NestJS application still verifies identity and resolves Company authority before invoking it. Its database signature accepts only the already validated closed command fields, expected row version, idempotency scope, and correlation context; internally it re-resolves tenant ownership, takes the locks, evaluates/calls only the pinned deterministic policy function or consumes an equivalently transaction-local result, and emits the receipt. Migration/superuser credentials are never available to API or worker processes. Direct-DML negative tests run with the actual runtime roles and must fail; testing with a superuser does not prove the boundary.
+The unit-of-work adapter is not an alternate public API and cannot authenticate a Founder by itself. NestJS still verifies identity and resolves Company authority before invoking it; the adapter re-resolves tenant ownership and current state under lock. Migration/superuser credentials are never available to API or worker processes. Direct-DML negative tests run with the actual runtime roles and must fail; testing with a superuser does not prove the boundary.
 
 ### 10.3 Index recommendations
 
 Indexes serve known authorization/audit paths and must be confirmed with `EXPLAIN (ANALYZE, BUFFERS)` against representative data:
 
 ```sql
-CREATE INDEX approvals_run_gate_history_idx
-  ON approvals(company_id, run_id, gate, created_at DESC, id DESC);
+CREATE INDEX founder_gate_decisions_run_history_idx
+  ON founder_gate_decisions(company_id, run_id, created_at DESC, id DESC);
 
 CREATE INDEX policy_decisions_run_time_idx
-  ON policy_decisions(company_id, run_id, occurred_at DESC, id DESC);
+  ON policy_decisions(company_id, run_id, issued_at DESC, id DESC);
 
 CREATE INDEX policy_decisions_action_result_idx
-  ON policy_decisions(company_id, action, result, occurred_at DESC, id DESC);
+  ON policy_decisions(company_id, action, result, issued_at DESC, id DESC);
 
-CREATE INDEX artifact_versions_pending_gate_idx
-  ON artifact_versions(company_id, run_id, lifecycle_state, created_at DESC, id DESC)
-  WHERE lifecycle_state = 'PENDING_APPROVAL';
+CREATE INDEX continuation_intents_claim_idx
+  ON continuation_intents(company_id, state, created_at, id)
+  WHERE state = 'PENDING';
 ```
 
 Do not index raw feedback or whole policy JSON for speculative search. Avoid an index already covered by a unique constraint. Retention/deletion of decision evidence follows the accepted retention mechanism; no final duration is invented here.
