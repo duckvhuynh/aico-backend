@@ -10,6 +10,20 @@
 
 This package selects the deny-by-default policy and exact-version approval architecture. It does not ship the public decision service or UI, complete AICO-041/AICO-042, execute Designer work, or claim MVP-CAP-004 complete.
 
+## Accepted decision evidence
+
+- Accepted semantic revision: `907c563fa336d01afae0fc9da48bd7ccc7327d9a`
+- Architecture/Engineering owner: Duc Huynh (`@duckvhuynh`)
+- Architecture decision: https://github.com/duckvhuynh/aico-backend/pull/14#issuecomment-5275214714
+- Product/Security owner: Duc Huynh (`@duckvhuynh`)
+- Product/Security acceptance: https://github.com/duckvhuynh/aico-backend/pull/14#issuecomment-5275215380
+- Candidate exact-SHA verification: https://github.com/duckvhuynh/aico-backend/actions/runs/31659994562
+- Decision date: 2026-08-13
+- Disputes: None
+- Conditions: None
+
+These decisions accept the architecture package only. Backend child #13 remains required for executable proof, and exact-final-SHA QA/Security approval remains a merge gate for child #12.
+
 ## Founder trust outcome
 
 The architecture must make one claim provable: only an authenticated founder decision about the exact pending artifact version that they reviewed may release the corresponding gate, and replay, stale context, another actor, another company, or process replacement cannot create an additional or unauthorized effect.
@@ -24,20 +38,20 @@ The architecture must make one claim provable: only an authenticated founder dec
 
 ## Evidence inventory
 
-| Evidence ID   | Evidence or command                                          | Expected authority/result                                                                                                                                                                                                    |
-| ------------- | ------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| A6-ADR-01     | `docs/architecture/008-policy-exact-version-approval.md`     | Compares viable approaches, selects the bounded MVP architecture, reconciles accepted/proposed authority, and remains Proposed until attributable Architecture and Product/Security decisions accept the exact semantic SHA. |
-| A6-INPUT-01   | ADR-008 and `docs/contracts/POLICY_APPROVAL.md`              | Defines the closed, versioned action-time policy and decision command inputs, authoritative sources, digests, validation, and default-deny behavior.                                                                         |
-| A6-ALLOW-01   | ADR-008 and policy contract                                  | ALLOW binds actor/employee, tenant, action, resource, parameters, attempt, artifact, gate, workflow/policy version, environment, budget state, and expiry; it never grants a session.                                        |
-| A6-TX-01      | ADR-008 and policy contract                                  | Defines one PostgreSQL transaction for locks, policy result, immutable founder decision, artifact/run/task transition, ordered event/outbox, and unique continuation/revision intent.                                        |
-| A6-REPLAY-01  | Policy contract and A6 threat plan                           | Same key plus same stable business command replays the original receipt; changed business content conflicts; concurrent commands create one winner and one logical effect.                                                   |
-| A6-DENY-01    | `docs/delivery/AICO_006_THREAT_TEST_PLAN.md`                 | Stable adversarial cases deny unauthorized/stale/invalid actions without business, tool, provider, budget, or downstream effects and without tenant/resource disclosure.                                                     |
-| A6-AUDIT-01   | Policy contract and A6 threat plan                           | A denial that falls under SRS-FR-087 creates exactly one scoped/redacted PolicyDecision plus linked denial event/outbox; this audit is not an authorized business success effect.                                            |
-| A6-RESTART-01 | Backend child #13 deterministic harness                      | Replacement processes reconstruct the pending/decided truth from PostgreSQL and resume at most once within the recorded recovery objective.                                                                                  |
-| A6-VERSION-01 | ADR-008, policy contract, and child #13                      | Existing decisions/runs remain readable under pinned workflow/policy/schema versions; unsupported or unsafe migration/rollback fails closed.                                                                                 |
-| A6-AEO-01-12  | `docs/delivery/AICO_006_AEO_AUDIT.md`                        | Causal, privacy-safe, low-cardinality evidence, replay modes, reconciliation, and readiness gates prevent unsupported or non-reproducible claims.                                                                            |
-| A6-TRACE-01   | This file and `scripts/validate-aico-006-architecture.mjs`   | Every parent criterion and cited authority has a binding artifact or explicit downstream owner; missing required text/evidence fails closed.                                                                                 |
-| A6-VERIFY-01  | `npm run verify:policy-architecture` and `npm run verify:ci` | Structural validation, deterministic mutation probes, and all canonical foreground gates pass on the exact reviewed SHA without paid services.                                                                               |
+| Evidence ID   | Evidence or command                                          | Expected authority/result                                                                                                                                                                                        |
+| ------------- | ------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A6-ADR-01     | `docs/architecture/008-policy-exact-version-approval.md`     | Compares viable approaches, selects the bounded MVP architecture, reconciles accepted/proposed authority, and binds attributable Architecture and Product/Security decisions to the exact accepted semantic SHA. |
+| A6-INPUT-01   | ADR-008 and `docs/contracts/POLICY_APPROVAL.md`              | Defines the closed, versioned action-time policy and decision command inputs, authoritative sources, digests, validation, and default-deny behavior.                                                             |
+| A6-ALLOW-01   | ADR-008 and policy contract                                  | ALLOW binds actor/employee, tenant, action, resource, parameters, attempt, artifact, gate, workflow/policy version, environment, budget state, and expiry; it never grants a session.                            |
+| A6-TX-01      | ADR-008 and policy contract                                  | Defines one PostgreSQL transaction for locks, policy result, immutable founder decision, artifact/run/task transition, ordered event/outbox, and unique continuation/revision intent.                            |
+| A6-REPLAY-01  | Policy contract and A6 threat plan                           | Same key plus same stable business command replays the original receipt; changed business content conflicts; concurrent commands create one winner and one logical effect.                                       |
+| A6-DENY-01    | `docs/delivery/AICO_006_THREAT_TEST_PLAN.md`                 | Stable adversarial cases deny unauthorized/stale/invalid actions without business, tool, provider, budget, or downstream effects and without tenant/resource disclosure.                                         |
+| A6-AUDIT-01   | Policy contract and A6 threat plan                           | A denial that falls under SRS-FR-087 creates exactly one scoped/redacted PolicyDecision plus linked denial event/outbox; this audit is not an authorized business success effect.                                |
+| A6-RESTART-01 | Backend child #13 deterministic harness                      | Replacement processes reconstruct the pending/decided truth from PostgreSQL and resume at most once within the recorded recovery objective.                                                                      |
+| A6-VERSION-01 | ADR-008, policy contract, and child #13                      | Existing decisions/runs remain readable under pinned workflow/policy/schema versions; unsupported or unsafe migration/rollback fails closed.                                                                     |
+| A6-AEO-01-12  | `docs/delivery/AICO_006_AEO_AUDIT.md`                        | Causal, privacy-safe, low-cardinality evidence, replay modes, reconciliation, and readiness gates prevent unsupported or non-reproducible claims.                                                                |
+| A6-TRACE-01   | This file and `scripts/validate-aico-006-architecture.mjs`   | Every parent criterion and cited authority has a binding artifact or explicit downstream owner; missing required text/evidence fails closed.                                                                     |
+| A6-VERIFY-01  | `npm run verify:policy-architecture` and `npm run verify:ci` | Structural validation, deterministic mutation probes, and all canonical foreground gates pass on the exact reviewed SHA without paid services.                                                                   |
 
 ## Current reusable evidence is partial
 

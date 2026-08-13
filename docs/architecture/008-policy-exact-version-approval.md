@@ -1,11 +1,13 @@
 # ADR-008: Deny-by-Default Policy and Exact-Version Founder Approval
 
-**Status:** Proposed for AICO-006 owner acceptance
+**Status:** Accepted for AICO-006
 **Date:** 2026-08-13
-**Decision owner:** Pending attributable human Architecture decision
-**Decision evidence:** Pending
-**Product/Security acceptance owner:** Pending attributable human decision
-**Product/Security evidence:** Pending
+**Decision owner:** Duc Huynh (`@duckvhuynh`), authorized Architecture/Engineering owner
+**Decision evidence:** https://github.com/duckvhuynh/aico-backend/pull/14#issuecomment-5275214714
+**Product/Security acceptance owner:** Duc Huynh (`@duckvhuynh`), authorized Product and Security owner
+**Product/Security evidence:** https://github.com/duckvhuynh/aico-backend/pull/14#issuecomment-5275215380
+**Accepted semantic revision:** `907c563fa336d01afae0fc9da48bd7ccc7327d9a`
+**Candidate verification:** https://github.com/duckvhuynh/aico-backend/actions/runs/31659994562
 **Parent:** `duckvhuynh/aicompanyos#6`
 **Decision child:** `duckvhuynh/aico-backend#12`
 **Product trace:** Goals G-02 and G-05; MVP-CAP-004 and the policy portion of MVP-CAP-011; SRS TD-007; PRD-FR-016–020 and PRD-FR-059–060; SRS-FR-021–027 and SRS-FR-085–088; AT-004–005
@@ -443,7 +445,9 @@ The selected approach accepts that policy changes are engineering releases and t
 
 ## 17. Human acceptance gate
 
-This ADR remains **Proposed**. Before backend child #12 or parent AICO-006 can be `Done`:
+This ADR is **Accepted** for AICO-006. Duc Huynh (`@duckvhuynh`) approved the exact semantic revision `907c563fa336d01afae0fc9da48bd7ccc7327d9a` separately as the authorized Architecture/Engineering owner and as the authorized Product/Security owner. Both decisions were recorded on 2026-08-13 with no disputes or conditions. Candidate verification [run 31659994562](https://github.com/duckvhuynh/aico-backend/actions/runs/31659994562) passed on that revision.
+
+Before backend child #12 or parent AICO-006 can be `Done`:
 
 1. an identifiable authorized Architecture owner must approve the exact semantic revision and selected Option A;
 2. a separate identifiable authorized Product/Security owner must accept the founder authority, denial/audit semantics, GATE-01 outcomes, non-goals, and later-issue boundaries on that same semantic revision;
@@ -451,4 +455,4 @@ This ADR remains **Proposed**. Before backend child #12 or parent AICO-006 can b
 4. the evidence package and canonical verification must pass on the exact clean final SHA; and
 5. any semantic edit after either human decision must reopen the affected decision rather than carrying approval forward.
 
-Human comments, their exact reviewed revision, and hosted verification must replace the pending header fields before this status can change. Agent-authored summaries, labels, issue assignment, draft PR state, local tests, or CI alone are not acceptance.
+The permanent Architecture and Product/Security comments are bound in the header. This metadata-only acceptance revision must pass accepted-mode and canonical exact-final-SHA verification, then receive attributable QA/Security approval before merge. Agent-authored summaries, labels, issue assignment, draft PR state, local tests, or CI alone are not QA/Security acceptance.
