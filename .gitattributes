@@ -1,5 +1,8 @@
 * text=auto eol=lf
 
+# Content-addressed third-party license evidence must retain its source bytes.
+docs/architecture/artifacts/aico-004/licenses/*.txt -text
+
 *.bat text eol=crlf
 *.cmd text eol=crlf
 *.ps1 text eol=crlf
