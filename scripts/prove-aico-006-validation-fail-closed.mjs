@@ -15,6 +15,8 @@ const probes = {
   'event-vocabulary': 'is missing required content: approval.decided',
   'deny-binding': 'is missing required content: DenyBindingV1',
   'replay-authority': 'is missing required content: replay-after-revocation',
+  'authority-order': 'must lock current authority before any idempotency-record lookup',
+  'reason-catalog': 'is missing canonical DENY reason: RUN_TERMINAL',
 };
 
 for (const [probe, expected] of Object.entries(probes)) {

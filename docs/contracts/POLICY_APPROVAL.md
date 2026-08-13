@@ -453,8 +453,8 @@ The application service uses one short PostgreSQL `READ COMMITTED` transaction w
 The fixed lock/write order is:
 
 1. Canonicalize the typed command plus parsed `If-Match`; compute the stable business-command digest. Exclude correlation/retry transport metadata from the digest.
-2. Insert-or-load the actor/operation/idempotency record and lock it. Record whether it is an identical completed replay, but do not return the stored receipt yet. A different digest returns `409 idempotency_key_reused` only after current actor authority is safely established.
-3. Lock the current authenticated session/Founder authority and server-resolved Founder-to-Company ownership rows. An identical completed replay returns the original receipt only if the credential/session is still active and that Founder still owns the same active Company. This replay path does not recheck post-success Run, Gate Instance, artifact, policy, or cancellation state and never repeats the business transition.
+2. Resolve and lock the current authenticated session, Founder authority, and server-derived Founder-to-Company ownership rows. Reject revoked/expired credentials, a disabled Founder, inactive Company, or lost ownership before any idempotency-record lookup, lock, conflict disclosure, or receipt access.
+3. Only after step 2 succeeds, insert-or-load and lock the tenant/actor/operation/idempotency record. A changed digest returns `409 idempotency_key_reused`. An identical completed command returns the original receipt here without rechecking post-success Run, Gate Instance, artifact, policy, or cancellation state and without repeating any business transition.
 4. Lock the effective Policy Targeting row/version, including emergency pause/deny/kill state.
 5. Lock the tenant-scoped Run with `SELECT ... FOR UPDATE`.
 6. Lock the exact Gate Instance and read its immutable Artifact/Artifact Version through composite Company/Run keys.
@@ -481,7 +481,7 @@ There is one database uniqueness constraint for that key in tenant/run scope. Th
 
 ### 6.1 Stable-business-command idempotency
 
-The idempotency scope is `(company_id, actor_id, operation, idempotency_key)`. The stable digest includes:
+Current authenticated session, Founder, Company, and ownership authority MUST be resolved and locked before the idempotency record is loaded or locked. Therefore an idempotency key or stored receipt is never a bearer capability and cannot reveal whether a prior command exists to revoked or displaced authority. After that authority gate passes, the idempotency scope is `(company_id, actor_id, operation, idempotency_key)`. The stable digest includes:
 
 - command schema and command ID;
 - run ID;
@@ -494,8 +494,8 @@ It excludes authorization credentials, request arrival time, trace/span IDs, ret
 | Case                                                    | Result                                                                                                                          |
 | ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
 | Same key + same digest, current authority remains valid | After locking current Founder/Company authority, return original receipt/status with `replayed=true`; create no row/event/task. |
-| Same key + same digest, concurrent request              | Wait on the idempotency row; winner commits; loser returns winner's receipt.                                                    |
-| Same key + different digest                             | `409 idempotency_key_reused`; zero decision or continuation effect.                                                             |
+| Same key + same digest, concurrent request              | After current authority locks pass, wait on the idempotency row; winner commits; loser returns winner's receipt.                |
+| Same key + different digest                             | After current authority locks pass, return `409 idempotency_key_reused`; zero decision or continuation effect.                  |
 | Different key after exact version already decided       | `409 decision_already_recorded`; never create a second decision or continuation.                                                |
 | Crash before commit                                     | Entire transaction rolls back; retry may execute normally.                                                                      |
 | Crash after commit but before response                  | Retry returns the committed receipt from PostgreSQL.                                                                            |

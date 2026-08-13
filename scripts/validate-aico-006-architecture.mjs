@@ -57,6 +57,13 @@ if (probe === 'adr-status') {
     /replay-after-revocation/gi,
     'replay-without-auth',
   );
+} else if (probe === 'authority-order') {
+  documents.contract = documents.contract.replace(
+    '2. Resolve and lock the current authenticated session',
+    '2. insert-or-load and lock the tenant/actor/operation/idempotency record before authority. Resolve and lock the current authenticated session',
+  );
+} else if (probe === 'reason-catalog') {
+  documents.adr = documents.adr.replace(/RUN_TERMINAL/g, 'REMOVED_TERMINAL_REASON');
 } else if (probe !== undefined) {
   throw new Error(`Unknown AICO-006 validation failure probe: ${probe}`);
 }
@@ -199,6 +206,64 @@ const runStageDefinition = documents.contract
   .find((line) => line.includes('type RunStage') || line.includes('| `RunStage`'));
 if (!runStageDefinition || runStageDefinition.includes('TERMINAL')) {
   errors.push(`${paths.contract} RunStage must use exactly INTAKE/PRODUCT/DESIGN/BUILD/QA/FINAL`);
+}
+
+const canonicalAllowReason = 'ACTION_ALLOWED';
+const canonicalDenyReasons = [
+  'ROLE_FORBIDDEN',
+  'WRONG_STAGE',
+  'APPROVAL_MISSING',
+  'STALE_VERSION',
+  'RESOURCE_OUT_OF_SCOPE',
+  'BUDGET_UNAVAILABLE',
+  'ENVIRONMENT_UNSAFE',
+  'TENANT_MISMATCH',
+  'INVALID_CONTEXT',
+  'AUTHENTICATION_REQUIRED',
+  'POLICY_VERSION_UNSUPPORTED',
+  'ALLOW_EXPIRED',
+  'RUN_CANCELED',
+  'RUN_TERMINAL',
+];
+for (const [name, document] of Object.entries({
+  adr: documents.adr,
+  contract: documents.contract,
+  threat: documents.threat,
+})) {
+  if (!document.includes(canonicalAllowReason)) {
+    errors.push(`${paths[name]} is missing canonical ALLOW reason: ${canonicalAllowReason}`);
+  }
+  for (const reason of canonicalDenyReasons) {
+    if (!document.includes(reason)) {
+      errors.push(`${paths[name]} is missing canonical DENY reason: ${reason}`);
+    }
+  }
+}
+for (const [name, document] of Object.entries({
+  adr: documents.adr,
+  contract: documents.contract,
+})) {
+  for (const forbiddenReason of ['RULE_MATCHED', 'WRONG_GATE', 'WRONG_STATE']) {
+    if (document.includes(`'${forbiddenReason}'`) || document.includes(`\`${forbiddenReason}\``)) {
+      errors.push(`${paths[name]} contains forbidden reason alias: ${forbiddenReason}`);
+    }
+  }
+}
+
+const authorityLockOffset = documents.contract.indexOf(
+  'Resolve and lock the current authenticated session',
+);
+const idempotencyLockOffset = documents.contract.indexOf(
+  'insert-or-load and lock the tenant/actor/operation/idempotency record',
+);
+if (
+  authorityLockOffset < 0 ||
+  idempotencyLockOffset < 0 ||
+  authorityLockOffset >= idempotencyLockOffset
+) {
+  errors.push(
+    `${paths.contract} must lock current authority before any idempotency-record lookup or receipt access`,
+  );
 }
 
 const threatIds = new Set(documents.threat.match(/\bA6-T-[A-Z0-9-]+\b/g) ?? []);
