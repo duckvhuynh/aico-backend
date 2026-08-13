@@ -1,0 +1,8 @@
+template-v1/node_modules
+template-v1/dist
+template-v1.tar
+template-v1.tar.gz
+template-v1.files.json
+template-v1.cdx.json
+template-v1.licenses.json
+licenses

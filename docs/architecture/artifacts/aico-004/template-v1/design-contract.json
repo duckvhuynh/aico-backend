@@ -1,0 +1,138 @@
+{
+  "schemaVersion": "aico.prototype-design-contract/v1",
+  "definitions": {
+    "route": "An addressable top-level prototype view selected by one stable hash path.",
+    "screen": "The single visible route canvas. Template v1 maps one screen to one route.",
+    "state": "A non-addressable presentation variant inside a screen; it does not increase the route or screen count."
+  },
+  "limits": {
+    "maximumRoutes": 5,
+    "maximumScreens": 5,
+    "primaryFlows": 1,
+    "clientOnly": true,
+    "dataMode": "TYPED_LOCAL_FIXTURES_ONLY"
+  },
+  "routes": [
+    {
+      "id": "start",
+      "path": "/start",
+      "screenId": "start-screen",
+      "label": "Start",
+      "primaryFlowOrder": 1,
+      "purpose": "Introduce the prototype flow and its limitation warning."
+    },
+    {
+      "id": "input",
+      "path": "/input",
+      "screenId": "input-screen",
+      "label": "Input",
+      "primaryFlowOrder": 2,
+      "purpose": "Capture one local-only choice without persistence or network access."
+    },
+    {
+      "id": "options",
+      "path": "/options",
+      "screenId": "options-screen",
+      "label": "Options",
+      "primaryFlowOrder": 3,
+      "purpose": "Compare typed fixture options."
+    },
+    {
+      "id": "summary",
+      "path": "/summary",
+      "screenId": "summary-screen",
+      "label": "Summary",
+      "primaryFlowOrder": 4,
+      "purpose": "Review the local prototype selection."
+    },
+    {
+      "id": "complete",
+      "path": "/complete",
+      "screenId": "complete-screen",
+      "label": "Complete",
+      "primaryFlowOrder": 5,
+      "purpose": "Show the non-production end state and restart action."
+    }
+  ],
+  "states": [
+    {
+      "id": "loading",
+      "kind": "LOADING",
+      "interaction": "Announce progress with role=status; never hide navigation indefinitely."
+    },
+    {
+      "id": "empty",
+      "kind": "EMPTY",
+      "interaction": "Explain the missing local fixture and offer one recovery action."
+    },
+    {
+      "id": "error",
+      "kind": "ERROR",
+      "interaction": "Use role=alert, plain-language local error text, and a retry action."
+    },
+    {
+      "id": "success",
+      "kind": "SUCCESS",
+      "interaction": "Render the current screen content and its bounded primary/secondary actions."
+    }
+  ],
+  "responsive": {
+    "breakpoints": [
+      {
+        "id": "compact",
+        "minimumWidthPx": 0,
+        "maximumWidthPx": 767,
+        "navigation": "Horizontally scrollable labeled progress list; one-column content and full-width actions."
+      },
+      {
+        "id": "wide",
+        "minimumWidthPx": 768,
+        "maximumWidthPx": null,
+        "navigation": "Labeled progress list above a centered content card; actions remain keyboard ordered."
+      }
+    ],
+    "layout": {
+      "maximumContentWidthPx": 960,
+      "minimumTargetSizePx": 44,
+      "spacingTokenScale": [4, 8, 12, 16, 24, 32, 48]
+    }
+  },
+  "tokens": {
+    "colorRoles": [
+      "canvas",
+      "surface",
+      "text",
+      "muted",
+      "accent",
+      "accentContrast",
+      "border",
+      "danger",
+      "warningSurface"
+    ],
+    "typeRoles": ["body", "label", "title", "display"],
+    "radiusRoles": ["control", "card", "pill"],
+    "motion": "Respect prefers-reduced-motion; no interaction depends on animation."
+  },
+  "interactions": {
+    "primary": "Continue to the next route in primaryFlowOrder.",
+    "secondary": "Return to the previous route without remote persistence.",
+    "retry": "Move ERROR directly to deterministic local SUCCESS without network access.",
+    "restore": "Move EMPTY directly to deterministic local SUCCESS without network access.",
+    "restart": "Clear in-memory selection and return to /start."
+  },
+  "accessibilityBaseline": {
+    "claim": "BASIC_AUTOMATED_SMOKE_ONLY_NO_CONFORMANCE_CLAIM",
+    "requirements": [
+      "Semantic landmarks and one level-one heading per screen.",
+      "Keyboard-operable controls with visible focus.",
+      "Programmatic labels and plain-language status/error announcements.",
+      "Color is not the only carrier of status.",
+      "Reduced-motion preference is respected."
+    ]
+  },
+  "prototypeWarning": {
+    "text": "Prototype only - not a live production system.",
+    "placement": "Persistent banner rendered on every route above the primary content.",
+    "dismissible": false
+  }
+}
