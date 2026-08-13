@@ -67,6 +67,7 @@ try {
     'minio-init',
   ]);
   gate('migrations', 'node', ['scripts/migration-fixture.mjs']);
+  gate('policy-approval-proof', 'node', ['scripts/policy-approval-proof.mjs']);
   gate('storage', 'node', ['scripts/storage-fixture.mjs'], {
     env: {
       OBJECT_STORAGE_ENDPOINT: `http://127.0.0.1:${minioPort}`,

@@ -14,6 +14,7 @@ export const verificationGates = [
   'dependencies',
   'object-init',
   'migrations',
+  'policy-approval-proof',
   'storage',
   'workflow-resilience',
   'http-smoke',
