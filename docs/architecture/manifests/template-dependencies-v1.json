@@ -57,10 +57,10 @@
   "sandbox_design_decision": {
     "materialization_owner": "AICO-004",
     "path": "docs/architecture/artifacts/aico-004/sandbox-design-decision-v1.json",
-    "digest": "sha256:22d0dd22303d004d7f8c82dea2b28f6253138590aa09bd0343523d6f6bcfbe56",
-    "semantic_digest": "sha256:b341788c7a5787b2e707996cc521ebf59e3cc8638482b7562335b590952feec7",
-    "file_digest": "sha256:22d0dd22303d004d7f8c82dea2b28f6253138590aa09bd0343523d6f6bcfbe56",
-    "canonical_artifact_set_digest": "sha256:04c5df316b2c84eb826de1dabd327b6d43c0f256515a53733a4ca4d5081e5cf1",
+    "digest": "sha256:1bfff28293f8e2ecd13ab935bed37cc7e2b92d26de7712785772f67e570ec14e",
+    "semantic_digest": "sha256:8f4b44d666a0025c0dece74fa56e42389f5f39f936b4e207d75885d5c5b7eaf1",
+    "file_digest": "sha256:1bfff28293f8e2ecd13ab935bed37cc7e2b92d26de7712785772f67e570ec14e",
+    "canonical_artifact_set_digest": "sha256:17df9844b2581496bc075a22a104583d0164f172ed0757c0e7d33872143ab9c5",
     "status": "MATERIALIZED_PROPOSED_CANDIDATE"
   },
   "design_definition_of_ready": {
@@ -198,12 +198,12 @@
       "materialization_owner": "AICO-004",
       "productization_owner": "AICO-047",
       "build_recipe_path": "docs/architecture/artifacts/aico-004/dependency-image/Dockerfile",
-      "build_recipe_digest": "sha256:356365e505f078d8e9183d170373b04ebbfba185164c3398cda6afeb75c53047",
+      "build_recipe_digest": "sha256:9941db15f394352cab9e6bcab56ce2d931c09af44307d0edb91e6f450ffe8587",
       "provenance_path": "docs/architecture/artifacts/aico-004/dependency-image/provenance.json",
-      "provenance_digest": "sha256:27c07b5d04d4a89a008d770bc507d54b238ce30d52b5e30375ac6c8694fd2dbf",
+      "provenance_digest": "sha256:65dbaa300187ccb3183c609b28f7aa59e1bcd201fe0aaca1dc4e41c4df1e430f",
       "ref": "aicompanyos/prototype-dependencies:1.0.0-candidate.1",
-      "immutable_ref": "aicompanyos/prototype-dependencies@sha256:31e1ca77e173d680b72ef7236dd7ee2a8e023531441d47d4d022e41350bca3c1",
-      "digest": "sha256:31e1ca77e173d680b72ef7236dd7ee2a8e023531441d47d4d022e41350bca3c1",
+      "immutable_ref": "aicompanyos/prototype-dependencies@sha256:b748ce96d54e53619db121d3991492b7c3d801895a6a590e9b98507a066e2fb0",
+      "digest": "sha256:b748ce96d54e53619db121d3991492b7c3d801895a6a590e9b98507a066e2fb0",
       "media_type": "application/vnd.oci.image.manifest.v1+json",
       "platform": "linux/amd64",
       "source_date_epoch": 0,
@@ -213,7 +213,7 @@
     "runtime_class_decision_status": "SELECTED_CANDIDATE_LOCAL_HARDENED_RUNC_LIMITATION_RECORDED",
     "executable_proof_owner": "AICO-004_PROOF_CHILD_17",
     "workspace_productization_owner": "AICO-048",
-    "dependency_bundle_image_digest": "sha256:31e1ca77e173d680b72ef7236dd7ee2a8e023531441d47d4d022e41350bca3c1"
+    "dependency_bundle_image_digest": "sha256:b748ce96d54e53619db121d3991492b7c3d801895a6a590e9b98507a066e2fb0"
   },
   "direct_packages": [
     {

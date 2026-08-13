@@ -396,10 +396,10 @@ As of 2026-08-13:
   are materialized and digest-bound by AICO-004;
 - the Node base image index and linux/amd64 manifest digests were inspected;
 - the linux/amd64 dependency-image candidate is materialized as OCI manifest
-  `sha256:31e1ca77e173d680b72ef7236dd7ee2a8e023531441d47d4d022e41350bca3c1`
+  `sha256:b748ce96d54e53619db121d3991492b7c3d801895a6a590e9b98507a066e2fb0`
   with reproducible-build inputs and provenance. The complete proposed artifact
   set is bound by semantic SHA
-  `b341788c7a5787b2e707996cc521ebf59e3cc8638482b7562335b590952feec7`;
+  `8f4b44d666a0025c0dece74fa56e42389f5f39f936b4e207d75885d5c5b7eaf1`;
   human owner acceptance remains separate from materialization;
 - no accepted numeric profile, production adapter, output collector,
   termination reconciler, or end-to-end execution evidence exists in this

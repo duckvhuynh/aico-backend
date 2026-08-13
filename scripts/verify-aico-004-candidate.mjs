@@ -1,8 +1,9 @@
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdtempSync, readFileSync, rmSync, statSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { buildPinnedDependencyImage } from './aico-004-image-builder.mjs';
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const artifactRoot = join(repoRoot, 'docs', 'architecture', 'artifacts', 'aico-004');
@@ -32,40 +33,29 @@ for (const script of ['format:check', 'lint', 'typecheck', 'test', 'build']) {
 
 const buildRoot = mkdtempSync(join(tmpdir(), 'aico004-verify-'));
 try {
-  const outputPath = join(buildRoot, 'dependency-image.oci.tar');
-  const metadataPath = join(buildRoot, 'build-metadata.json');
-  run(
-    'docker',
-    [
-      'buildx',
-      'build',
-      '--provenance=false',
-      '--build-arg',
-      'SOURCE_DATE_EPOCH=0',
-      '--file',
-      'dependency-image/Dockerfile',
-      '--output',
-      `type=oci,dest=${outputPath}`,
-      '--metadata-file',
+  const actualDigests = [];
+  for (const buildNumber of [1, 2]) {
+    const outputPath = join(buildRoot, `dependency-image-${buildNumber}.oci.tar`);
+    const metadataPath = join(buildRoot, `build-metadata-${buildNumber}.json`);
+    const result = buildPinnedDependencyImage({
+      artifactRoot,
+      outputPath,
       metadataPath,
-      '.',
-    ],
-    artifactRoot,
-  );
-  if (!existsSync(outputPath) || statSync(outputPath).size === 0) {
-    throw new Error('Dependency-image OCI exporter produced no archive');
+      label: `verify-${buildNumber}`,
+    });
+    actualDigests.push(result.descriptor.digest);
   }
-  const actualMetadata = JSON.parse(readFileSync(metadataPath, 'utf8'));
-  const descriptor = actualMetadata['containerimage.descriptor'];
-  if (descriptor?.mediaType !== 'application/vnd.oci.image.manifest.v1+json') {
-    throw new Error('Dependency-image output is not an OCI image manifest');
+  if (new Set(actualDigests).size !== 1) {
+    throw new Error(`Independent dependency-image builds drifted: ${actualDigests.join(', ')}`);
   }
-  if (descriptor.digest !== expectedDigest) {
+  if (actualDigests[0] !== expectedDigest) {
     throw new Error(
-      `Dependency-image digest drift: expected ${expectedDigest}, got ${descriptor.digest}`,
+      `Dependency-image digest drift: expected ${expectedDigest}, got ${actualDigests[0]}`,
     );
   }
-  console.log(`AICO-004 candidate verified: template checks=5; OCI digest=${expectedDigest}.`);
+  console.log(
+    `AICO-004 candidate verified: template checks=5; independent builds=2; OCI digest=${expectedDigest}.`,
+  );
 } finally {
   rmSync(buildRoot, { recursive: true, force: true });
 }

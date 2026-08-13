@@ -13,6 +13,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join, relative, resolve, sep } from 'node:path';
 import { gzipSync } from 'node:zlib';
 import { fileURLToPath } from 'node:url';
+import { AICO_004_BUILDKIT_IMAGE, buildPinnedDependencyImage } from './aico-004-image-builder.mjs';
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const artifactRoot = join(repoRoot, 'docs', 'architecture', 'artifacts', 'aico-004');
@@ -20,6 +21,13 @@ const templateRoot = join(artifactRoot, 'template-v1');
 const dependencyImageRoot = join(artifactRoot, 'dependency-image');
 const licensesRoot = join(artifactRoot, 'licenses');
 const packageLockPath = join(templateRoot, 'package-lock.json');
+const architectureManifestPath = join(
+  repoRoot,
+  'docs',
+  'architecture',
+  'manifests',
+  'template-dependencies-v1.json',
+);
 const imageReference = 'aicompanyos/prototype-dependencies:1.0.0-candidate.1';
 const baseImageDigest = 'd45d78e7929b46875bbd4e29bea672d5bc48186c6c3588306521c815e78352d6';
 const generatedOn = '2026-08-13';
@@ -404,16 +412,15 @@ try {
   const archivePath = join(artifactRoot, 'template-v1.tar.gz');
   writeFileSync(archivePath, gzipSync(createCanonicalUstar(templateFiles), { level: 9 }));
 
-  const dockerInspect = spawnSync('docker', ['image', 'inspect', imageReference], {
-    encoding: 'utf8',
+  const dependencyImageBuild = buildPinnedDependencyImage({
+    artifactRoot,
+    outputPath: join(tempRoot, 'dependency-image.oci.tar'),
+    metadataPath: join(tempRoot, 'dependency-image-build-metadata.json'),
+    label: 'materialize',
   });
-  const image = dockerInspect.status === 0 ? JSON.parse(dockerInspect.stdout)[0] : null;
   const buildMetadataPath = join(dependencyImageRoot, 'build-metadata.json');
-  const rawBuildMetadata = existsSync(buildMetadataPath)
-    ? JSON.parse(readFileSync(buildMetadataPath, 'utf8'))
-    : null;
-  const descriptor =
-    rawBuildMetadata?.['containerimage.descriptor'] ?? rawBuildMetadata?.descriptor ?? null;
+  const rawBuildMetadata = dependencyImageBuild.rawMetadata;
+  const descriptor = dependencyImageBuild.descriptor;
   if (descriptor && descriptor.mediaType !== 'application/vnd.oci.image.manifest.v1+json') {
     throw new Error('Dependency build metadata is not an OCI image manifest');
   }
@@ -421,22 +428,20 @@ try {
   if (imageDigest && !/^[a-f0-9]{64}$/u.test(imageDigest)) {
     throw new Error('Dependency OCI manifest digest is malformed');
   }
-  if (rawBuildMetadata) {
-    writeJson(buildMetadataPath, {
-      contract: 'aico.dependency-image-build-metadata/v1',
-      source_date_epoch: 0,
-      platform: descriptor.platform,
-      descriptor,
-      config_digest:
-        rawBuildMetadata['containerimage.config.digest'] ?? rawBuildMetadata.config_digest,
-      materials:
-        rawBuildMetadata['buildx.build.provenance']?.materials ?? rawBuildMetadata.materials ?? [],
-      invocation:
-        rawBuildMetadata['buildx.build.provenance']?.invocation?.parameters ??
-        rawBuildMetadata.invocation ??
-        {},
-    });
-  }
+  writeJson(buildMetadataPath, {
+    contract: 'aico.dependency-image-build-metadata/v1',
+    source_date_epoch: 0,
+    platform: descriptor.platform,
+    descriptor,
+    config_digest: dependencyImageBuild.configDigest,
+    builder_image: AICO_004_BUILDKIT_IMAGE,
+    reproducibility: {
+      oci_rewrite_timestamp: true,
+      removed_generated_paths: ['/root/.npm', '/tmp/node-compile-cache', '/tmp/*'],
+    },
+    materials: rawBuildMetadata['buildx.build.provenance']?.materials ?? [],
+    invocation: rawBuildMetadata['buildx.build.provenance']?.invocation?.parameters ?? {},
+  });
   const dockerfilePath = join(dependencyImageRoot, 'Dockerfile');
   const archiveDigest = sha256(readFileSync(archivePath));
   const lockDigest = sha256(packageLockBytes);
@@ -461,8 +466,8 @@ try {
     candidateImageDigest: imageDigest ? `sha256:${imageDigest}` : null,
     candidateImageMediaType: descriptor?.mediaType ?? null,
     builtAt: descriptor?.annotations?.['org.opencontainers.image.created'] ?? null,
-    builder: imageDigest ? 'Docker BuildKit 29.2.0 OCI exporter' : null,
-    rootfsDiffIds: image?.RootFS?.Layers ?? [],
+    builder: imageDigest ? AICO_004_BUILDKIT_IMAGE : null,
+    rootfsDiffIds: dependencyImageBuild.rootfsDiffIds,
     inputs: {
       templateArchiveDigest: archiveDigest,
       packageLockDigest: lockDigest,
@@ -720,6 +725,53 @@ try {
   );
   const designManifestPath = join(artifactRoot, 'sandbox-design-decision-v1.json');
   writeJson(designManifestPath, designManifest);
+
+  const architectureManifest = JSON.parse(readFileSync(architectureManifestPath, 'utf8'));
+  const prefixed = (digest) => `sha256:${digest}`;
+  architectureManifest.template.artifact.archive_digest = prefixed(archiveDigest);
+  architectureManifest.template.artifact.file_manifest_digest = prefixed(
+    sha256(readFileSync(fileManifestPath)),
+  );
+  architectureManifest.template.design_contract.digest = prefixed(
+    sha256(readFileSync(join(templateRoot, 'design-contract.json'))),
+  );
+  architectureManifest.template.archive_digest = prefixed(archiveDigest);
+  architectureManifest.acquisition.lockfile.digest = prefixed(lockDigest);
+  architectureManifest.acquisition.sbom.digest = prefixed(sbomDigest);
+  architectureManifest.acquisition.license_evidence.digest = prefixed(licenseReportDigest);
+  architectureManifest.acquisition.lockfile_digest = prefixed(lockDigest);
+  architectureManifest.acquisition.sbom_digest = prefixed(sbomDigest);
+  architectureManifest.toolchain.dependency_bundle_image.build_recipe_digest = prefixed(
+    provenance.buildRecipeDigest,
+  );
+  architectureManifest.toolchain.dependency_bundle_image.provenance_digest = prefixed(
+    sha256(readFileSync(provenancePath)),
+  );
+  architectureManifest.toolchain.dependency_bundle_image.immutable_ref =
+    canonicalArtifacts.dependency_bundle_image.immutable_ref;
+  architectureManifest.toolchain.dependency_bundle_image.digest = prefixed(imageDigest);
+  architectureManifest.toolchain.dependency_bundle_image.source_date_epoch = 0;
+  architectureManifest.toolchain.dependency_bundle_image.status = 'MATERIALIZED_CANDIDATE';
+  architectureManifest.toolchain.dependency_bundle_image_digest = prefixed(imageDigest);
+  const designManifestFileDigest = prefixed(sha256(readFileSync(designManifestPath)));
+  architectureManifest.sandbox_design_decision.digest = designManifestFileDigest;
+  architectureManifest.sandbox_design_decision.file_digest = designManifestFileDigest;
+  architectureManifest.sandbox_design_decision.semantic_digest = prefixed(
+    designManifest.manifest_digest,
+  );
+  architectureManifest.sandbox_design_decision.canonical_artifact_set_digest = prefixed(
+    designManifest.canonical_artifact_set_digest,
+  );
+  const { format: formatWithPrettier, resolveConfig: resolvePrettierConfig } =
+    await import('prettier');
+  const prettierConfig = (await resolvePrettierConfig(architectureManifestPath)) ?? {};
+  writeFileSync(
+    architectureManifestPath,
+    await formatWithPrettier(JSON.stringify(architectureManifest), {
+      ...prettierConfig,
+      filepath: architectureManifestPath,
+    }),
+  );
 
   console.log(
     JSON.stringify(

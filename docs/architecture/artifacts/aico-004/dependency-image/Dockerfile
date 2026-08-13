@@ -8,7 +8,8 @@ COPY template-v1/package.json template-v1/package-lock.json ./
 RUN npm install --global npm@11.6.2 --ignore-scripts --no-audit --no-fund \
   && test "$(npm --version)" = "11.6.2" \
   && npm ci --ignore-scripts --no-audit --no-fund \
-  && npm cache clean --force
+  && npm cache clean --force \
+  && rm -rf /root/.npm /tmp/node-compile-cache /tmp/*
 
 COPY template-v1/ ./template/
 
