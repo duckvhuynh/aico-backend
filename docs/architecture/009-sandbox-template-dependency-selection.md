@@ -1,14 +1,16 @@
 # ADR-009: Sandbox, fixed template, and dependency acquisition boundary
 
-**Status:** Proposed for AICO-004 owner acceptance
+**Status:** Accepted for AICO-004
 
-**Engineering/Design evidence:** Pending
+**Engineering/Design evidence:** https://github.com/duckvhuynh/aico-backend/pull/18#issuecomment-5278580604
 
-**Architecture/Security/Platform evidence:** Pending
+**Architecture/Security/Platform evidence:** https://github.com/duckvhuynh/aico-backend/pull/18#issuecomment-5278583297
 
-This ADR is a candidate decision package for AICO-004. It does not become
-Accepted, satisfy DEC-010, or authorize execution until attributable human
-owners accept the exact semantic SHA and immutable artifacts described below.
+This ADR is accepted for the bounded AICO-004 decision scope at semantic SHA
+`ca766d1490613a73a93d539465f088910f6021b6`. The acceptance freezes the exact
+template, dependency, Design, sandbox-boundary, and rollback evidence described
+below. It does not authorize production execution, satisfy proof child #17, or
+make parent AICO-004 Done.
 
 ## Context
 
@@ -313,22 +315,30 @@ SHA; proof child #17 owns the later executable outcomes.
 
 ### 7. Approval and DEC-010 reconciliation
 
-DEC-010 stays OPEN. Proposed package or image metadata is not owner acceptance.
-Before this ADR can move to Accepted or AICO-004 can be Done:
+DEC-010 is resolved for the bounded fixed-template and package-selection scope by
+the attributable owner decisions above at semantic SHA
+`ca766d1490613a73a93d539465f088910f6021b6`. This resolution does not select a
+production runtime, waive proof child #17, or make AICO-004 Done.
+
+The accepted decision evidence is:
 
 1. AICO-004 produces and validates the canonical template files/archive,
    reproducible lockfile, complete CycloneDX SBOM and license-text evidence,
    dependency image candidate/provenance, and semantic SHA in this decision
    package.
-2. Engineering and Design accept the exact template/package/license semantic
-   SHA, Design DoR, and documented fixed-template limitations.
-3. Architecture, Security, and Platform accept the exact sandbox/acquisition
-   profile SHA, selected RUNSC configuration, immutable image digest, explicit
-   local hardened-runc limitation, non-goals, and rollback. Target execution
-   proof is not a #16 acceptance prerequisite.
-4. Validators pass in accepted mode with no null/Pending artifact or approval.
-5. QA/Security accepts the exact final decision/evidence-plan SHA. The closed
-   executable threat and mutation suite remains owned by proof child #17.
+2. Engineering and Design accepted the exact template/package/license semantic
+   SHA, Design DoR, and documented fixed-template limitations in permanent PR
+   evidence.
+3. Architecture, Security, and Platform separately accepted the exact
+   sandbox/acquisition profile SHA, selected RUNSC configuration, immutable
+   image digest, explicit local hardened-runc limitation, non-goals, and
+   rollback. Target execution proof is not a #16 acceptance prerequisite.
+4. The metadata-only acceptance revision must pass accepted-mode validation with
+   no null/Pending decision artifact or owner approval.
+
+QA/Security acceptance of the exact final decision/evidence-plan SHA remains the
+merge and #16 Done gate. The closed executable threat and mutation suite remains
+owned by proof child #17.
 
 A later version or any changed byte in a semantic input invalidates acceptance;
 it never inherits approval by version-name similarity.

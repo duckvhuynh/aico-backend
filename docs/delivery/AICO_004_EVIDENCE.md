@@ -1,6 +1,6 @@
 # AICO-004 Decision Evidence and Traceability
 
-**Status:** Proposed package; human decision and proof evidence pending
+**Status:** Accepted architecture decision at semantic SHA `ca766d1490613a73a93d539465f088910f6021b6`; exact-final-SHA QA/Security and proof child #17 remain pending
 
 **Parent:** `duckvhuynh/aicompanyos#4`
 
@@ -19,20 +19,20 @@ SRS-NFR-011/025/026; partial enabling evidence for AT-009; DEC-010.
 
 ## 2. Evidence map
 
-| Evidence ID      | Decision-child authority                                                                           | Current reusable evidence                                             | Missing completion evidence                                                                  | Later owner           |
-| ---------------- | -------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- | --------------------- |
-| `A4-ADR-01`      | Compare sandbox, dependency-acquisition, and template choices; select bounded MVP approach.        | Proposed ADR-001/004 and accepted port-oriented modular architecture. | Accepted ADR-009 with exact human evidence.                                                  | AICO-004/#16          |
-| `A4-BOUNDARY-01` | Workspace/process/filesystem/network/credential/resource/output/termination and cleanup contract.  | AICO-003 tenant contract; AICO-006 deny-by-default policy.            | Executable confinement proof and production adapter.                                         | #17; AICO-048–052     |
-| `A4-TEMPLATE-01` | Fixed ≤5-route responsive client-only template and rollback contract.                              | Product scope and SRS boundaries.                                     | Accepted exact files, interaction states, accessibility/warning, package and image manifest. | #16; AICO-047         |
-| `A4-DEPS-01`     | Exact package, integrity, license, lockfile, SBOM, acquisition, and no-runtime-install policy.     | Control-plane lockfile patterns only.                                 | Accepted dependency bundle and production acquisition service.                               | #16; AICO-047/052     |
-| `A4-OUTPUT-01`   | Exact source/build result, blocking check, checksum, staging, bounded log, and redaction contract. | Artifact/event/outbox and AEO patterns.                               | Test-only proof, then production source/build/evidence services.                             | #17; AICO-054–056     |
-| `A4-TERM-01`     | Finite limits, timeout/cancel/kill-tree, cleanup, duplicate/restart, and UNKNOWN reconciliation.   | AICO-002 durability and lease-fencing patterns.                       | Sandbox process evidence and production runner.                                              | #17; AICO-051/084     |
-| `A4-THREAT-01`   | Closed two-company positive/negative matrix and zero-effect invariants.                            | AICO-003 and AICO-006 adversarial patterns.                           | All proof-child cases and real mutations.                                                    | #17; AICO-083/085     |
-| `A4-ROLLBACK-01` | Immutable publication, version targeting, old-run readability, and no silent fallback.             | Registry/manifest contract patterns.                                  | Accepted version registry plus production migration/rollback.                                | #16; AICO-022/079     |
-| `A4-AEO-01-12`   | Causal, privacy, reproduction, evidence, and readiness gates.                                      | Accepted global AEO contract.                                         | AICO-004 proof and production telemetry/evidence.                                            | #16/#17; AICO-056/072 |
-| `A4-TRACE-01`    | Exact requirements, evidence, gaps, non-goals, and later ownership.                                | This package.                                                         | Product and Project review on exact semantic SHA.                                            | #16                   |
-| `A4-VERIFY-01`   | Strict architecture validator and deterministic structural mutation probes.                        | Validator implementation in this branch.                              | Hosted exact-SHA success.                                                                    | #16                   |
-| `A4-ACCEPT-01`   | Separate Engineering/Design and Architecture/Security/Platform exact-SHA decisions.                | Design DoR acceptance on parent #4.                                   | Decision comments on PR; then QA/Security approval for proof child #17.                      | Human owners          |
+| Evidence ID      | Decision-child authority                                                                           | Current reusable evidence                                                                                                                                  | Missing completion evidence                                                    | Later owner           |
+| ---------------- | -------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ | --------------------- |
+| `A4-ADR-01`      | Compare sandbox, dependency-acquisition, and template choices; select bounded MVP approach.        | Accepted ADR-009 at semantic SHA `ca766d1490613a73a93d539465f088910f6021b6` with separate permanent owner evidence.                                        | Exact-final-SHA QA/Security and merge reconciliation.                          | AICO-004/#16          |
+| `A4-BOUNDARY-01` | Workspace/process/filesystem/network/credential/resource/output/termination and cleanup contract.  | AICO-003 tenant contract; AICO-006 deny-by-default policy.                                                                                                 | Executable confinement proof and production adapter.                           | #17; AICO-048–052     |
+| `A4-TEMPLATE-01` | Fixed ≤5-route responsive client-only template and rollback contract.                              | Accepted exact template archive, Design manifest, route/state/accessibility/warning contract, and immutable image binding.                                 | Executable proof, then production template registry and publication lifecycle. | #17; AICO-047         |
+| `A4-DEPS-01`     | Exact package, integrity, license, lockfile, SBOM, acquisition, and no-runtime-install policy.     | Accepted lockfile, 182-entry package/license authority, CycloneDX SBOM, dependency-image digest, and acquisition boundary.                                 | Executable no-runtime-install proof and production acquisition service.        | #17; AICO-047/052     |
+| `A4-OUTPUT-01`   | Exact source/build result, blocking check, checksum, staging, bounded log, and redaction contract. | Artifact/event/outbox and AEO patterns.                                                                                                                    | Test-only proof, then production source/build/evidence services.               | #17; AICO-054–056     |
+| `A4-TERM-01`     | Finite limits, timeout/cancel/kill-tree, cleanup, duplicate/restart, and UNKNOWN reconciliation.   | AICO-002 durability and lease-fencing patterns.                                                                                                            | Sandbox process evidence and production runner.                                | #17; AICO-051/084     |
+| `A4-THREAT-01`   | Closed two-company positive/negative matrix and zero-effect invariants.                            | AICO-003 and AICO-006 adversarial patterns.                                                                                                                | All proof-child cases and real mutations.                                      | #17; AICO-083/085     |
+| `A4-ROLLBACK-01` | Immutable publication, version targeting, old-run readability, and no silent fallback.             | Accepted immutable decision bundle, targeting, rollback, and no-silent-fallback contract.                                                                  | Production version registry plus migration/rollback proof.                     | #17; AICO-022/079     |
+| `A4-AEO-01-12`   | Causal, privacy, reproduction, evidence, and readiness gates.                                      | Accepted global AEO contract.                                                                                                                              | AICO-004 proof and production telemetry/evidence.                              | #16/#17; AICO-056/072 |
+| `A4-TRACE-01`    | Exact requirements, evidence, gaps, non-goals, and later ownership.                                | Accepted package plus permanent exact-semantic-SHA owner evidence.                                                                                         | Exact-final-SHA QA/Security and Project closure reconciliation.                | #16                   |
+| `A4-VERIFY-01`   | Strict architecture validator and deterministic structural mutation probes.                        | Proposed-mode validator, structural mutations, local canonical verification, and candidate hosted CI passed at `ca766d1490613a73a93d539465f088910f6021b6`. | Accepted-mode exact-final-SHA hosted success.                                  | #16                   |
+| `A4-ACCEPT-01`   | Separate Engineering/Design and Architecture/Security/Platform exact-SHA decisions.                | Both owner decisions are permanent, attributable, unconditional, and bound to semantic SHA `ca766d1490613a73a93d539465f088910f6021b6`.                     | Metadata-only final revision and exact-final-SHA QA/Security approval.         | Human owners          |
 
 ## 3. Present-versus-required truth
 
@@ -60,14 +60,22 @@ not rootless/gVisor or production kernel-isolation claims.
 
 ## 4. Human decision gates
 
+Accepted semantic candidate:
+
+- SHA: `ca766d1490613a73a93d539465f088910f6021b6`
+- Hosted candidate CI: https://github.com/duckvhuynh/aico-backend/actions/runs/31684753875
+- Engineering/Design decision: https://github.com/duckvhuynh/aico-backend/pull/18#issuecomment-5278580604
+- Architecture/Security/Platform decision: https://github.com/duckvhuynh/aico-backend/pull/18#issuecomment-5278583297
+- Conditions or disputed evidence IDs: None
+
 Before decision child #16 can be Done:
 
 1. Proposed-mode validator and all structural mutation probes pass on a clean semantic SHA.
 2. Hosted canonical CI passes on that same SHA.
-3. Engineering/Design approves the exact template, route/state model, package versions,
-   integrity, licenses, warning/accessibility behavior, and rollback target.
-4. Architecture/Security/Platform separately approves sandbox technology, dependency acquisition,
-   no-fallback boundary, threat plan, evidence limits, and downstream ownership.
+3. Engineering/Design approved the exact template, route/state model, package versions,
+   integrity, licenses, warning/accessibility behavior, and rollback target at the semantic SHA.
+4. Architecture/Security/Platform separately approved sandbox technology, dependency acquisition,
+   no-fallback boundary, threat plan, evidence limits, and downstream ownership at that same SHA.
 5. A metadata-only accepted-status commit passes accepted validation and hosted CI; any semantic
    change requires both decisions again.
 

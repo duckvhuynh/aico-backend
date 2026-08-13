@@ -4,13 +4,13 @@
   "schema_version": "1.0",
   "manifest_id": "aico-fixed-react-ts-dependencies",
   "manifest_version": "1.0.0-candidate.1",
-  "decision_status": "PROPOSED",
+  "decision_status": "ACCEPTED",
   "observed_on": "2026-08-13",
   "acceptance": {
-    "engineering_design": "PENDING",
-    "architecture_security_platform": "PENDING",
+    "engineering_design": "ACCEPTED",
+    "architecture_security_platform": "ACCEPTED",
     "qa_security_exact_final_sha": "PENDING",
-    "semantic_sha": null
+    "semantic_sha": "ca766d1490613a73a93d539465f088910f6021b6"
   },
   "template": {
     "id": "aico-fixed-react-ts",
@@ -29,13 +29,13 @@
       "file_manifest_path": "docs/architecture/artifacts/aico-004/template-v1.files.json",
       "file_manifest_digest": "sha256:4b41d5d78f8b3025d519a7c1b1317c64f1e768e8331450fdb7730e4f5e8d5cb0",
       "canonicalization": "POSIX_USTAR_SORTED_PATHS_MODE_0644_UID_GID_ZERO_MTIME_2026_08_13_GZIP_MTIME_ZERO",
-      "status": "MATERIALIZED_CANDIDATE"
+      "status": "DECISION_FROZEN"
     },
     "design_contract": {
       "materialization_owner": "AICO-004",
       "path": "docs/architecture/artifacts/aico-004/template-v1/design-contract.json",
       "digest": "sha256:318e920a75b0470f3f5ab31a9e4c2fc387b78868fb02ba0e3795be624bcc2510",
-      "status": "MATERIALIZED_CANDIDATE"
+      "status": "DECISION_FROZEN"
     },
     "editable_paths": ["src/**"],
     "protected_paths": [
@@ -57,11 +57,11 @@
   "sandbox_design_decision": {
     "materialization_owner": "AICO-004",
     "path": "docs/architecture/artifacts/aico-004/sandbox-design-decision-v1.json",
-    "digest": "sha256:649f9cd1f1f01da665e4e5563af60c38a62ffd465d83ff9793ed4bd6b19ec584",
-    "semantic_digest": "sha256:3e74bcfd085cdfbad0353cee9cabc8530099f33fe789644a3974f4766aa30445",
-    "file_digest": "sha256:649f9cd1f1f01da665e4e5563af60c38a62ffd465d83ff9793ed4bd6b19ec584",
-    "canonical_artifact_set_digest": "sha256:239c8f6c14dfebabffe0c3ad52b23744e2ac879aff1fff717848a5b768386f9d",
-    "status": "MATERIALIZED_PROPOSED_CANDIDATE"
+    "digest": "sha256:ce6f293338a2bed99d6640cab894c873a71387a219a625653445b488aec632fe",
+    "semantic_digest": "sha256:7bb45f0355e41164e6a3dd8abfa7e18196834609fcc3f6b8761140b3085c0198",
+    "file_digest": "sha256:ce6f293338a2bed99d6640cab894c873a71387a219a625653445b488aec632fe",
+    "canonical_artifact_set_digest": "sha256:479e73a18d7235fbbe1ed81dfcf4192315c2267dee81a5ea5a3869264c2929f7",
+    "status": "DECISION_FROZEN"
   },
   "design_definition_of_ready": {
     "authority_path": "docs/architecture/artifacts/aico-004/template-v1/design-contract.json",
@@ -165,7 +165,7 @@
       "path": "docs/architecture/artifacts/aico-004/template-v1/package-lock.json",
       "digest": "sha256:22e0e8531a72cc2848ef14b2d73ecae6a5046f9ace5791c566d74fa24186eb99",
       "format": "npm-lockfile/v3",
-      "status": "MATERIALIZED_CANDIDATE"
+      "status": "DECISION_FROZEN"
     },
     "sbom": {
       "materialization_owner": "AICO-004",
@@ -173,7 +173,7 @@
       "digest": "sha256:0a196c462b695861e3f86584a088baa1b6fc703c373d41fd6f4d583b5de5d2fb",
       "format": "CycloneDX 1.6 JSON",
       "component_count": 182,
-      "status": "MATERIALIZED_CANDIDATE"
+      "status": "DECISION_FROZEN"
     },
     "license_evidence": {
       "materialization_owner": "AICO-004",
@@ -182,9 +182,9 @@
       "digest": "sha256:8274a74a33a1349b7e8985fa4559250c19b9377887ec9a7a213fcc769d71124a",
       "package_count": 182,
       "linux_amd64_applicable_count": 160,
-      "status": "MATERIALIZED_CANDIDATE"
+      "status": "DECISION_FROZEN"
     },
-    "license_review_status": "PENDING_HUMAN_ENGINEERING_DESIGN_AND_SECURITY_REVIEW",
+    "license_review_status": "ACCEPTED_BY_ENGINEERING_DESIGN_AND_ARCHITECTURE_SECURITY_PLATFORM",
     "lockfile_digest": "sha256:22e0e8531a72cc2848ef14b2d73ecae6a5046f9ace5791c566d74fa24186eb99",
     "sbom_digest": "sha256:0a196c462b695861e3f86584a088baa1b6fc703c373d41fd6f4d583b5de5d2fb"
   },
@@ -207,7 +207,7 @@
       "media_type": "application/vnd.oci.image.manifest.v1+json",
       "platform": "linux/amd64",
       "source_date_epoch": 0,
-      "status": "MATERIALIZED_CANDIDATE"
+      "status": "DECISION_FROZEN"
     },
     "runtime_class_candidate": "RUNSC",
     "runtime_class_decision_status": "SELECTED_CANDIDATE_LOCAL_HARDENED_RUNC_LIMITATION_RECORDED",
@@ -1618,12 +1618,10 @@
     "native_kind_enum": ["NONE", "NAPI_BINARY", "PLATFORM_EXECUTABLE"],
     "package_count": 182,
     "linux_amd64_applicable_count": 160,
-    "status": "MATERIALIZED_CANDIDATE"
+    "status": "DECISION_FROZEN"
   },
   "acceptance_blockers": [
-    "The materialized six-artifact set and proposed semantic SHA require attributable exact-SHA owner review before decision freeze.",
-    "Engineering/Design and Architecture/Security/Platform must review the materialized template, Design DoR, lockfile, CycloneDX SBOM, and complete package/license facts.",
-    "Architecture/Security/Platform must review the immutable dependency-image candidate, provenance, selected RUNSC boundary, and explicit local hardened-runc limitation.",
-    "Required human exact-semantic-SHA approvals remain pending."
+    "The metadata-only accepted-status commit must pass accepted-mode validation and hosted exact-final-SHA CI before QA/Security review.",
+    "QA/Security exact-final-SHA approval remains required before decision child #16 can merge and become Done."
   ]
 }
