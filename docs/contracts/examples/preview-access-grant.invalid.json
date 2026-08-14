@@ -1,0 +1,28 @@
+{
+  "contract": "aico.preview-access-grant",
+  "schema_version": "1.0",
+  "protected_header": {
+    "typ": "AICO-PREVIEW-GRANT+JWT",
+    "alg": "ES256",
+    "kid": "preview-signing-key-v1",
+    "token_schema_version": 1,
+    "key_version": 1
+  },
+  "claims": {
+    "issuer": "aico-preview-access-broker",
+    "audience": "PREVIEW_VIEWER",
+    "opaque_grant_id": "AAAAAAAAAAAAAAAAAAAAAAAA",
+    "opaque_public_preview_id": "BBBBBBBBBBBBBBBBBBBBBBBB",
+    "company_id": "00000000-0000-4000-8000-000000000001",
+    "origin_hostname": "abcdefghijklmnopqrstuvwxyz.preview.example",
+    "environment": "LOCAL_PROOF",
+    "issued_at": "2026-08-14T05:00:00Z",
+    "not_before": "2026-08-14T05:00:00Z",
+    "expires_at": "2026-08-14T05:05:00Z",
+    "nonce": "CCCCCCCCCCCCCCCCCCCCCCCC",
+    "token_schema_version": 1,
+    "key_version": 1,
+    "binding_sha256": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+  },
+  "signature_b64url": "DDDDDDDDDDDDDDDDDDDDDDDD"
+}
