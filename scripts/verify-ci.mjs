@@ -45,6 +45,7 @@ try {
   gate('audit', 'npm', ['audit', '--audit-level=high']);
   gate('compose-config', 'docker', ['compose', '-p', project, 'config', '--quiet']);
   gate('images', 'docker', ['compose', '-p', project, 'build', 'api', 'worker', 'migrate']);
+  gate('sandbox-proof', 'npm', ['run', 'prove:sandbox']);
   gate('dependencies', 'docker', [
     'compose',
     '-p',
