@@ -1,0 +1,1545 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aicompanyos.dev/schemas/preview-isolation.v1.schema.json",
+  "title": "AI Company OS Preview Isolation Contract v1",
+  "description": "Closed exact-binding contracts for preview publication, opaque EdDSA grants, current-authority access, revocation, cleanup, reconciliation, events, and receipts.",
+  "oneOf": [
+    { "$ref": "#/$defs/previewPublicationRequest" },
+    { "$ref": "#/$defs/previewPublicationReceipt" },
+    { "$ref": "#/$defs/previewGrantIssueRequest" },
+    { "$ref": "#/$defs/previewGrantIssueReceipt" },
+    { "$ref": "#/$defs/previewAccessGrant" },
+    { "$ref": "#/$defs/previewAccessExchangeAttempt" },
+    { "$ref": "#/$defs/previewAccessExchangeReceipt" },
+    { "$ref": "#/$defs/previewAccessRequest" },
+    { "$ref": "#/$defs/previewAccessReceipt" },
+    { "$ref": "#/$defs/previewRevocationRequest" },
+    { "$ref": "#/$defs/previewRevocationReceipt" },
+    { "$ref": "#/$defs/previewRevocationInspectRequest" },
+    { "$ref": "#/$defs/previewRevocationInspectReceipt" },
+    { "$ref": "#/$defs/previewCleanupRequest" },
+    { "$ref": "#/$defs/previewCleanupReceipt" },
+    { "$ref": "#/$defs/previewReconciliationRequest" },
+    { "$ref": "#/$defs/previewReconciliationReceipt" },
+    { "$ref": "#/$defs/previewEvent" }
+  ],
+  "$defs": {
+    "uuid": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "rfc3339Utc": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "Z$"
+    },
+    "versionToken": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._/-]{0,79}$"
+    },
+    "safeIdentifier": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+    },
+    "logicalKey": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{15,199}$"
+    },
+    "opaqueId": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{22,86}$"
+    },
+    "publicIdentity": {
+      "type": "string",
+      "pattern": "^[a-z2-7]{26,52}$"
+    },
+    "hostname": {
+      "type": "string",
+      "pattern": "^(?=.{1,253}$)(?:[a-z2-7]{26,52}\\.)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z]{2,63}$"
+    },
+    "base64url": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]+$",
+      "minLength": 22,
+      "maxLength": 512
+    },
+    "relativePath": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 240,
+      "pattern": "^(?!/)(?!\\.)(?!.*(?:^|/)\\.{1,2}(?:/|$))(?!.*\\\\)(?!.*//)[A-Za-z0-9][A-Za-z0-9._/-]*$"
+    },
+    "positiveInt": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9007199254740991
+    },
+    "nonNegativeInt": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "traceId": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{32}$"
+    },
+    "spanId": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{16}$"
+    },
+    "derivedMeta": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "message_id",
+        "correlation_id",
+        "causation_id",
+        "trace_id",
+        "span_id",
+        "operation_attempt_id",
+        "occurred_at"
+      ],
+      "properties": {
+        "message_id": { "$ref": "#/$defs/uuid" },
+        "correlation_id": { "$ref": "#/$defs/uuid" },
+        "causation_id": { "$ref": "#/$defs/uuid" },
+        "trace_id": { "$ref": "#/$defs/traceId" },
+        "span_id": { "$ref": "#/$defs/spanId" },
+        "operation_attempt_id": { "$ref": "#/$defs/uuid" },
+        "occurred_at": { "$ref": "#/$defs/rfc3339Utc" }
+      }
+    },
+    "versionBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version", "digest"],
+      "properties": {
+        "id": { "$ref": "#/$defs/uuid" },
+        "version": { "$ref": "#/$defs/versionToken" },
+        "digest": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "redactionProfile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["redaction_profile_id", "redaction_profile_version", "redaction_profile_digest"],
+      "properties": {
+        "redaction_profile_id": { "$ref": "#/$defs/uuid" },
+        "redaction_profile_version": { "$ref": "#/$defs/versionToken" },
+        "redaction_profile_digest": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "profileSet": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "origin",
+        "isolation",
+        "security_headers",
+        "cache",
+        "file_validation",
+        "access_policy",
+        "retention_policy",
+        "cleanup",
+        "redaction",
+        "header_profile_version",
+        "cache_profile_version"
+      ],
+      "properties": {
+        "origin": { "$ref": "#/$defs/versionBinding" },
+        "isolation": { "$ref": "#/$defs/versionBinding" },
+        "security_headers": { "$ref": "#/$defs/versionBinding" },
+        "cache": { "$ref": "#/$defs/versionBinding" },
+        "file_validation": { "$ref": "#/$defs/versionBinding" },
+        "access_policy": { "$ref": "#/$defs/versionBinding" },
+        "retention_policy": { "$ref": "#/$defs/versionBinding" },
+        "cleanup": { "$ref": "#/$defs/versionBinding" },
+        "redaction": { "$ref": "#/$defs/versionBinding" },
+        "header_profile_version": { "$ref": "#/$defs/versionToken" },
+        "cache_profile_version": { "$ref": "#/$defs/versionToken" }
+      }
+    },
+    "currentAuthorityEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source",
+        "read_at",
+        "authority_row_version",
+        "postgres_transaction_id",
+        "postgres_read_lsn",
+        "currentness_proof_digest",
+        "freshness",
+        "freshness_uncertain"
+      ],
+      "properties": {
+        "source": { "const": "POSTGRESQL_PRIMARY" },
+        "read_at": { "$ref": "#/$defs/rfc3339Utc" },
+        "authority_row_version": { "$ref": "#/$defs/positiveInt" },
+        "postgres_transaction_id": { "$ref": "#/$defs/positiveInt" },
+        "postgres_read_lsn": { "type": "string", "pattern": "^[A-F0-9]+/[A-F0-9]+$" },
+        "currentness_proof_digest": { "$ref": "#/$defs/sha256" },
+        "freshness": { "const": "CURRENT_AT_DECISION" },
+        "freshness_uncertain": { "const": false }
+      }
+    },
+    "authorityUnavailableEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source", "attempted_at", "freshness", "freshness_uncertain", "safe_reason"],
+      "properties": {
+        "source": { "const": "POSTGRESQL_PRIMARY" },
+        "attempted_at": { "$ref": "#/$defs/rfc3339Utc" },
+        "freshness": { "const": "UNKNOWN" },
+        "freshness_uncertain": { "const": true },
+        "safe_reason": {
+          "enum": ["READ_UNAVAILABLE", "TRANSACTION_AMBIGUOUS", "ROUTING_UNCERTAIN"]
+        }
+      }
+    },
+    "authorityEvidence": {
+      "oneOf": [
+        { "$ref": "#/$defs/currentAuthorityEvidence" },
+        { "$ref": "#/$defs/authorityUnavailableEvidence" }
+      ]
+    },
+    "contentAuthorizationEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "action",
+        "decision_id",
+        "decision_digest",
+        "input_digest",
+        "parameters_digest",
+        "resource_digest",
+        "effect",
+        "reason",
+        "evaluated_at"
+      ],
+      "properties": {
+        "action": { "const": "preview.content.read/v1" },
+        "decision_id": { "$ref": "#/$defs/uuid" },
+        "decision_digest": { "$ref": "#/$defs/sha256" },
+        "input_digest": { "$ref": "#/$defs/sha256" },
+        "parameters_digest": { "$ref": "#/$defs/sha256" },
+        "resource_digest": { "$ref": "#/$defs/sha256" },
+        "effect": { "enum": ["ALLOW", "DENY"] },
+        "reason": { "$ref": "#/$defs/safeIdentifier" },
+        "evaluated_at": { "$ref": "#/$defs/rfc3339Utc" }
+      }
+    },
+    "toolInvocationPublish": {
+      "$ref": "#/$defs/toolInvocationPublishShape"
+    },
+    "toolInvocationPublishShape": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "invocation_intent_id",
+        "intent_version",
+        "decision_id",
+        "decision_digest",
+        "logical_invocation_key",
+        "request_digest",
+        "action",
+        "parameters_digest",
+        "resource_digest",
+        "effect",
+        "reason",
+        "max_uses",
+        "issued_at",
+        "expires_at"
+      ],
+      "properties": {
+        "invocation_intent_id": { "$ref": "#/$defs/uuid" },
+        "intent_version": { "$ref": "#/$defs/positiveInt" },
+        "decision_id": { "$ref": "#/$defs/uuid" },
+        "decision_digest": { "$ref": "#/$defs/sha256" },
+        "logical_invocation_key": { "$ref": "#/$defs/logicalKey" },
+        "request_digest": { "$ref": "#/$defs/sha256" },
+        "action": { "const": "preview.publish/v1" },
+        "parameters_digest": { "$ref": "#/$defs/sha256" },
+        "resource_digest": { "$ref": "#/$defs/sha256" },
+        "effect": { "const": "ALLOW" },
+        "reason": { "const": "ACTION_ALLOWED" },
+        "max_uses": { "const": 1 },
+        "issued_at": { "$ref": "#/$defs/rfc3339Utc" },
+        "expires_at": { "$ref": "#/$defs/rfc3339Utc" }
+      }
+    },
+    "toolInvocationGrantIssue": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "invocation_intent_id",
+        "intent_version",
+        "decision_id",
+        "decision_digest",
+        "logical_invocation_key",
+        "request_digest",
+        "action",
+        "parameters_digest",
+        "resource_digest",
+        "effect",
+        "reason",
+        "max_uses",
+        "issued_at",
+        "expires_at"
+      ],
+      "properties": {
+        "invocation_intent_id": { "$ref": "#/$defs/uuid" },
+        "intent_version": { "$ref": "#/$defs/positiveInt" },
+        "decision_id": { "$ref": "#/$defs/uuid" },
+        "decision_digest": { "$ref": "#/$defs/sha256" },
+        "logical_invocation_key": { "$ref": "#/$defs/logicalKey" },
+        "request_digest": { "$ref": "#/$defs/sha256" },
+        "action": { "const": "preview.grant.issue/v1" },
+        "parameters_digest": { "$ref": "#/$defs/sha256" },
+        "resource_digest": { "$ref": "#/$defs/sha256" },
+        "effect": { "const": "ALLOW" },
+        "reason": { "const": "ACTION_ALLOWED" },
+        "max_uses": { "const": 1 },
+        "issued_at": { "$ref": "#/$defs/rfc3339Utc" },
+        "expires_at": { "$ref": "#/$defs/rfc3339Utc" }
+      }
+    },
+    "toolInvocationRevoke": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "invocation_intent_id",
+        "intent_version",
+        "decision_id",
+        "decision_digest",
+        "logical_invocation_key",
+        "request_digest",
+        "action",
+        "parameters_digest",
+        "resource_digest",
+        "effect",
+        "reason",
+        "max_uses",
+        "issued_at",
+        "expires_at"
+      ],
+      "properties": {
+        "invocation_intent_id": { "$ref": "#/$defs/uuid" },
+        "intent_version": { "$ref": "#/$defs/positiveInt" },
+        "decision_id": { "$ref": "#/$defs/uuid" },
+        "decision_digest": { "$ref": "#/$defs/sha256" },
+        "logical_invocation_key": { "$ref": "#/$defs/logicalKey" },
+        "request_digest": { "$ref": "#/$defs/sha256" },
+        "action": { "const": "preview.revoke/v1" },
+        "parameters_digest": { "$ref": "#/$defs/sha256" },
+        "resource_digest": { "$ref": "#/$defs/sha256" },
+        "effect": { "const": "ALLOW" },
+        "reason": { "const": "ACTION_ALLOWED" },
+        "max_uses": { "const": 1 },
+        "issued_at": { "$ref": "#/$defs/rfc3339Utc" },
+        "expires_at": { "$ref": "#/$defs/rfc3339Utc" }
+      }
+    },
+    "toolInvocationCleanup": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "invocation_intent_id",
+        "intent_version",
+        "decision_id",
+        "decision_digest",
+        "logical_invocation_key",
+        "request_digest",
+        "action",
+        "parameters_digest",
+        "resource_digest",
+        "effect",
+        "reason",
+        "max_uses",
+        "issued_at",
+        "expires_at"
+      ],
+      "properties": {
+        "invocation_intent_id": { "$ref": "#/$defs/uuid" },
+        "intent_version": { "$ref": "#/$defs/positiveInt" },
+        "decision_id": { "$ref": "#/$defs/uuid" },
+        "decision_digest": { "$ref": "#/$defs/sha256" },
+        "logical_invocation_key": { "$ref": "#/$defs/logicalKey" },
+        "request_digest": { "$ref": "#/$defs/sha256" },
+        "action": { "const": "preview.cleanup/v1" },
+        "parameters_digest": { "$ref": "#/$defs/sha256" },
+        "resource_digest": { "$ref": "#/$defs/sha256" },
+        "effect": { "const": "ALLOW" },
+        "reason": { "const": "ACTION_ALLOWED" },
+        "max_uses": { "const": 1 },
+        "issued_at": { "$ref": "#/$defs/rfc3339Utc" },
+        "expires_at": { "$ref": "#/$defs/rfc3339Utc" }
+      }
+    },
+    "toolInvocationReconcile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "invocation_intent_id",
+        "intent_version",
+        "decision_id",
+        "decision_digest",
+        "logical_invocation_key",
+        "request_digest",
+        "action",
+        "parameters_digest",
+        "resource_digest",
+        "effect",
+        "reason",
+        "max_uses",
+        "issued_at",
+        "expires_at"
+      ],
+      "properties": {
+        "invocation_intent_id": { "$ref": "#/$defs/uuid" },
+        "intent_version": { "$ref": "#/$defs/positiveInt" },
+        "decision_id": { "$ref": "#/$defs/uuid" },
+        "decision_digest": { "$ref": "#/$defs/sha256" },
+        "logical_invocation_key": { "$ref": "#/$defs/logicalKey" },
+        "request_digest": { "$ref": "#/$defs/sha256" },
+        "action": { "const": "preview.reconcile/v1" },
+        "parameters_digest": { "$ref": "#/$defs/sha256" },
+        "resource_digest": { "$ref": "#/$defs/sha256" },
+        "effect": { "const": "ALLOW" },
+        "reason": { "const": "ACTION_ALLOWED" },
+        "max_uses": { "const": 1 },
+        "issued_at": { "$ref": "#/$defs/rfc3339Utc" },
+        "expires_at": { "$ref": "#/$defs/rfc3339Utc" }
+      }
+    },
+    "invocationConsumption": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "invocation_intent_id",
+        "consumption_id",
+        "logical_invocation_key",
+        "request_digest",
+        "use_ordinal",
+        "consumed_at"
+      ],
+      "properties": {
+        "invocation_intent_id": { "$ref": "#/$defs/uuid" },
+        "consumption_id": { "$ref": "#/$defs/uuid" },
+        "logical_invocation_key": { "$ref": "#/$defs/logicalKey" },
+        "request_digest": { "$ref": "#/$defs/sha256" },
+        "use_ordinal": { "const": 1 },
+        "consumed_at": { "$ref": "#/$defs/rfc3339Utc" }
+      }
+    },
+    "buildBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "company_id",
+        "build_id",
+        "build_version",
+        "build_result_receipt_id",
+        "build_result_receipt_version",
+        "build_result_receipt_digest",
+        "run_id",
+        "run_version",
+        "task_id",
+        "task_version",
+        "attempt_id",
+        "attempt_number",
+        "sandbox_execution_id",
+        "sandbox_execution_receipt_digest",
+        "build_status",
+        "artifact_id",
+        "artifact_version_id",
+        "artifact_version",
+        "artifact_checksum",
+        "output_manifest_id",
+        "output_manifest_version",
+        "output_manifest_digest",
+        "entry_document",
+        "file_count",
+        "total_bytes"
+      ],
+      "properties": {
+        "company_id": { "$ref": "#/$defs/uuid" },
+        "build_id": { "$ref": "#/$defs/uuid" },
+        "build_version": { "$ref": "#/$defs/positiveInt" },
+        "build_result_receipt_id": { "$ref": "#/$defs/uuid" },
+        "build_result_receipt_version": { "$ref": "#/$defs/versionToken" },
+        "build_result_receipt_digest": { "$ref": "#/$defs/sha256" },
+        "run_id": { "$ref": "#/$defs/uuid" },
+        "run_version": { "$ref": "#/$defs/positiveInt" },
+        "task_id": { "$ref": "#/$defs/uuid" },
+        "task_version": { "$ref": "#/$defs/positiveInt" },
+        "attempt_id": { "$ref": "#/$defs/uuid" },
+        "attempt_number": { "$ref": "#/$defs/positiveInt" },
+        "sandbox_execution_id": { "$ref": "#/$defs/uuid" },
+        "sandbox_execution_receipt_digest": { "$ref": "#/$defs/sha256" },
+        "build_status": { "const": "SUCCEEDED" },
+        "artifact_id": { "$ref": "#/$defs/uuid" },
+        "artifact_version_id": { "$ref": "#/$defs/uuid" },
+        "artifact_version": { "$ref": "#/$defs/positiveInt" },
+        "artifact_checksum": { "$ref": "#/$defs/sha256" },
+        "output_manifest_id": { "$ref": "#/$defs/uuid" },
+        "output_manifest_version": { "$ref": "#/$defs/versionToken" },
+        "output_manifest_digest": { "$ref": "#/$defs/sha256" },
+        "entry_document": { "$ref": "#/$defs/relativePath" },
+        "file_count": { "$ref": "#/$defs/positiveInt" },
+        "total_bytes": { "$ref": "#/$defs/positiveInt" }
+      }
+    },
+    "previewBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "preview_id",
+        "publication_id",
+        "publication_version",
+        "opaque_public_preview_id",
+        "public_identity",
+        "environment",
+        "origin_hostname",
+        "available_from",
+        "expires_at",
+        "revocation_epoch"
+      ],
+      "properties": {
+        "preview_id": { "$ref": "#/$defs/uuid" },
+        "publication_id": { "$ref": "#/$defs/uuid" },
+        "publication_version": { "$ref": "#/$defs/positiveInt" },
+        "opaque_public_preview_id": { "$ref": "#/$defs/opaqueId" },
+        "public_identity": { "$ref": "#/$defs/publicIdentity" },
+        "environment": { "enum": ["LOCAL_PROOF", "TEST", "STAGING", "PRODUCTION"] },
+        "origin_hostname": { "$ref": "#/$defs/hostname" },
+        "available_from": { "$ref": "#/$defs/rfc3339Utc" },
+        "expires_at": { "$ref": "#/$defs/rfc3339Utc" },
+        "revocation_epoch": { "$ref": "#/$defs/positiveInt" }
+      }
+    },
+    "grantAuthorityBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "build",
+        "preview",
+        "profiles",
+        "content_policy_decision_id",
+        "content_policy_version",
+        "content_policy_digest",
+        "binding_sha256"
+      ],
+      "properties": {
+        "build": { "$ref": "#/$defs/buildBinding" },
+        "preview": { "$ref": "#/$defs/previewBinding" },
+        "profiles": { "$ref": "#/$defs/profileSet" },
+        "content_policy_decision_id": { "$ref": "#/$defs/uuid" },
+        "content_policy_version": { "$ref": "#/$defs/versionToken" },
+        "content_policy_digest": { "$ref": "#/$defs/sha256" },
+        "binding_sha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "operationFailure": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["outcome", "reason", "external_effect_started", "invocation_consumption"],
+      "properties": {
+        "outcome": { "enum": ["DENIED", "CONFLICT", "FAILED", "UNKNOWN"] },
+        "reason": {
+          "enum": [
+            "POLICY_DENIED",
+            "AUTHORITY_STALE",
+            "AUTHORITY_FRESHNESS_UNKNOWN",
+            "TENANT_MISMATCH",
+            "BINDING_MISMATCH",
+            "INVALID_CONTEXT",
+            "IDEMPOTENCY_KEY_REUSED",
+            "INVOCATION_ALREADY_CONSUMED",
+            "STALE_VERSION",
+            "DEPENDENCY_UNAVAILABLE",
+            "INTEGRITY_FAILED",
+            "UNKNOWN_EXTERNAL_OUTCOME"
+          ]
+        },
+        "external_effect_started": { "type": "boolean" },
+        "invocation_consumption": {
+          "oneOf": [{ "$ref": "#/$defs/invocationConsumption" }, { "type": "null" }]
+        }
+      }
+    },
+    "previewPublicationRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract",
+        "schema_version",
+        "meta",
+        "publication_request_id",
+        "logical_idempotency_key",
+        "request_digest",
+        "requested_at",
+        "deadline_at",
+        "build",
+        "preview",
+        "profiles",
+        "tool_invocation"
+      ],
+      "properties": {
+        "contract": { "const": "aico.preview-publication-request" },
+        "schema_version": { "const": "1.0" },
+        "meta": { "$ref": "#/$defs/derivedMeta" },
+        "publication_request_id": { "$ref": "#/$defs/uuid" },
+        "logical_idempotency_key": { "$ref": "#/$defs/logicalKey" },
+        "request_digest": { "$ref": "#/$defs/sha256" },
+        "requested_at": { "$ref": "#/$defs/rfc3339Utc" },
+        "deadline_at": { "$ref": "#/$defs/rfc3339Utc" },
+        "build": { "$ref": "#/$defs/buildBinding" },
+        "preview": { "$ref": "#/$defs/previewBinding" },
+        "profiles": { "$ref": "#/$defs/profileSet" },
+        "tool_invocation": { "$ref": "#/$defs/toolInvocationPublish" }
+      }
+    },
+    "previewPublicationReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract",
+        "schema_version",
+        "receipt_type",
+        "meta",
+        "publication_receipt_id",
+        "publication_request_id",
+        "request_digest",
+        "receipt_digest",
+        "redaction_profile",
+        "authority_evidence",
+        "result",
+        "completed_at"
+      ],
+      "properties": {
+        "contract": { "const": "aico.preview-publication-receipt" },
+        "schema_version": { "const": "1.0" },
+        "receipt_type": { "const": "PUBLICATION" },
+        "meta": { "$ref": "#/$defs/derivedMeta" },
+        "publication_receipt_id": { "$ref": "#/$defs/uuid" },
+        "publication_request_id": { "$ref": "#/$defs/uuid" },
+        "request_digest": { "$ref": "#/$defs/sha256" },
+        "receipt_digest": { "$ref": "#/$defs/sha256" },
+        "redaction_profile": { "$ref": "#/$defs/redactionProfile" },
+        "authority_evidence": { "$ref": "#/$defs/authorityEvidence" },
+        "result": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "outcome",
+                "reason",
+                "serving_state",
+                "routing_active",
+                "published_manifest_digest",
+                "invocation_consumption"
+              ],
+              "properties": {
+                "outcome": { "const": "SUCCEEDED" },
+                "reason": { "const": "PUBLISHED" },
+                "serving_state": { "const": "ACTIVE" },
+                "routing_active": { "const": true },
+                "published_manifest_digest": { "$ref": "#/$defs/sha256" },
+                "invocation_consumption": { "$ref": "#/$defs/invocationConsumption" }
+              }
+            },
+            { "$ref": "#/$defs/operationFailure" }
+          ]
+        },
+        "completed_at": { "$ref": "#/$defs/rfc3339Utc" }
+      }
+    },
+    "previewGrantIssueRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract",
+        "schema_version",
+        "meta",
+        "grant_issue_request_id",
+        "logical_idempotency_key",
+        "request_digest",
+        "opaque_grant_id",
+        "nonce_digest",
+        "requested_at",
+        "not_before",
+        "expires_at",
+        "authority_binding",
+        "tool_invocation"
+      ],
+      "properties": {
+        "contract": { "const": "aico.preview-grant-issue-request" },
+        "schema_version": { "const": "1.0" },
+        "meta": { "$ref": "#/$defs/derivedMeta" },
+        "grant_issue_request_id": { "$ref": "#/$defs/uuid" },
+        "logical_idempotency_key": { "$ref": "#/$defs/logicalKey" },
+        "request_digest": { "$ref": "#/$defs/sha256" },
+        "opaque_grant_id": { "$ref": "#/$defs/opaqueId" },
+        "nonce_digest": { "$ref": "#/$defs/sha256" },
+        "requested_at": { "$ref": "#/$defs/rfc3339Utc" },
+        "not_before": { "$ref": "#/$defs/rfc3339Utc" },
+        "expires_at": { "$ref": "#/$defs/rfc3339Utc" },
+        "authority_binding": { "$ref": "#/$defs/grantAuthorityBinding" },
+        "tool_invocation": { "$ref": "#/$defs/toolInvocationGrantIssue" }
+      }
+    },
+    "previewGrantIssueReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract",
+        "schema_version",
+        "receipt_type",
+        "meta",
+        "grant_issue_receipt_id",
+        "grant_issue_request_id",
+        "request_digest",
+        "receipt_digest",
+        "redaction_profile",
+        "authority_evidence",
+        "result",
+        "completed_at"
+      ],
+      "properties": {
+        "contract": { "const": "aico.preview-grant-issue-receipt" },
+        "schema_version": { "const": "1.0" },
+        "receipt_type": { "const": "GRANT_ISSUANCE" },
+        "meta": { "$ref": "#/$defs/derivedMeta" },
+        "grant_issue_receipt_id": { "$ref": "#/$defs/uuid" },
+        "grant_issue_request_id": { "$ref": "#/$defs/uuid" },
+        "request_digest": { "$ref": "#/$defs/sha256" },
+        "receipt_digest": { "$ref": "#/$defs/sha256" },
+        "redaction_profile": { "$ref": "#/$defs/redactionProfile" },
+        "authority_evidence": { "$ref": "#/$defs/authorityEvidence" },
+        "result": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "outcome",
+                "reason",
+                "opaque_grant_id",
+                "opaque_public_preview_id",
+                "binding_sha256",
+                "expires_at",
+                "token_digest",
+                "invocation_consumption"
+              ],
+              "properties": {
+                "outcome": { "const": "SUCCEEDED" },
+                "reason": { "const": "GRANT_ISSUED" },
+                "opaque_grant_id": { "$ref": "#/$defs/opaqueId" },
+                "opaque_public_preview_id": { "$ref": "#/$defs/opaqueId" },
+                "binding_sha256": { "$ref": "#/$defs/sha256" },
+                "expires_at": { "$ref": "#/$defs/rfc3339Utc" },
+                "token_digest": { "$ref": "#/$defs/sha256" },
+                "invocation_consumption": { "$ref": "#/$defs/invocationConsumption" }
+              }
+            },
+            { "$ref": "#/$defs/operationFailure" }
+          ]
+        },
+        "completed_at": { "$ref": "#/$defs/rfc3339Utc" }
+      }
+    },
+    "previewAccessGrant": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["contract", "schema_version", "protected_header", "claims", "signature_b64url"],
+      "properties": {
+        "contract": { "const": "aico.preview-access-grant" },
+        "schema_version": { "const": "1.0" },
+        "protected_header": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["typ", "alg", "kid", "token_schema_version", "key_version"],
+          "properties": {
+            "typ": { "const": "AICO-PREVIEW-GRANT+JWT" },
+            "alg": { "const": "EdDSA" },
+            "kid": { "$ref": "#/$defs/safeIdentifier" },
+            "token_schema_version": { "const": 1 },
+            "key_version": { "$ref": "#/$defs/positiveInt" }
+          }
+        },
+        "claims": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "issuer",
+            "audience",
+            "opaque_grant_id",
+            "opaque_public_preview_id",
+            "origin_hostname",
+            "environment",
+            "issued_at",
+            "not_before",
+            "expires_at",
+            "nonce",
+            "token_schema_version",
+            "key_version",
+            "binding_sha256"
+          ],
+          "properties": {
+            "issuer": { "const": "aico-preview-access-broker" },
+            "audience": { "const": "PREVIEW_VIEWER" },
+            "opaque_grant_id": { "$ref": "#/$defs/opaqueId" },
+            "opaque_public_preview_id": { "$ref": "#/$defs/opaqueId" },
+            "origin_hostname": { "$ref": "#/$defs/hostname" },
+            "environment": { "enum": ["LOCAL_PROOF", "TEST", "STAGING", "PRODUCTION"] },
+            "issued_at": { "$ref": "#/$defs/rfc3339Utc" },
+            "not_before": { "$ref": "#/$defs/rfc3339Utc" },
+            "expires_at": { "$ref": "#/$defs/rfc3339Utc" },
+            "nonce": { "$ref": "#/$defs/base64url" },
+            "token_schema_version": { "const": 1 },
+            "key_version": { "$ref": "#/$defs/positiveInt" },
+            "binding_sha256": { "$ref": "#/$defs/sha256" }
+          }
+        },
+        "signature_b64url": { "$ref": "#/$defs/base64url" }
+      }
+    },
+    "previewAccessExchangeAttempt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract",
+        "schema_version",
+        "meta",
+        "exchange_attempt_id",
+        "logical_idempotency_key",
+        "request_digest",
+        "origin_hostname",
+        "environment",
+        "grant",
+        "attempted_at"
+      ],
+      "properties": {
+        "contract": { "const": "aico.preview-access-exchange-attempt" },
+        "schema_version": { "const": "1.0" },
+        "meta": { "$ref": "#/$defs/derivedMeta" },
+        "exchange_attempt_id": { "$ref": "#/$defs/uuid" },
+        "logical_idempotency_key": { "$ref": "#/$defs/logicalKey" },
+        "request_digest": { "$ref": "#/$defs/sha256" },
+        "origin_hostname": { "$ref": "#/$defs/hostname" },
+        "environment": { "enum": ["LOCAL_PROOF", "TEST", "STAGING", "PRODUCTION"] },
+        "grant": { "$ref": "#/$defs/previewAccessGrant" },
+        "attempted_at": { "$ref": "#/$defs/rfc3339Utc" }
+      }
+    },
+    "previewAccessExchangeReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract",
+        "schema_version",
+        "receipt_type",
+        "meta",
+        "exchange_receipt_id",
+        "exchange_attempt_id",
+        "request_digest",
+        "receipt_digest",
+        "redaction_profile",
+        "authority_evidence",
+        "result",
+        "completed_at"
+      ],
+      "properties": {
+        "contract": { "const": "aico.preview-access-exchange-receipt" },
+        "schema_version": { "const": "1.0" },
+        "receipt_type": { "const": "ACCESS_EXCHANGE" },
+        "meta": { "$ref": "#/$defs/derivedMeta" },
+        "exchange_receipt_id": { "$ref": "#/$defs/uuid" },
+        "exchange_attempt_id": { "$ref": "#/$defs/uuid" },
+        "request_digest": { "$ref": "#/$defs/sha256" },
+        "receipt_digest": { "$ref": "#/$defs/sha256" },
+        "redaction_profile": { "$ref": "#/$defs/redactionProfile" },
+        "authority_evidence": { "$ref": "#/$defs/authorityEvidence" },
+        "result": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "outcome",
+                "reason",
+                "session_id",
+                "session_token_digest",
+                "binding_sha256",
+                "expires_at",
+                "nonce_consumed",
+                "redirect_status"
+              ],
+              "properties": {
+                "outcome": { "const": "SUCCEEDED" },
+                "reason": { "const": "GRANT_EXCHANGED" },
+                "session_id": { "$ref": "#/$defs/uuid" },
+                "session_token_digest": { "$ref": "#/$defs/sha256" },
+                "binding_sha256": { "$ref": "#/$defs/sha256" },
+                "expires_at": { "$ref": "#/$defs/rfc3339Utc" },
+                "nonce_consumed": { "const": true },
+                "redirect_status": { "const": 303 }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "outcome",
+                "reason",
+                "external_status",
+                "external_code",
+                "nonce_consumption_state",
+                "set_cookie_issued"
+              ],
+              "properties": {
+                "outcome": { "enum": ["DENIED", "CONFLICT", "UNKNOWN"] },
+                "reason": {
+                  "enum": [
+                    "RESOURCE_NOT_FOUND",
+                    "CREDENTIAL_INVALID",
+                    "CREDENTIAL_EXPIRED",
+                    "CREDENTIAL_REPLAYED",
+                    "BINDING_MISMATCH",
+                    "AUTHORITY_FRESHNESS_UNKNOWN",
+                    "IDEMPOTENCY_KEY_REUSED",
+                    "UNKNOWN_EXTERNAL_OUTCOME"
+                  ]
+                },
+                "external_status": { "const": 404 },
+                "external_code": { "const": "resource_not_found" },
+                "nonce_consumption_state": {
+                  "enum": ["NOT_CONSUMED", "ALREADY_CONSUMED", "UNKNOWN"]
+                },
+                "set_cookie_issued": { "const": false }
+              }
+            }
+          ]
+        },
+        "completed_at": { "$ref": "#/$defs/rfc3339Utc" }
+      }
+    },
+    "sanitizedCredential": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "credential_kind",
+        "opaque_credential_id",
+        "credential_digest",
+        "binding_sha256",
+        "key_version"
+      ],
+      "properties": {
+        "credential_kind": { "const": "HOST_SESSION" },
+        "opaque_credential_id": { "$ref": "#/$defs/opaqueId" },
+        "credential_digest": { "$ref": "#/$defs/sha256" },
+        "binding_sha256": { "$ref": "#/$defs/sha256" },
+        "key_version": { "$ref": "#/$defs/positiveInt" }
+      }
+    },
+    "previewAccessRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract",
+        "schema_version",
+        "meta",
+        "access_request_id",
+        "access_attempt_id",
+        "request_digest",
+        "requested_at",
+        "method",
+        "environment",
+        "origin_hostname",
+        "opaque_public_preview_id",
+        "normalized_path",
+        "normalized_path_digest",
+        "credential"
+      ],
+      "properties": {
+        "contract": { "const": "aico.preview-access-request" },
+        "schema_version": { "const": "1.0" },
+        "meta": { "$ref": "#/$defs/derivedMeta" },
+        "access_request_id": { "$ref": "#/$defs/uuid" },
+        "access_attempt_id": { "$ref": "#/$defs/uuid" },
+        "request_digest": { "$ref": "#/$defs/sha256" },
+        "requested_at": { "$ref": "#/$defs/rfc3339Utc" },
+        "method": { "enum": ["GET", "HEAD"] },
+        "environment": { "enum": ["LOCAL_PROOF", "TEST", "STAGING", "PRODUCTION"] },
+        "origin_hostname": { "$ref": "#/$defs/hostname" },
+        "opaque_public_preview_id": { "$ref": "#/$defs/opaqueId" },
+        "normalized_path": { "$ref": "#/$defs/relativePath" },
+        "normalized_path_digest": { "$ref": "#/$defs/sha256" },
+        "credential": { "$ref": "#/$defs/sanitizedCredential" }
+      }
+    },
+    "previewAccessReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract",
+        "schema_version",
+        "receipt_type",
+        "meta",
+        "access_receipt_id",
+        "access_request_id",
+        "access_attempt_id",
+        "request_digest",
+        "receipt_digest",
+        "redaction_profile",
+        "authority_evidence",
+        "content_authorization",
+        "result",
+        "completed_at"
+      ],
+      "properties": {
+        "contract": { "const": "aico.preview-access-receipt" },
+        "schema_version": { "const": "1.0" },
+        "receipt_type": { "const": "ACCESS" },
+        "meta": { "$ref": "#/$defs/derivedMeta" },
+        "access_receipt_id": { "$ref": "#/$defs/uuid" },
+        "access_request_id": { "$ref": "#/$defs/uuid" },
+        "access_attempt_id": { "$ref": "#/$defs/uuid" },
+        "request_digest": { "$ref": "#/$defs/sha256" },
+        "receipt_digest": { "$ref": "#/$defs/sha256" },
+        "redaction_profile": { "$ref": "#/$defs/redactionProfile" },
+        "authority_evidence": { "$ref": "#/$defs/authorityEvidence" },
+        "content_authorization": { "$ref": "#/$defs/contentAuthorizationEvidence" },
+        "result": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "outcome",
+                "reason",
+                "binding_sha256",
+                "normalized_path_digest",
+                "response_media_type",
+                "response_bytes",
+                "response_digest",
+                "cache_result",
+                "authorization_before_cache"
+              ],
+              "properties": {
+                "outcome": { "const": "ALLOWED" },
+                "reason": { "const": "ACCESS_ALLOWED" },
+                "binding_sha256": { "$ref": "#/$defs/sha256" },
+                "normalized_path_digest": { "$ref": "#/$defs/sha256" },
+                "response_media_type": { "type": "string", "minLength": 3, "maxLength": 100 },
+                "response_bytes": { "$ref": "#/$defs/nonNegativeInt" },
+                "response_digest": { "$ref": "#/$defs/sha256" },
+                "cache_result": { "enum": ["BYPASS", "MISS", "HIT"] },
+                "authorization_before_cache": { "const": true }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "outcome",
+                "reason",
+                "external_status",
+                "external_code",
+                "resource_bindings",
+                "cache_checked",
+                "object_adapter_called",
+                "response_body_bytes"
+              ],
+              "properties": {
+                "outcome": { "const": "DENIED" },
+                "reason": {
+                  "enum": [
+                    "RESOURCE_NOT_FOUND",
+                    "CREDENTIAL_INVALID",
+                    "CREDENTIAL_EXPIRED",
+                    "CREDENTIAL_REPLAYED",
+                    "PUBLICATION_NOT_ACTIVE",
+                    "BINDING_MISMATCH",
+                    "POLICY_DENIED",
+                    "AUTHORITY_FRESHNESS_UNKNOWN",
+                    "PATH_NOT_ALLOWED",
+                    "METHOD_NOT_ALLOWED",
+                    "GLOBAL_KILL_ACTIVE",
+                    "INTEGRITY_FAILED"
+                  ]
+                },
+                "external_status": { "const": 404 },
+                "external_code": { "const": "resource_not_found" },
+                "resource_bindings": { "type": "null" },
+                "cache_checked": { "const": false },
+                "object_adapter_called": { "const": false },
+                "response_body_bytes": { "const": 0 }
+              }
+            }
+          ]
+        },
+        "completed_at": { "$ref": "#/$defs/rfc3339Utc" }
+      }
+    },
+    "previewRevocationRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract",
+        "schema_version",
+        "meta",
+        "revocation_request_id",
+        "logical_idempotency_key",
+        "request_digest",
+        "company_id",
+        "preview_id",
+        "publication_id",
+        "publication_version",
+        "expected_current_epoch",
+        "reason",
+        "requested_at",
+        "tool_invocation"
+      ],
+      "properties": {
+        "contract": { "const": "aico.preview-revocation-request" },
+        "schema_version": { "const": "1.0" },
+        "meta": { "$ref": "#/$defs/derivedMeta" },
+        "revocation_request_id": { "$ref": "#/$defs/uuid" },
+        "logical_idempotency_key": { "$ref": "#/$defs/logicalKey" },
+        "request_digest": { "$ref": "#/$defs/sha256" },
+        "company_id": { "$ref": "#/$defs/uuid" },
+        "preview_id": { "$ref": "#/$defs/uuid" },
+        "publication_id": { "$ref": "#/$defs/uuid" },
+        "publication_version": { "$ref": "#/$defs/positiveInt" },
+        "expected_current_epoch": { "$ref": "#/$defs/positiveInt" },
+        "reason": {
+          "enum": [
+            "EXPIRED",
+            "FOUNDER_REVOKED",
+            "RUN_CANCELED",
+            "INTEGRITY_FAILED",
+            "POLICY_KILLED",
+            "PROFILE_KILLED",
+            "SECURITY_RESPONSE",
+            "DELETION_REQUESTED"
+          ]
+        },
+        "requested_at": { "$ref": "#/$defs/rfc3339Utc" },
+        "tool_invocation": { "$ref": "#/$defs/toolInvocationRevoke" }
+      }
+    },
+    "previewRevocationReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract",
+        "schema_version",
+        "receipt_type",
+        "meta",
+        "revocation_receipt_id",
+        "revocation_request_id",
+        "request_digest",
+        "receipt_digest",
+        "redaction_profile",
+        "authority_evidence",
+        "result",
+        "completed_at"
+      ],
+      "properties": {
+        "contract": { "const": "aico.preview-revocation-receipt" },
+        "schema_version": { "const": "1.0" },
+        "receipt_type": { "const": "REVOCATION" },
+        "meta": { "$ref": "#/$defs/derivedMeta" },
+        "revocation_receipt_id": { "$ref": "#/$defs/uuid" },
+        "revocation_request_id": { "$ref": "#/$defs/uuid" },
+        "request_digest": { "$ref": "#/$defs/sha256" },
+        "receipt_digest": { "$ref": "#/$defs/sha256" },
+        "redaction_profile": { "$ref": "#/$defs/redactionProfile" },
+        "authority_evidence": { "$ref": "#/$defs/authorityEvidence" },
+        "result": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "outcome",
+                "reason",
+                "previous_epoch",
+                "new_epoch",
+                "serving_state",
+                "access_denied_before_purge",
+                "invocation_consumption"
+              ],
+              "properties": {
+                "outcome": { "const": "SUCCEEDED" },
+                "reason": { "const": "REVOKED" },
+                "previous_epoch": { "$ref": "#/$defs/positiveInt" },
+                "new_epoch": { "$ref": "#/$defs/positiveInt" },
+                "serving_state": { "enum": ["REVOKED", "EXPIRED"] },
+                "access_denied_before_purge": { "const": true },
+                "invocation_consumption": { "$ref": "#/$defs/invocationConsumption" }
+              }
+            },
+            { "$ref": "#/$defs/operationFailure" }
+          ]
+        },
+        "completed_at": { "$ref": "#/$defs/rfc3339Utc" }
+      }
+    },
+    "previewRevocationInspectRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract",
+        "schema_version",
+        "meta",
+        "inspection_request_id",
+        "logical_idempotency_key",
+        "request_digest",
+        "original_revocation_request_id",
+        "original_request_digest",
+        "requested_at",
+        "tool_invocation"
+      ],
+      "properties": {
+        "contract": { "const": "aico.preview-revocation-inspect-request" },
+        "schema_version": { "const": "1.0" },
+        "meta": { "$ref": "#/$defs/derivedMeta" },
+        "inspection_request_id": { "$ref": "#/$defs/uuid" },
+        "logical_idempotency_key": { "$ref": "#/$defs/logicalKey" },
+        "request_digest": { "$ref": "#/$defs/sha256" },
+        "original_revocation_request_id": { "$ref": "#/$defs/uuid" },
+        "original_request_digest": { "$ref": "#/$defs/sha256" },
+        "requested_at": { "$ref": "#/$defs/rfc3339Utc" },
+        "tool_invocation": { "$ref": "#/$defs/toolInvocationReconcile" }
+      }
+    },
+    "previewRevocationInspectReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract",
+        "schema_version",
+        "receipt_type",
+        "meta",
+        "inspection_receipt_id",
+        "inspection_request_id",
+        "request_digest",
+        "receipt_digest",
+        "redaction_profile",
+        "authority_evidence",
+        "result",
+        "completed_at"
+      ],
+      "properties": {
+        "contract": { "const": "aico.preview-revocation-inspect-receipt" },
+        "schema_version": { "const": "1.0" },
+        "receipt_type": { "const": "REVOCATION_INSPECTION" },
+        "meta": { "$ref": "#/$defs/derivedMeta" },
+        "inspection_receipt_id": { "$ref": "#/$defs/uuid" },
+        "inspection_request_id": { "$ref": "#/$defs/uuid" },
+        "request_digest": { "$ref": "#/$defs/sha256" },
+        "receipt_digest": { "$ref": "#/$defs/sha256" },
+        "redaction_profile": { "$ref": "#/$defs/redactionProfile" },
+        "authority_evidence": { "$ref": "#/$defs/authorityEvidence" },
+        "result": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "outcome",
+            "reason",
+            "observed_state",
+            "observed_epoch",
+            "invocation_consumption"
+          ],
+          "properties": {
+            "outcome": { "enum": ["CONFIRMED", "DENIED", "CONFLICT", "UNKNOWN"] },
+            "reason": {
+              "enum": [
+                "REVOCATION_CONFIRMED",
+                "NOT_REVOKED",
+                "POLICY_DENIED",
+                "STALE_VERSION",
+                "AUTHORITY_FRESHNESS_UNKNOWN",
+                "UNKNOWN_EXTERNAL_OUTCOME"
+              ]
+            },
+            "observed_state": { "enum": ["ACTIVE", "REVOKED", "EXPIRED", "UNKNOWN"] },
+            "observed_epoch": { "$ref": "#/$defs/positiveInt" },
+            "invocation_consumption": {
+              "oneOf": [{ "$ref": "#/$defs/invocationConsumption" }, { "type": "null" }]
+            }
+          }
+        },
+        "completed_at": { "$ref": "#/$defs/rfc3339Utc" }
+      }
+    },
+    "previewCleanupRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract",
+        "schema_version",
+        "meta",
+        "cleanup_request_id",
+        "logical_idempotency_key",
+        "request_digest",
+        "company_id",
+        "preview_id",
+        "publication_id",
+        "publication_version",
+        "revocation_epoch",
+        "serving_state",
+        "published_manifest_digest",
+        "cache_namespace_digest",
+        "expected_file_count",
+        "expected_total_bytes",
+        "retention_policy",
+        "cleanup_profile",
+        "not_before",
+        "deadline_at",
+        "tool_invocation"
+      ],
+      "properties": {
+        "contract": { "const": "aico.preview-cleanup-request" },
+        "schema_version": { "const": "1.0" },
+        "meta": { "$ref": "#/$defs/derivedMeta" },
+        "cleanup_request_id": { "$ref": "#/$defs/uuid" },
+        "logical_idempotency_key": { "$ref": "#/$defs/logicalKey" },
+        "request_digest": { "$ref": "#/$defs/sha256" },
+        "company_id": { "$ref": "#/$defs/uuid" },
+        "preview_id": { "$ref": "#/$defs/uuid" },
+        "publication_id": { "$ref": "#/$defs/uuid" },
+        "publication_version": { "$ref": "#/$defs/positiveInt" },
+        "revocation_epoch": { "$ref": "#/$defs/positiveInt" },
+        "serving_state": {
+          "enum": ["FAILED", "UNKNOWN", "QUARANTINED", "REVOKED", "EXPIRED", "CLEANUP_PENDING"]
+        },
+        "published_manifest_digest": { "$ref": "#/$defs/sha256" },
+        "cache_namespace_digest": { "$ref": "#/$defs/sha256" },
+        "expected_file_count": { "$ref": "#/$defs/nonNegativeInt" },
+        "expected_total_bytes": { "$ref": "#/$defs/nonNegativeInt" },
+        "retention_policy": { "$ref": "#/$defs/versionBinding" },
+        "cleanup_profile": { "$ref": "#/$defs/versionBinding" },
+        "not_before": { "$ref": "#/$defs/rfc3339Utc" },
+        "deadline_at": { "$ref": "#/$defs/rfc3339Utc" },
+        "tool_invocation": { "$ref": "#/$defs/toolInvocationCleanup" }
+      }
+    },
+    "previewCleanupReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract",
+        "schema_version",
+        "receipt_type",
+        "meta",
+        "cleanup_receipt_id",
+        "cleanup_request_id",
+        "request_digest",
+        "receipt_digest",
+        "redaction_profile",
+        "authority_evidence",
+        "result",
+        "completed_at"
+      ],
+      "properties": {
+        "contract": { "const": "aico.preview-cleanup-receipt" },
+        "schema_version": { "const": "1.0" },
+        "receipt_type": { "const": "CLEANUP" },
+        "meta": { "$ref": "#/$defs/derivedMeta" },
+        "cleanup_receipt_id": { "$ref": "#/$defs/uuid" },
+        "cleanup_request_id": { "$ref": "#/$defs/uuid" },
+        "request_digest": { "$ref": "#/$defs/sha256" },
+        "receipt_digest": { "$ref": "#/$defs/sha256" },
+        "redaction_profile": { "$ref": "#/$defs/redactionProfile" },
+        "authority_evidence": { "$ref": "#/$defs/authorityEvidence" },
+        "result": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "outcome",
+                "reason",
+                "routing_removed",
+                "cache_purge_acknowledged",
+                "eligible_objects_deleted",
+                "eligible_remaining_object_count",
+                "unexpected_object_count",
+                "invocation_consumption"
+              ],
+              "properties": {
+                "outcome": { "const": "CLEANED" },
+                "reason": { "const": "CLEANUP_COMPLETE" },
+                "routing_removed": { "const": true },
+                "cache_purge_acknowledged": { "const": true },
+                "eligible_objects_deleted": { "const": true },
+                "eligible_remaining_object_count": { "const": 0 },
+                "unexpected_object_count": { "const": 0 },
+                "invocation_consumption": { "$ref": "#/$defs/invocationConsumption" }
+              }
+            },
+            { "$ref": "#/$defs/operationFailure" }
+          ]
+        },
+        "completed_at": { "$ref": "#/$defs/rfc3339Utc" }
+      }
+    },
+    "previewReconciliationRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract",
+        "schema_version",
+        "meta",
+        "reconciliation_request_id",
+        "logical_idempotency_key",
+        "request_digest",
+        "target_kind",
+        "original_request_id",
+        "original_request_digest",
+        "requested_at",
+        "tool_invocation"
+      ],
+      "properties": {
+        "contract": { "const": "aico.preview-reconciliation-request" },
+        "schema_version": { "const": "1.0" },
+        "meta": { "$ref": "#/$defs/derivedMeta" },
+        "reconciliation_request_id": { "$ref": "#/$defs/uuid" },
+        "logical_idempotency_key": { "$ref": "#/$defs/logicalKey" },
+        "request_digest": { "$ref": "#/$defs/sha256" },
+        "target_kind": { "enum": ["PUBLICATION", "REVOCATION", "CLEANUP", "ACCESS_EXCHANGE"] },
+        "original_request_id": { "$ref": "#/$defs/uuid" },
+        "original_request_digest": { "$ref": "#/$defs/sha256" },
+        "requested_at": { "$ref": "#/$defs/rfc3339Utc" },
+        "tool_invocation": { "$ref": "#/$defs/toolInvocationReconcile" }
+      }
+    },
+    "previewReconciliationReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract",
+        "schema_version",
+        "receipt_type",
+        "meta",
+        "reconciliation_receipt_id",
+        "reconciliation_request_id",
+        "request_digest",
+        "receipt_digest",
+        "redaction_profile",
+        "authority_evidence",
+        "result",
+        "completed_at"
+      ],
+      "properties": {
+        "contract": { "const": "aico.preview-reconciliation-receipt" },
+        "schema_version": { "const": "1.0" },
+        "receipt_type": { "const": "RECONCILIATION" },
+        "meta": { "$ref": "#/$defs/derivedMeta" },
+        "reconciliation_receipt_id": { "$ref": "#/$defs/uuid" },
+        "reconciliation_request_id": { "$ref": "#/$defs/uuid" },
+        "request_digest": { "$ref": "#/$defs/sha256" },
+        "receipt_digest": { "$ref": "#/$defs/sha256" },
+        "redaction_profile": { "$ref": "#/$defs/redactionProfile" },
+        "authority_evidence": { "$ref": "#/$defs/authorityEvidence" },
+        "result": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["outcome", "reason", "resolved_receipt_digest", "invocation_consumption"],
+          "properties": {
+            "outcome": {
+              "enum": [
+                "RESOLVED_SUCCESS",
+                "RESOLVED_FAILURE",
+                "STILL_UNKNOWN",
+                "DENIED",
+                "CONFLICT"
+              ]
+            },
+            "reason": {
+              "enum": [
+                "AUTHORITATIVE_RECEIPT_FOUND",
+                "AUTHORITATIVE_FAILURE_FOUND",
+                "PROVIDER_OUTCOME_UNKNOWN",
+                "POLICY_DENIED",
+                "IDEMPOTENCY_KEY_REUSED",
+                "BINDING_MISMATCH",
+                "AUTHORITY_FRESHNESS_UNKNOWN"
+              ]
+            },
+            "resolved_receipt_digest": {
+              "oneOf": [{ "$ref": "#/$defs/sha256" }, { "type": "null" }]
+            },
+            "invocation_consumption": {
+              "oneOf": [{ "$ref": "#/$defs/invocationConsumption" }, { "type": "null" }]
+            }
+          }
+        },
+        "completed_at": { "$ref": "#/$defs/rfc3339Utc" }
+      }
+    },
+    "previewEvent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract",
+        "schema_version",
+        "meta",
+        "event_id",
+        "event_type",
+        "event_digest",
+        "redaction_profile",
+        "company_id",
+        "resource_id",
+        "resource_version",
+        "result_class",
+        "reason_code",
+        "payload_digest"
+      ],
+      "properties": {
+        "contract": { "const": "aico.preview-event" },
+        "schema_version": { "const": "1.0" },
+        "meta": { "$ref": "#/$defs/derivedMeta" },
+        "event_id": { "$ref": "#/$defs/uuid" },
+        "event_type": {
+          "enum": [
+            "preview.publication.requested",
+            "preview.publication.activated",
+            "preview.publication.failed",
+            "preview.publication.outcome_unknown",
+            "preview.grant.issued",
+            "preview.access.exchange_allowed",
+            "preview.access.exchange_denied",
+            "preview.access.allowed",
+            "preview.access.denied",
+            "preview.revoked",
+            "preview.expired",
+            "preview.cleanup.requested",
+            "preview.cleanup.completed",
+            "preview.cleanup.failed",
+            "preview.cleanup.outcome_unknown",
+            "preview.reconciliation.completed",
+            "preview.security_signal.detected"
+          ]
+        },
+        "event_digest": { "$ref": "#/$defs/sha256" },
+        "redaction_profile": { "$ref": "#/$defs/redactionProfile" },
+        "company_id": { "$ref": "#/$defs/uuid" },
+        "resource_id": { "$ref": "#/$defs/uuid" },
+        "resource_version": { "$ref": "#/$defs/positiveInt" },
+        "result_class": { "$ref": "#/$defs/safeIdentifier" },
+        "reason_code": { "$ref": "#/$defs/safeIdentifier" },
+        "payload_digest": { "$ref": "#/$defs/sha256" }
+      }
+    }
+  }
+}

@@ -20,6 +20,15 @@ const environment = {
   AICO_MINIO_PORT: minioPort,
   AICO_MINIO_CONSOLE_PORT: process.env.AICO_VERIFY_MINIO_CONSOLE_PORT ?? '19019',
 };
+const previewArchitecture = readFileSync(
+  'docs/architecture/010-preview-isolation-selection.md',
+  'utf8',
+);
+const architectureVerificationScript = /^\*\*Status:\*\* Accepted for AICO-007\b/m.test(
+  previewArchitecture,
+)
+  ? 'verify:architecture:accepted'
+  : 'verify:architecture';
 const compose = (...args) =>
   run('docker', ['compose', '-p', project, ...args], { env: environment });
 const gate = (name, command, args, options = {}) => {
@@ -35,7 +44,7 @@ try {
         process.env.PR_BODY?.trim() || readFileSync('test/fixtures/valid-pr-body.md', 'utf8'),
     },
   });
-  gate('architecture', 'npm', ['run', 'verify:architecture']);
+  gate('architecture', 'npm', ['run', architectureVerificationScript]);
   gate('fail-closed', 'npm', ['run', 'verify:fail-closed']);
   gate('format', 'npm', ['run', 'format:check']);
   gate('lint', 'npm', ['run', 'lint']);
