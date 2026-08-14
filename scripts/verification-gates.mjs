@@ -12,6 +12,7 @@ export const verificationGates = [
   'compose-config',
   'images',
   'sandbox-proof',
+  'preview-proof',
   'dependencies',
   'object-init',
   'migrations',

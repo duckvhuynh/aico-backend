@@ -24,3 +24,11 @@ jobs:
         env:
           PR_BODY: ${{ github.event.pull_request.body }}
         run: npm run verify:ci
+      - name: Retain bounded AICO-007 proof evidence
+        if: ${{ hashFiles('.aico-evidence/aico-007-preview-proof.json') != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: aico-007-preview-proof-${{ github.sha }}
+          path: .aico-evidence/aico-007-preview-proof.json
+          if-no-files-found: error
+          retention-days: 90

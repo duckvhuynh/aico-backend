@@ -55,6 +55,7 @@ try {
   gate('compose-config', 'docker', ['compose', '-p', project, 'config', '--quiet']);
   gate('images', 'docker', ['compose', '-p', project, 'build', 'api', 'worker', 'migrate']);
   gate('sandbox-proof', 'npm', ['run', 'prove:sandbox']);
+  gate('preview-proof', 'npm', ['run', 'prove:preview']);
   gate('dependencies', 'docker', [
     'compose',
     '-p',
