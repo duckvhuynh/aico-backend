@@ -9,14 +9,16 @@
 **Product trace:** Goals G-01 and G-05; MVP-CAP-007; PRD-FR-040–041; SRS TD-008; SRS-FR-059–060; AT-014
 
 This proposed revision makes no acceptance claim. Acceptance requires two
-different, attributable human decision owners acting in different roles: one
-Architecture/Security owner and one Product/Platform owner. Each must approve the
-same exact semantic revision in a different permanent pull-request issue-comment
-URL. The accepted paragraph must name the exact 40-hex semantic SHA, and both
-comments must repeat that same SHA and the owner's role. One person, URL, comment,
-review state, edited PR body, commit signature, agent statement, green formatter,
-validator, fixture, CI run, or implementation cannot satisfy or be counted as
-either or both owner decisions.
+separate, attributable human decision acts in different roles: one
+Architecture/Security decision and one Product/Platform decision. Each must approve
+the same exact semantic revision in a different permanent pull-request
+issue-comment URL. If repository governance assigns both roles to one human, that
+person must perform two separate review acts and explicitly name the role exercised
+in each comment. The accepted paragraph must name the exact 40-hex semantic SHA,
+and both comments must repeat that same SHA and their role. One URL, comment, review
+state, edited PR body, commit signature, agent statement, green formatter,
+validator, fixture, CI run, or implementation cannot satisfy or be counted as both
+owner decisions; an agent statement cannot satisfy either decision.
 
 For this package, **semantic SHA** means the full 40-lowercase-hex Git commit SHA
 of the clean repository revision whose ADR, contract/schema, threat registry,
