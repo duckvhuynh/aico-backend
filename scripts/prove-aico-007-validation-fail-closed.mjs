@@ -12,6 +12,14 @@ const probes = {
   'aeo-cardinality': 'is missing required content: low-cardinality',
   'schema-closed': 'must set additionalProperties=false',
   'schema-access-kind': 'is missing required schema term: previewAccessGrant',
+  'schema-browser-header': 'browser protected header keys must be exactly typ, alg, kid',
+  'schema-browser-claims': 'browser claim keys must match the exact minimal allowlist',
+  'generated-csp-exact': 'must contain exact generated CSP',
+  'bootstrap-csp-exact': 'must contain exact bootstrap CSP',
+  'bootstrap-script-exact': 'must contain the exact bootstrap script bytes',
+  'permissions-policy-exact': 'must contain exact Permissions-Policy',
+  'hsts-exact': 'must contain exact HSTS',
+  'response-profile-mapping': 'is missing exact response-profile mapping',
   'trace-owner': 'is missing required content: AICO-057',
 };
 
