@@ -1,24 +1,27 @@
 # ADR-010: Isolated Preview Origin and Delivery Selection
 
-**Status:** Proposed for AICO-007 owner acceptance
+**Status:** Accepted for AICO-007
 **Date:** 2026-08-14
-**Architecture/Security evidence:** Pending
-**Product/Platform evidence:** Pending
+**Architecture/Security evidence:** https://github.com/duckvhuynh/aico-backend/pull/23#issuecomment-5291254107
+**Product/Platform evidence:** https://github.com/duckvhuynh/aico-backend/pull/23#issuecomment-5291254854
 **Parent:** `duckvhuynh/aicompanyos#7`
 **Decision child:** `duckvhuynh/aico-backend#20`
 **Product trace:** Goals G-01 and G-05; MVP-CAP-007; PRD-FR-040–041; SRS TD-008; SRS-FR-059–060; AT-014
 
-The previously accepted semantic SHA
+The accepted semantic SHA `0f355699848a5e1c388c70b33dd7bfe61e3fbb4c` is the clean
+corrigendum revision reviewed in the two attributable owner decisions above. This
+metadata-only acceptance records those decisions without changing the semantic
+package they approved. Acceptance unblocks the bounded proof child #21; it does
+not approve that proof, a production Preview Service, founder UX, or AT-014.
+
+The previously accepted revision
 `d30b76fb6aa47212450aee4cd592577f8df1300a` is historical evidence only. Delivery
 review found browser-token and response-profile contradictions inside that bundle.
-This bounded semantic corrigendum therefore returns the decision to Proposed and
-withdraws that SHA from implementation/proof authority. Proof child #21 remains
-blocked until this corrected package passes Proposed-mode validation on a new
-clean semantic SHA and receives fresh Architecture/Security and Product/Platform
-acceptance of that same SHA.
+This bounded semantic corrigendum therefore withdraws that revision from
+implementation/proof authority.
 
-This proposed revision makes no acceptance claim. Acceptance requires two
-separate, attributable human decision acts in different roles: one
+Acceptance requires two separate, attributable human decision acts in different
+roles: one
 Architecture/Security decision and one Product/Platform decision. Each must approve
 the same exact semantic revision in a different permanent pull-request
 issue-comment URL. If repository governance assigns both roles to one human, that
