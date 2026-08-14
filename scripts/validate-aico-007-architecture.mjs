@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import Ajv2020 from 'ajv/dist/2020.js';
 import addFormats from 'ajv-formats';
 
@@ -32,6 +33,26 @@ const normalize = (value) =>
     .replace(/[^a-z0-9]+/g, ' ')
     .trim();
 
+const generatedCsp =
+  "Content-Security-Policy: default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; media-src 'self'; connect-src 'none'; object-src 'none'; frame-src 'none'; child-src 'none'; worker-src 'none'; manifest-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; sandbox allow-scripts allow-same-origin";
+const bootstrapHash = '0K99yYE6jYGRdI008pEtqIua6cTps5n1zRKB0UzSqJA=';
+const bootstrapCsp = `Content-Security-Policy: default-src 'none'; script-src 'sha256-${bootstrapHash}'; style-src 'none'; img-src 'none'; font-src 'none'; media-src 'none'; connect-src 'self'; object-src 'none'; frame-src 'none'; child-src 'none'; worker-src 'none'; manifest-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; sandbox allow-scripts allow-same-origin`;
+const bootstrapScript = `(() => {
+  const c = location.hash.slice(1);
+  history.replaceState(null, '', location.pathname);
+  fetch('/__aico/exchange', {
+    method: 'POST',
+    headers: { 'content-type': 'application/octet-stream' },
+    body: c,
+    credentials: 'same-origin',
+    cache: 'no-store',
+    redirect: 'manual',
+  }).finally(() => location.replace('/'));
+})();`;
+const permissionsPolicy =
+  'Permissions-Policy: accelerometer=(), ambient-light-sensor=(), autoplay=(), camera=(), clipboard-read=(), clipboard-write=(), display-capture=(), encrypted-media=(), fullscreen=(), geolocation=(), gyroscope=(), hid=(), magnetometer=(), microphone=(), midi=(), payment=(), picture-in-picture=(), publickey-credentials-create=(), publickey-credentials-get=(), screen-wake-lock=(), serial=(), storage-access=(), usb=(), web-share=(), xr-spatial-tracking=()';
+const hsts = 'Strict-Transport-Security: max-age=31536000; includeSubDomains';
+
 const replacements = {
   'adr-status': ['adr', /^\*\*Status:\*\*.+$/gm, '**Status:** REMOVED'],
   'origin-isolation': ['adr', /control-plane-isolated origin/gi, 'shared control-plane origin'],
@@ -44,6 +65,38 @@ const replacements = {
   'aeo-cardinality': ['aeo', /low-cardinality/gi, 'unbounded-cardinality'],
   'schema-closed': ['schema', /"additionalProperties": false/, '"additionalProperties": true'],
   'schema-access-kind': ['schema', /previewAccessGrant/g, 'removedAccessGrant'],
+  'schema-browser-header': [
+    'schema',
+    /"required": \["typ", "alg", "kid"\]/,
+    '"required": ["typ", "alg", "kid", "key_version"]',
+  ],
+  'schema-browser-claims': ['schema', /"opaque_grant_ref",/, '"opaque_public_preview_id",'],
+  'generated-csp-exact': [
+    'contract',
+    /script-src 'self'; style-src 'self'/,
+    "script-src *; style-src 'self'",
+  ],
+  'bootstrap-csp-exact': [
+    'contract',
+    /style-src 'none'; img-src 'none'; font-src 'none'/,
+    "style-src 'self'; img-src 'none'; font-src 'none'",
+  ],
+  'bootstrap-script-exact': ['contract', /redirect: 'manual'/, "redirect: 'follow'"],
+  'permissions-policy-exact': [
+    'contract',
+    /clipboard-read=\(\), clipboard-write=\(\),/,
+    'clipboard-read=(self), clipboard-write=(),',
+  ],
+  'hsts-exact': [
+    'contract',
+    /Strict-Transport-Security: max-age=31536000; includeSubDomains/,
+    'Strict-Transport-Security: max-age=60',
+  ],
+  'response-profile-mapping': [
+    'contract',
+    /denial, unavailable, or error documents/,
+    'bootstrap, denial, unavailable, or error documents',
+  ],
   'trace-owner': ['evidence', /AICO-057/g, 'REMOVED-OWNER'],
 };
 
@@ -226,6 +279,60 @@ requireText('evidence', [
   'AICO-085',
 ]);
 
+const exactResponseDocuments = ['contract', 'threat'];
+for (const documentName of exactResponseDocuments) {
+  for (const [label, value] of [
+    ['generated CSP', generatedCsp],
+    ['bootstrap CSP', bootstrapCsp],
+    ['Permissions-Policy', permissionsPolicy],
+    ['HSTS', hsts],
+  ]) {
+    if (!documents[documentName].includes(value)) {
+      errors.push(`${paths[documentName]} must contain exact ${label}`);
+    }
+  }
+  const scriptDocument =
+    documentName === 'threat'
+      ? documents[documentName].replace(/^ {3}/gm, '')
+      : documents[documentName];
+  if (!scriptDocument.includes(bootstrapScript)) {
+    errors.push(`${paths[documentName]} must contain the exact bootstrap script bytes`);
+  }
+}
+
+const computedBootstrapBytes = Buffer.byteLength(bootstrapScript, 'utf8');
+const computedBootstrapHash = createHash('sha256').update(bootstrapScript, 'utf8').digest('base64');
+if (computedBootstrapBytes !== 349 || computedBootstrapHash !== bootstrapHash) {
+  errors.push('validator bootstrap fixture must remain exactly 349 bytes with the pinned SHA-256');
+}
+
+for (const [documentName, phrases] of [
+  [
+    'contract',
+    [
+      'Only `/__aico/bootstrap` uses this canonical bootstrap CSP byte-for-byte',
+      'Manifest-backed generated HTML/assets and denial, unavailable, or error documents',
+      'Exchange and 303 responses create no active document; they still carry the bootstrap CSP',
+      'There is no third CSP',
+    ],
+  ],
+  [
+    'threat',
+    [
+      'Only `/__aico/bootstrap` uses this distinct immutable CSP',
+      'generated, denial, unavailable, and error documents carry the generated CSP',
+      'one of the two exact response-class variants',
+    ],
+  ],
+]) {
+  const normalizedDocument = normalize(documents[documentName]);
+  for (const phrase of phrases) {
+    if (!normalizedDocument.includes(normalize(phrase))) {
+      errors.push(`${paths[documentName]} is missing exact response-profile mapping: ${phrase}`);
+    }
+  }
+}
+
 const threatIds = new Set(documents.threat.match(/\bA7-T-[A-Z0-9-]+\b/g) ?? []);
 for (const id of expectedThreatIds) {
   if (!threatIds.has(id)) errors.push(`${paths.threat} is missing stable threat case: ${id}`);
@@ -335,6 +442,59 @@ if (schema) {
   ]) {
     if (serialized.includes(`\"${forbidden}\"`)) {
       errors.push(`${paths.schema} contains forbidden caller-controlled field: ${forbidden}`);
+    }
+  }
+
+  const browserGrant = schema.$defs?.previewAccessGrant;
+  const protectedHeader = browserGrant?.properties?.protected_header;
+  const claims = browserGrant?.properties?.claims;
+  const sorted = (values) => [...(values ?? [])].sort();
+  const exactKeys = (actual, expected) =>
+    JSON.stringify(sorted(actual)) === JSON.stringify(sorted(expected));
+  const protectedHeaderKeys = ['typ', 'alg', 'kid'];
+  const claimKeys = [
+    'audience',
+    'opaque_grant_ref',
+    'nonce',
+    'issued_at',
+    'not_before',
+    'expires_at',
+    'origin_hostname',
+    'environment',
+    'binding_sha256',
+  ];
+  if (
+    !exactKeys(protectedHeader?.required, protectedHeaderKeys) ||
+    !exactKeys(Object.keys(protectedHeader?.properties ?? {}), protectedHeaderKeys)
+  ) {
+    errors.push(`${paths.schema} browser protected header keys must be exactly typ, alg, kid`);
+  }
+  if (
+    !exactKeys(claims?.required, claimKeys) ||
+    !exactKeys(Object.keys(claims?.properties ?? {}), claimKeys)
+  ) {
+    errors.push(`${paths.schema} browser claim keys must match the exact minimal allowlist`);
+  }
+  const serializedBrowserGrant = JSON.stringify(browserGrant ?? {});
+  for (const forbiddenBrowserField of [
+    'company_id',
+    'actor_id',
+    'preview_id',
+    'opaque_public_preview_id',
+    'preview_version',
+    'build_id',
+    'artifact_version_id',
+    'manifest_digest',
+    'revocation_epoch',
+    'policy_version',
+    'profile_version',
+    'token_schema_version',
+    'key_version',
+  ]) {
+    if (serializedBrowserGrant.includes(`"${forbiddenBrowserField}"`)) {
+      errors.push(
+        `${paths.schema} browser grant exposes forbidden field: ${forbiddenBrowserField}`,
+      );
     }
   }
 

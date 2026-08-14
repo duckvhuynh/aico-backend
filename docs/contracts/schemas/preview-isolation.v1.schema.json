@@ -764,46 +764,36 @@
         "protected_header": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["typ", "alg", "kid", "token_schema_version", "key_version"],
+          "required": ["typ", "alg", "kid"],
           "properties": {
             "typ": { "const": "AICO-PREVIEW-GRANT+JWT" },
             "alg": { "const": "EdDSA" },
-            "kid": { "$ref": "#/$defs/safeIdentifier" },
-            "token_schema_version": { "const": 1 },
-            "key_version": { "$ref": "#/$defs/positiveInt" }
+            "kid": { "$ref": "#/$defs/opaqueId" }
           }
         },
         "claims": {
           "type": "object",
           "additionalProperties": false,
           "required": [
-            "issuer",
             "audience",
-            "opaque_grant_id",
-            "opaque_public_preview_id",
-            "origin_hostname",
-            "environment",
+            "opaque_grant_ref",
+            "nonce",
             "issued_at",
             "not_before",
             "expires_at",
-            "nonce",
-            "token_schema_version",
-            "key_version",
+            "origin_hostname",
+            "environment",
             "binding_sha256"
           ],
           "properties": {
-            "issuer": { "const": "aico-preview-access-broker" },
             "audience": { "const": "PREVIEW_VIEWER" },
-            "opaque_grant_id": { "$ref": "#/$defs/opaqueId" },
-            "opaque_public_preview_id": { "$ref": "#/$defs/opaqueId" },
-            "origin_hostname": { "$ref": "#/$defs/hostname" },
-            "environment": { "enum": ["LOCAL_PROOF", "TEST", "STAGING", "PRODUCTION"] },
+            "opaque_grant_ref": { "$ref": "#/$defs/opaqueId" },
+            "nonce": { "$ref": "#/$defs/base64url" },
             "issued_at": { "$ref": "#/$defs/rfc3339Utc" },
             "not_before": { "$ref": "#/$defs/rfc3339Utc" },
             "expires_at": { "$ref": "#/$defs/rfc3339Utc" },
-            "nonce": { "$ref": "#/$defs/base64url" },
-            "token_schema_version": { "const": 1 },
-            "key_version": { "$ref": "#/$defs/positiveInt" },
+            "origin_hostname": { "$ref": "#/$defs/hostname" },
+            "environment": { "enum": ["LOCAL_PROOF", "TEST", "STAGING", "PRODUCTION"] },
             "binding_sha256": { "$ref": "#/$defs/sha256" }
           }
         },

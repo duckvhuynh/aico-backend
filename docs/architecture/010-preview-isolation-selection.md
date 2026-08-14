@@ -1,14 +1,21 @@
 # ADR-010: Isolated Preview Origin and Delivery Selection
 
-**Status:** Accepted for AICO-007
+**Status:** Proposed for AICO-007 owner acceptance
 **Date:** 2026-08-14
-**Architecture/Security evidence:** https://github.com/duckvhuynh/aico-backend/pull/22#issuecomment-5290436765
-**Product/Platform evidence:** https://github.com/duckvhuynh/aico-backend/pull/22#issuecomment-5290437423
+**Architecture/Security evidence:** Pending
+**Product/Platform evidence:** Pending
 **Parent:** `duckvhuynh/aicompanyos#7`
 **Decision child:** `duckvhuynh/aico-backend#20`
 **Product trace:** Goals G-01 and G-05; MVP-CAP-007; PRD-FR-040–041; SRS TD-008; SRS-FR-059–060; AT-014
 
-Accepted semantic SHA `d30b76fb6aa47212450aee4cd592577f8df1300a`.
+The previously accepted semantic SHA
+`d30b76fb6aa47212450aee4cd592577f8df1300a` is historical evidence only. Delivery
+review found browser-token and response-profile contradictions inside that bundle.
+This bounded semantic corrigendum therefore returns the decision to Proposed and
+withdraws that SHA from implementation/proof authority. Proof child #21 remains
+blocked until this corrected package passes Proposed-mode validation on a new
+clean semantic SHA and receives fresh Architecture/Security and Product/Platform
+acceptance of that same SHA.
 
 This proposed revision makes no acceptance claim. Acceptance requires two
 separate, attributable human decision acts in different roles: one
@@ -476,6 +483,11 @@ second accepted algorithm. `none`, symmetric/MAC confusion, embedded verificatio
 keys, remote `jku`/`x5u`, unknown critical headers, caller-selected key lookup,
 duplicate fields, and signature malleability are rejected.
 
+The compact JWS protected header contains exactly `typ`, `alg=EdDSA`, and one
+server-selected opaque `kid`. It contains no token-schema or key-version field;
+the server resolves the active Ed25519 verification-key record and version from
+the opaque `kid`.
+
 The signed payload contains only:
 
 - a constant preview-viewer audience and an opaque random grant reference;
@@ -487,9 +499,10 @@ The signed payload contains only:
 The capability contains **no** `company_id`, actor/employee ID, Run/Task/Attempt,
 preview ID or version, build/execution/receipt, artifact/object/output-manifest ID,
 version or checksum, revocation epoch, policy/profile ID/version/digest, hold,
-budget, object key, cache key, path, correlation/causation, or control-session
-fact. It contains no readable tenant or resource locator other than the exact
-delivery host/environment already required to route the request.
+budget, object key, cache key, path, correlation/causation, token-schema version,
+key version, issuer, or control-session fact. It contains no readable tenant or
+resource locator other than the exact delivery host/environment already required
+to route the request.
 
 The authoritative server record behind the opaque grant reference contains the
 full Company, actor/audience, exact preview/build/artifact/output-manifest versions
@@ -636,18 +649,52 @@ embedding context, modals, presentation, pointer lock, orientation lock, and
 downloads. Prototype interactions must remain client-only and conform to this
 profile; a build that needs an exception is not publishable under this policy.
 
-The fixed bootstrap uses a separate immutable CSP: `default-src 'none'`, exactly
-one pinned script hash, `connect-src 'self'`, and the same `object-src`,
-`frame-src`, `child-src`, `worker-src`, `manifest-src`, `base-uri`, `form-action`,
-and `frame-ancestors` denials. Generated files are never loaded into that page.
+The fixed bootstrap uses this distinct exact CSP:
+
+```text
+Content-Security-Policy: default-src 'none'; script-src 'sha256-0K99yYE6jYGRdI008pEtqIua6cTps5n1zRKB0UzSqJA='; style-src 'none'; img-src 'none'; font-src 'none'; media-src 'none'; connect-src 'self'; object-src 'none'; frame-src 'none'; child-src 'none'; worker-src 'none'; manifest-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; sandbox allow-scripts allow-same-origin
+```
+
+The hash pins these exact 349 UTF-8/ASCII script bytes with no leading/trailing
+whitespace or newline:
+
+```js
+(() => {
+  const c = location.hash.slice(1);
+  history.replaceState(null, '', location.pathname);
+  fetch('/__aico/exchange', {
+    method: 'POST',
+    headers: { 'content-type': 'application/octet-stream' },
+    body: c,
+    credentials: 'same-origin',
+    cache: 'no-store',
+    redirect: 'manual',
+  }).finally(() => location.replace('/'));
+})();
+```
+
+The bootstrap permits only that script and its same-origin exchange. Generated
+files are never loaded or executed in that page. Changing any byte requires a new
+bootstrap/profile version and hash; there is no nonce, `unsafe-inline`, second
+hash, or caller override.
 
 ### 8.2 Mandatory headers and transport behavior
+
+One `preview-response-policy/v1` contains the exact generated CSP above, the exact
+bootstrap CSP above, their closed response-class mapping, and the following exact
+common headers/cache controls. Generated, denial/unavailable-document, HTML, and
+asset responses use the generated CSP. Only `/__aico/bootstrap` uses the bootstrap
+CSP. Exchange and 303 responses create no active document; they still receive the
+bootstrap CSP defensively, while CSP enforcement is meaningful only if a user
+agent creates a document. Response-specific `Content-Type`, `Content-Length`,
+`Location`, `Set-Cookie`, and permitted `Clear-Site-Data` do not alter the common
+profile. No response may select a third or weaker CSP.
 
 All bootstrap, exchange, unavailable, HTML, and asset responses set or enforce:
 
 | Control                        | Binding behavior                                                                                                                                                                                                                           |
 | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| TLS/HSTS                       | HTTPS only; preview parent owns HSTS with accepted `max-age` and `includeSubDomains`; no HTTP content or downgrade redirect                                                                                                                |
+| TLS/HSTS                       | HTTPS only; exact `Strict-Transport-Security: max-age=31536000; includeSubDomains`; `preload` is absent; no HTTP content or downgrade redirect                                                                                             |
 | `Cross-Origin-Opener-Policy`   | `same-origin`, plus the control UI opens with `noopener,noreferrer`; no usable opener channel                                                                                                                                              |
 | `Cross-Origin-Embedder-Policy` | `require-corp`; preview resources are same-origin and exact-manifest only                                                                                                                                                                  |
 | `Cross-Origin-Resource-Policy` | `same-origin`; no cross-origin reuse of preview responses                                                                                                                                                                                  |

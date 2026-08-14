@@ -8,6 +8,13 @@
 
 This contract defines the backend and delivery boundary for publishing one exact successful static build as a short-lived browser preview. It is an architecture contract, not a production Preview Service, endpoint, CDN deployment, founder UI, or AT-014 completion claim. Normative terms become binding only when the governing AICO-007 ADR is accepted at an exact semantic SHA.
 
+The earlier accepted semantic revision
+`d30b76fb6aa47212450aee4cd592577f8df1300a` exposed conflicting browser-token and
+response-profile shapes. This corrigendum changes the unimplemented v1 candidate
+before proof-child execution, returns the package to Proposed, and requires a new
+clean semantic SHA plus fresh owner acceptance. No production or proof receipt may
+claim compatibility with the withdrawn shape.
+
 The security invariant is: **generated content is untrusted static content on a control-plane-isolated origin, with no control-plane identity, cookie, storage, private control APIs, credential, service worker, or route to another preview**. Possession of an ID, object key, hostname, cached body, expired token, prior receipt, or successful sandbox result is never current authorization.
 
 ## 1. Binding rules
@@ -18,7 +25,7 @@ The security invariant is: **generated content is untrusted static content on a 
 4. Every binding uses immutable IDs, versions, and `sha256:<64 lowercase hexadecimal>` digests. `latest`, mutable tags, path-selected versions, inferred checksums, and partially qualified references are invalid.
 5. A publication is immutable. Rebuild, expiry extension, origin/profile change, artifact change, or header/cache policy change creates a new publication version and public identity; it never mutates files beneath an existing public identity.
 6. Content is staged under a non-serving identity, copied only through tenant- and purpose-scoped object capabilities, re-listed and checksum-verified, and made active by one authoritative state transition. `PREPARED`, `STAGING`, `VERIFYING`, `UNKNOWN`, `FAILED`, `QUARANTINED`, `REVOKED`, `EXPIRED`, and `CLEANUP_PENDING` content is not served.
-7. The browser receives only an opaque short-lived EdDSA v1 grant. Its unencrypted JWS contains issuer, audience, opaque grant/public-preview IDs, exact host/environment/time, nonce, token-schema/key versions, and `binding_sha256`; tenant, Run, build, receipt, artifact, manifest, revocation, policy, and profile facts exist only in the server-side binding record covered by that digest.
+7. The browser receives only an opaque short-lived Ed25519/EdDSA grant. Its protected header contains exactly `typ`, `alg=EdDSA`, and an opaque `kid`. Its payload contains only audience, opaque grant reference, nonce, issued/not-before/exclusive-expiry times, exact host/environment, and `binding_sha256`. Tenant, actor, preview, Run, build, receipt, artifact, manifest, epoch, policy/profile, token-schema, and key-version facts exist only in the server-side binding/receipt records covered by that digest.
 8. Every grant issue, exchange, content request, publication, revocation, cleanup, inspection, and reconciliation rereads current PostgreSQL authority before effect. A prior `ALLOW`, signed snapshot, asynchronously replicated projection, replica read, token, session, or cached authorization never suffices in v1. Read or freshness uncertainty denies before body-cache lookup.
 9. Unknown schemas, fields, enum values, algorithms, keys, profiles, media types, paths, digests, or ambiguous external outcomes fail closed. There is no fallback to unsigned access, a shared control-plane origin, an old revocation snapshot, permissive headers, a public bucket, or direct object-store URLs.
 10. Denial exposes no protected content or resource-existence distinction and causes zero publication, copy, signed access, positive cache fill, preview body read, redirect to a protected body, mutation, task continuation, model/tool/sandbox call, or billable business effect. A bounded redacted denial audit record is the only permitted effect.
@@ -152,20 +159,32 @@ Grant issuance uses `aico.preview-grant-issue-request/1.0`, rereads every bindin
 
 The server-side binding contains exact `company_id`; preview/publication/version and current revocation epoch; Run/Task/Attempt; `build_id`, Build version, and Build Result receipt ID/version/digest; execution/artifact/output-manifest IDs/versions/digests; content policy; and origin/isolation/header/cache/redaction profile IDs/versions/digests. `binding_sha256` is the canonical digest of that closed record.
 
-The unencrypted browser capability is deliberately minimal. `aico.preview-access-grant/1.0` is JWS EdDSA v1 only and contains exactly:
+The unencrypted browser capability is deliberately minimal.
+`aico.preview-access-grant/1.0` is compact JWS with an exact protected header of
+`typ=AICO-PREVIEW-GRANT+JWT`, `alg=EdDSA`, and one server-selected opaque `kid`.
+The protected header contains no token-schema or key-version field. Its payload
+contains exactly:
 
-- issuer and `PREVIEW_VIEWER` audience;
-- opaque random grant ID and opaque public-preview ID;
-- exact preview hostname and environment;
+- `PREVIEW_VIEWER` audience and one opaque random grant reference;
+- random nonce;
 - issued-at, not-before, and exclusive expiry;
-- random nonce, token schema version, signing key ID/version; and
+- exact preview hostname and environment; and
 - `binding_sha256`.
 
-It contains no `company_id`, Run, Task, Attempt, internal preview/publication ID, build, Build Result receipt, sandbox execution, artifact, output manifest, revocation epoch, policy, profile, message, correlation, causation, object, or cache fact.
+It contains no issuer, `company_id`, actor/employee, internal or public preview/
+publication ID, Run, Task, Attempt, build, Build Result receipt, sandbox execution,
+artifact, output manifest, revocation epoch, policy, profile, token-schema version,
+key version, message, correlation, causation, object, path, or cache fact.
 
 The raw nonce, signature, compact token, redemption query, and access URL are bearer secrets. They are returned only over TLS to the authorized caller, never persisted in plaintext, placed in an event, used as an idempotency key, accepted from a referrer, or written to logs/traces/metrics/error monitoring. Only a keyed token fingerprint or SHA-256 nonce digest may be retained for one-time redemption and replay detection.
 
-Key selection is server-controlled. The verifier accepts only protected `typ=AICO-PREVIEW-GRANT+JWT`, `alg=EdDSA`, token schema v1, issuer, audience, and a server-selected active Ed25519 key ID/version. It rejects ES256, `none`, symmetric confusion, caller key URLs/certificates, unknown critical headers, duplicate claims, invalid canonicalization, signature malleability, and unknown/revoked versions.
+Key selection is server-controlled. The verifier accepts only protected
+`typ=AICO-PREVIEW-GRANT+JWT`, `alg=EdDSA`, and a server-selected opaque `kid`, then
+resolves the exact active Ed25519 key/version from the server registry. It validates
+the constant payload audience and server-side record/version, and rejects ES256,
+`none`, symmetric confusion, caller key URLs/certificates, unknown critical
+headers, duplicate claims, invalid canonicalization, signature malleability, and
+unknown/revoked key records or versions.
 
 `aico.preview-grant-issue-receipt/1.0` records a closed success/denied/conflict/failed/unknown outcome, current-authority evidence, ToolGateway consumption when applicable, token fingerprint, binding digest, and immutable redaction profile. It never contains nonce, signature, compact token, access URL, or session value.
 
@@ -174,7 +193,7 @@ Key selection is server-controlled. The verifier accepts only protected `typ=AIC
 The control plane returns a short-lived access URL for the exact public host. Each redemption is an idempotent `aico.preview-access-exchange-attempt/1.0` and produces `aico.preview-access-exchange-receipt/1.0`. The token endpoint:
 
 1. checks host/public-identity agreement before resource lookup;
-2. validates EdDSA v1 and the minimal claims, loads the server binding by opaque ID, recomputes `binding_sha256`, and rereads current PostgreSQL publication, Build Result receipt, epoch, key, policy, kill, and profile authority;
+2. validates the exact EdDSA header and minimal payload, loads the server binding by opaque grant reference, recomputes `binding_sha256`, and rereads current PostgreSQL publication, Build Result receipt, epoch, key, policy, kill, and profile authority;
 3. atomically consumes the nonce/grant ID once and creates the digest-bound host session; freshness uncertainty denies without consumption;
 4. returns `303` to the clean same-host entry path with no credential in the location; and
 5. sets an opaque preview session as `__Host-aico_preview`, `Secure`, `HttpOnly`, `SameSite=Strict`, `Path=/`, with no `Domain`, and expiry no later than the grant/publication.
@@ -203,10 +222,52 @@ Authentication failure at the control-plane grant-issuance endpoint may be `401`
 
 ## 5. Mandatory response policy
 
-There is one accepted v1 generated-content header/cache profile. It applies byte-for-byte to success assets and, where a header is meaningful, to bootstrap, exchange, redirect, denial, unavailable, and error responses; there is no caller override or alternate weaker profile:
+There is one proposed `preview-response-policy/v1`. It contains two and only two
+exact CSP variants plus one exact common header/cache set and a closed
+response-class mapping; there is no caller override or alternate weaker profile.
+
+Manifest-backed generated HTML/assets and denial, unavailable, or error documents
+use this canonical generated-content CSP byte-for-byte:
 
 ```text
 Content-Security-Policy: default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; media-src 'self'; connect-src 'none'; object-src 'none'; frame-src 'none'; child-src 'none'; worker-src 'none'; manifest-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; sandbox allow-scripts allow-same-origin
+```
+
+Only `/__aico/bootstrap` uses this canonical bootstrap CSP byte-for-byte:
+
+```text
+Content-Security-Policy: default-src 'none'; script-src 'sha256-0K99yYE6jYGRdI008pEtqIua6cTps5n1zRKB0UzSqJA='; style-src 'none'; img-src 'none'; font-src 'none'; media-src 'none'; connect-src 'self'; object-src 'none'; frame-src 'none'; child-src 'none'; worker-src 'none'; manifest-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; sandbox allow-scripts allow-same-origin
+```
+
+The bootstrap hash is SHA-256 over these exact 349 UTF-8/ASCII bytes with no
+leading/trailing whitespace or newline:
+
+```js
+(() => {
+  const c = location.hash.slice(1);
+  history.replaceState(null, '', location.pathname);
+  fetch('/__aico/exchange', {
+    method: 'POST',
+    headers: { 'content-type': 'application/octet-stream' },
+    body: c,
+    credentials: 'same-origin',
+    cache: 'no-store',
+    redirect: 'manual',
+  }).finally(() => location.replace('/'));
+})();
+```
+
+Changing any bootstrap byte requires a new response-policy version and pinned
+hash. Exchange and 303 responses create no active document; they still carry the
+bootstrap CSP defensively, while CSP is meaningful only if a user agent creates a
+document. There is no third CSP.
+
+Every bootstrap, exchange, redirect, generated, denial, unavailable, error, HTML,
+script, style, font, image, and media response carries this exact common set where
+the header is meaningful:
+
+```text
+Strict-Transport-Security: max-age=31536000; includeSubDomains
 Cross-Origin-Opener-Policy: same-origin
 Cross-Origin-Embedder-Policy: require-corp
 Cross-Origin-Resource-Policy: same-origin
@@ -223,7 +284,19 @@ CDN-Cache-Control: no-store
 Surrogate-Control: no-store
 ```
 
-The platform validates the serialized header set byte-for-byte against the versioned header-profile digest. HTTPS is mandatory and the preview parent owns HSTS with the accepted `max-age` and `includeSubDomains`. It must not reflect generated headers, MIME parameters, filenames, origins, or CSP fragments. `Access-Control-Allow-Origin`, credential grants, permissive `Timing-Allow-Origin`, provider debug headers, server banners, directory metadata, and source-map headers are absent. There is no range, 304, content negotiation, compression transform, attachment disposition, or object-store redirect. Unavailable/expired/revoked responses also send `Clear-Site-Data: "cache", "cookies", "storage"` where supported; this is cleanup defense, never revocation authority.
+The HSTS value is exactly `max-age=31536000; includeSubDomains`; `preload` is
+absent. The platform validates the applicable CSP plus serialized common set
+byte-for-byte against the versioned response-policy digest. Response-specific
+`Content-Type`, `Content-Length`, permitted clean `Location`, host-only
+`Set-Cookie`, and permitted `Clear-Site-Data` are outside the common set but remain
+closed by their response schema. It must not reflect generated headers, MIME
+parameters, filenames, origins, or CSP fragments. `Access-Control-Allow-Origin`,
+credential grants, permissive `Timing-Allow-Origin`, provider debug headers,
+server banners, directory metadata, and source-map headers are absent. There is no
+range, 304, content negotiation, compression transform, attachment disposition,
+or object-store redirect. Unavailable/expired/revoked responses also send
+`Clear-Site-Data: "cache", "cookies", "storage"` where supported; this is cleanup
+defense, never revocation authority.
 
 The CSP `sandbox` intentionally omits forms, popups, top navigation, downloads, pointer lock, presentation, modals, orientation lock, and storage-access escape. Generated content cannot register a service worker because `worker-src 'none'`; preview routing also reserves and denies service-worker control endpoints. Every route remains under the same exact header policy. A browser feature unsupported by a header is not considered safely enabled.
 

@@ -28,6 +28,15 @@ Therefore it is `BLOCKED` at `pre-A7-READY-0`. Green backend tests, document
 validation, a local browser fixture, generated summaries, telemetry, or sandbox
 CI cannot promote readiness by themselves.
 
+The former semantic revision `d30b76fb6aa47212450aee4cd592577f8df1300a`
+and its two role-bound owner comments are historical evidence only. A bounded
+semantic corrigendum changed the browser capability and response-policy contracts,
+invalidating that revision as current decision authority. This package must first
+pass Proposed-mode validation on a new clean semantic SHA and then receive fresh,
+separate Architecture/Security and Product/Platform decisions citing that same SHA.
+Until then proof child #21 remains blocked; an accepted-status metadata change is
+not valid without those fresh decisions and accepted-mode hosted CI.
+
 The earliest honest promotions are cumulative:
 
 - `A7-READY-0` requires a complete, internally consistent document/schema
