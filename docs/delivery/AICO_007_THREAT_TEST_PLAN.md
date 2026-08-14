@@ -301,8 +301,8 @@ AICO-083/AICO-085 obligations.
 
 ## Non-waivable exit rule and explicit limitations
 
-Decision child #20 can be accepted only when the strict structural validator, all 12
-document mutation probes, canonical verification, and hosted CI pass on the same exact
+Decision child #20 can be accepted only when the strict structural validator, all 20
+document/schema mutation probes, canonical verification, and hosted CI pass on the same exact
 clean semantic revision; attributable Architecture/Security and Product/Platform owners
 accept that SHA; and later proof/production gaps remain open under their named issues.
 Parent AICO-007 can complete only after proof child #21 passes all 39 stable executable
