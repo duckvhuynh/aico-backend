@@ -1,12 +1,14 @@
 # ADR-010: Isolated Preview Origin and Delivery Selection
 
-**Status:** Proposed for AICO-007 owner acceptance
+**Status:** Accepted for AICO-007
 **Date:** 2026-08-14
-**Architecture/Security evidence:** Pending
-**Product/Platform evidence:** Pending
+**Architecture/Security evidence:** https://github.com/duckvhuynh/aico-backend/pull/22#issuecomment-5290436765
+**Product/Platform evidence:** https://github.com/duckvhuynh/aico-backend/pull/22#issuecomment-5290437423
 **Parent:** `duckvhuynh/aicompanyos#7`
 **Decision child:** `duckvhuynh/aico-backend#20`
 **Product trace:** Goals G-01 and G-05; MVP-CAP-007; PRD-FR-040–041; SRS TD-008; SRS-FR-059–060; AT-014
+
+Accepted semantic SHA `d30b76fb6aa47212450aee4cd592577f8df1300a`.
 
 This proposed revision makes no acceptance claim. Acceptance requires two
 separate, attributable human decision acts in different roles: one
