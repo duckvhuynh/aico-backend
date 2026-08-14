@@ -16,6 +16,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - uses: actions/setup-node@v7
         with:
           node-version: 24.18.0
@@ -23,12 +24,13 @@ jobs:
       - name: Run the canonical foreground verifier
         env:
           PR_BODY: ${{ github.event.pull_request.body }}
+          AICO_PREVIEW_PROOF_EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: npm run verify:ci
       - name: Retain bounded AICO-007 proof evidence
         if: ${{ hashFiles('.aico-evidence/aico-007-preview-proof.json') != '' }}
         uses: actions/upload-artifact@v4
         with:
-          name: aico-007-preview-proof-${{ github.sha }}
+          name: aico-007-preview-proof-${{ github.event.pull_request.head.sha || github.sha }}
           path: .aico-evidence/aico-007-preview-proof.json
           if-no-files-found: error
           retention-days: 90

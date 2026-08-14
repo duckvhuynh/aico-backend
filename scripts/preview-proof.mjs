@@ -177,6 +177,13 @@ if (status.stdout.trim().length > 0) {
 }
 const revision = run('git', ['rev-parse', 'HEAD'], { capture: true }).stdout.trim();
 if (!/^[0-9a-f]{40}$/.test(revision)) throw new Error('AICO-007 requires an exact 40-hex SHA.');
+const expectedRevision = process.env.AICO_PREVIEW_PROOF_EXPECTED_SHA;
+if (
+  expectedRevision !== undefined &&
+  (!/^[0-9a-f]{40}$/.test(expectedRevision) || expectedRevision !== revision)
+) {
+  throw new Error('AICO-007 checkout does not match the expected hosted proof SHA.');
+}
 
 runChecked('accepted architecture', 'npm', ['run', 'verify:preview-architecture:accepted']);
 
