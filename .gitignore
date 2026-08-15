@@ -1,6 +1,7 @@
 node_modules/
 dist/
 coverage/
+.aico-evidence/
 .env
 .env.*
 !.env.example
@@ -9,4 +10,3 @@ coverage/
 Thumbs.db
 .idea/
 .vscode/
-
