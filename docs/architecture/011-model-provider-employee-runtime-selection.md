@@ -1,9 +1,9 @@
 # ADR-011: Model Provider and Employee Runtime Boundary Selection
 
-**Status:** Proposed for AICO-005 owner acceptance
+**Status:** Accepted for AICO-005
 **Date:** 2026-08-15
-**Architecture/AI evidence:** Pending
-**Product + Legal/Security evidence:** Pending
+**Architecture/AI evidence:** https://github.com/duckvhuynh/aico-backend/pull/27#issuecomment-5300873726
+**Product + Legal/Security evidence:** https://github.com/duckvhuynh/aico-backend/pull/27#issuecomment-5300874199
 **Parent:** `duckvhuynh/aicompanyos#5`
 **Decision child:** `duckvhuynh/aico-backend#25`
 **Proof child:** `duckvhuynh/aico-backend#26`, blocked until this decision is accepted

@@ -1,16 +1,16 @@
 # AICO-005 Provider and Employee Runtime Decision Evidence
 
-**Status:** Proposed decision package; no external provider activation or production runtime is claimed
-**Candidate semantic SHA:** Pending
-**Architecture/AI evidence:** Pending
-**Product + Legal/Security evidence:** Pending
-**Proposed-mode hosted verification:** Pending
-**Proposed-mode hosted verification SHA:** Pending
+**Status:** Accepted decision package; no external provider activation or production runtime is claimed
+**Candidate semantic SHA:** `3ccb09cf6f320872d9c964240dd6673da06713ad`
+**Architecture/AI evidence:** https://github.com/duckvhuynh/aico-backend/pull/27#issuecomment-5300873726
+**Product + Legal/Security evidence:** https://github.com/duckvhuynh/aico-backend/pull/27#issuecomment-5300874199
+**Proposed-mode hosted verification:** https://github.com/duckvhuynh/aico-backend/actions/runs/31867696746
+**Proposed-mode hosted verification SHA:** `3ccb09cf6f320872d9c964240dd6673da06713ad`
 **Accepted metadata SHA:** Pending
 **Accepted-mode hosted verification:** Pending
 **Accepted-mode hosted verification SHA:** Pending
 **Accepted-mode verification artifact digest:** Pending
-**Decision date:** Pending
+**Decision date:** 2026-08-15
 **Disputed IDs:** None
 **Product trace SHA:** `28d2bc0ecd9e5676a4e87f1bf5e81c602a1a0714`
 
