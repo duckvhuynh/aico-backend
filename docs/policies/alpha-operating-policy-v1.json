@@ -1,0 +1,974 @@
+{
+  "$schema": "../contracts/schemas/alpha-operating-policy.v1.schema.json",
+  "schema_version": "aico.alpha-operating-policy/1.0",
+  "policy_id": "alpha-operating-policy",
+  "policy_version": "1.0.0",
+  "status": "ACCEPTED",
+  "authority": {
+    "parent_issue": "duckvhuynh/aicompanyos#8",
+    "product_repository": "duckvhuynh/aicompanyos",
+    "product_commit": "28d2bc0ecd9e5676a4e87f1bf5e81c602a1a0714",
+    "requirements": [
+      "MVP-CAP-002",
+      "MVP-CAP-007",
+      "MVP-CAP-008",
+      "MVP-CAP-010",
+      "MVP-CAP-012",
+      "PRD-FR-006–008",
+      "PRD-FR-037",
+      "PRD-FR-042–047",
+      "SRS-FR-008–011",
+      "SRS-FR-052",
+      "SRS-FR-061–067",
+      "SRS-FR-095",
+      "SRS-NFR-004",
+      "SRS-NFR-025–027",
+      "SRS-TD-010"
+    ]
+  },
+  "owners": {
+    "product": { "role": "Product owner", "github_login": "duckvhuynh" },
+    "design": { "role": "Design owner", "github_login": "duckvhuynh" },
+    "qa": { "role": "QA owner", "github_login": "duckvhuynh" },
+    "security": { "role": "Security owner", "github_login": "duckvhuynh" },
+    "delivery": { "role": "Delivery owner", "github_login": "duckvhuynh" }
+  },
+  "review_by": "2026-11-20",
+  "qualification": {
+    "entries": [
+      {
+        "id": "A8V-QUAL-CATEGORIES",
+        "configuration_key": "alpha.v1.goal.categories.allowed",
+        "value": [
+          "crud_workspace",
+          "dashboard_reporting",
+          "intake_onboarding",
+          "catalog_directory",
+          "planning_scheduling",
+          "content_library"
+        ],
+        "unit": "enum_set",
+        "owner_roles": ["Product", "Design"],
+        "rationale": "A closed set of low-risk browser prototype shapes covers the fixed template while preventing an unreviewed general coding surface.",
+        "reason_code": "GOAL_CATEGORY_UNSUPPORTED",
+        "review_by": "2026-11-20"
+      },
+      {
+        "id": "A8V-QUAL-PERSONAS",
+        "configuration_key": "alpha.v1.goal.primary_personas.max",
+        "value": 1,
+        "unit": "count",
+        "owner_roles": ["Product"],
+        "rationale": "One primary persona keeps the outcome and acceptance criteria bounded enough for a five-screen prototype.",
+        "reason_code": "GOAL_TOO_MANY_PERSONAS",
+        "review_by": "2026-11-20"
+      },
+      {
+        "id": "A8V-QUAL-FLOWS",
+        "configuration_key": "alpha.v1.goal.primary_flows.max",
+        "value": 1,
+        "unit": "count",
+        "owner_roles": ["Product", "Design"],
+        "rationale": "The MVP value unit explicitly proves one primary user flow and requires a founder-authored narrowing decision for more.",
+        "reason_code": "GOAL_TOO_MANY_FLOWS",
+        "review_by": "2026-11-20"
+      },
+      {
+        "id": "A8V-QUAL-ROUTES",
+        "configuration_key": "alpha.v1.goal.routes.max",
+        "value": 5,
+        "unit": "count",
+        "owner_roles": ["Product", "Design", "Engineering"],
+        "rationale": "Five routes is the authoritative MVP ceiling and matches the accepted fixed-template architecture.",
+        "reason_code": "GOAL_TOO_MANY_SCREENS",
+        "review_by": "2026-11-20"
+      },
+      {
+        "id": "A8V-QUAL-PLATFORM",
+        "configuration_key": "alpha.v1.goal.output.platform",
+        "value": "responsive_browser",
+        "unit": "enum",
+        "owner_roles": ["Product", "Design"],
+        "rationale": "The first alpha evaluates responsive browser prototypes and explicitly excludes native, desktop, and extension output.",
+        "reason_code": "GOAL_PLATFORM_UNSUPPORTED",
+        "review_by": "2026-11-20"
+      },
+      {
+        "id": "A8V-QUAL-TEMPLATE",
+        "configuration_key": "alpha.v1.goal.template.key",
+        "value": "react_typescript_template_v1",
+        "unit": "enum",
+        "owner_roles": ["Design", "Engineering", "Security"],
+        "rationale": "The accepted sandbox decision permits one checksum-verified React and TypeScript template rather than arbitrary project stacks.",
+        "reason_code": "GOAL_TEMPLATE_UNAVAILABLE",
+        "review_by": "2026-11-20"
+      },
+      {
+        "id": "A8V-QUAL-CLIENT-ONLY",
+        "configuration_key": "alpha.v1.goal.runtime.client_only",
+        "value": true,
+        "unit": "boolean",
+        "owner_roles": ["Product", "Engineering", "Security"],
+        "rationale": "Client-only behavior prevents generated backends, production actions, credentials, and external business effects in the MVP.",
+        "reason_code": "GOAL_REQUIRES_BACKEND",
+        "review_by": "2026-11-20"
+      },
+      {
+        "id": "A8V-QUAL-MOCK-DATA",
+        "configuration_key": "alpha.v1.goal.data.mode",
+        "value": "mock_local_only",
+        "unit": "enum",
+        "owner_roles": ["Product", "Security"],
+        "rationale": "Local mock data supports demonstrations without customer, sensitive, credential, payment, or production-system data.",
+        "reason_code": "GOAL_REQUIRES_REAL_DATA",
+        "review_by": "2026-11-20"
+      },
+      {
+        "id": "A8V-QUAL-DENIED",
+        "configuration_key": "alpha.v1.goal.capabilities.denied",
+        "value": [
+          "production_deployment",
+          "generated_backend",
+          "production_database",
+          "real_authentication",
+          "real_payment",
+          "email_delivery",
+          "third_party_business_api",
+          "sensitive_data",
+          "native_mobile",
+          "native_desktop",
+          "browser_extension",
+          "multi_user_collaboration",
+          "multiple_primary_flows",
+          "multiple_concurrent_initiatives",
+          "custom_employees",
+          "arbitrary_shell",
+          "unrestricted_network",
+          "external_business_action"
+        ],
+        "unit": "enum_set",
+        "owner_roles": ["Product", "Security"],
+        "rationale": "This closed denial registry converts authoritative MVP non-goals into deterministic qualification results without silently dropping requested behavior.",
+        "reason_code": "GOAL_CAPABILITY_UNSUPPORTED",
+        "review_by": "2026-11-20"
+      },
+      {
+        "id": "A8V-QUAL-QUESTIONS",
+        "configuration_key": "alpha.v1.goal.clarification_questions.max",
+        "value": 5,
+        "unit": "count",
+        "owner_roles": ["Product"],
+        "rationale": "Five focused questions is the SRS ceiling and avoids turning qualification into an unbounded conversation.",
+        "reason_code": "GOAL_NEEDS_CLARIFICATION",
+        "review_by": "2026-11-20"
+      }
+    ]
+  },
+  "attachments": {
+    "entries": [
+      {
+        "id": "A8V-ATTACH-TYPES",
+        "configuration_key": "alpha.v1.attachment.media_types.allowed",
+        "value": [
+          "text/plain",
+          "text/markdown",
+          "application/pdf",
+          "image/png",
+          "image/jpeg",
+          "image/webp"
+        ],
+        "unit": "enum_set",
+        "owner_roles": ["Product", "Security"],
+        "rationale": "Plain text, Markdown, PDF, PNG, JPEG, and WebP cover necessary references while excluding active and executable document classes.",
+        "reason_code": "ATTACHMENT_TYPE_UNSUPPORTED",
+        "review_by": "2026-11-20"
+      },
+      {
+        "id": "A8V-ATTACH-COUNT",
+        "configuration_key": "alpha.v1.attachment.count.max",
+        "value": 5,
+        "unit": "count",
+        "owner_roles": ["Product", "Security"],
+        "rationale": "Five references provide useful product context while bounding scan, extraction, prompt, storage, and review load.",
+        "reason_code": "ATTACHMENT_COUNT_EXCEEDED",
+        "review_by": "2026-11-20"
+      },
+      {
+        "id": "A8V-ATTACH-PER-FILE",
+        "configuration_key": "alpha.v1.attachment.bytes.per_file_max",
+        "value": {
+          "text/plain": 262144,
+          "text/markdown": 262144,
+          "application/pdf": 10485760,
+          "image/png": 5242880,
+          "image/jpeg": 5242880,
+          "image/webp": 5242880
+        },
+        "unit": "bytes",
+        "owner_roles": ["Security", "Engineering"],
+        "rationale": "Per-type byte ceilings bound parser and scanner exposure while allowing ordinary short documents and reference imagery.",
+        "reason_code": "ATTACHMENT_TOO_LARGE",
+        "review_by": "2026-11-20"
+      },
+      {
+        "id": "A8V-ATTACH-AGGREGATE",
+        "configuration_key": "alpha.v1.attachment.bytes.aggregate_max",
+        "value": 20971520,
+        "unit": "bytes",
+        "owner_roles": ["Security", "Engineering"],
+        "rationale": "A twenty MiB aggregate ceiling prevents multiple individually valid files from bypassing the run storage and processing budget.",
+        "reason_code": "ATTACHMENT_TOTAL_EXCEEDED",
+        "review_by": "2026-11-20"
+      },
+      {
+        "id": "A8V-ATTACH-PDF-PAGES",
+        "configuration_key": "alpha.v1.attachment.pdf.pages.max",
+        "value": 50,
+        "unit": "pages",
+        "owner_roles": ["Product", "Security"],
+        "rationale": "Fifty pages is enough for bounded product references without accepting long-document ingestion or unbounded extraction work.",
+        "reason_code": "ATTACHMENT_PDF_TOO_LONG",
+        "review_by": "2026-11-20"
+      },
+      {
+        "id": "A8V-ATTACH-IMAGE-PIXELS",
+        "configuration_key": "alpha.v1.attachment.image.pixels.max",
+        "value": 20000000,
+        "unit": "pixels",
+        "owner_roles": ["Design", "Security"],
+        "rationale": "A twenty-megapixel decoded-image ceiling prevents decompression abuse while retaining useful interface and visual references.",
+        "reason_code": "ATTACHMENT_IMAGE_TOO_LARGE",
+        "review_by": "2026-11-20"
+      },
+      {
+        "id": "A8V-ATTACH-VALIDATION",
+        "configuration_key": "alpha.v1.attachment.validation.required",
+        "value": [
+          "declared_type_allowlisted",
+          "detected_type_allowlisted",
+          "declared_matches_detected",
+          "byte_limit",
+          "sha256_verified",
+          "malware_scan_clean",
+          "active_content_absent",
+          "parser_limits_enforced",
+          "tenant_scope_verified"
+        ],
+        "unit": "enum_set",
+        "owner_roles": ["Security", "QA"],
+        "rationale": "Every attachment must pass type, integrity, safety, parser, and tenant checks before promotion or use by any employee or tool.",
+        "reason_code": "ATTACHMENT_VALIDATION_FAILED",
+        "review_by": "2026-11-20"
+      },
+      {
+        "id": "A8V-ATTACH-DENIED",
+        "configuration_key": "alpha.v1.attachment.classes.denied",
+        "value": [
+          "archive",
+          "svg",
+          "html",
+          "office_document",
+          "executable",
+          "script",
+          "encrypted_pdf",
+          "password_protected",
+          "polyglot",
+          "embedded_file",
+          "active_content",
+          "unknown_type"
+        ],
+        "unit": "enum_set",
+        "owner_roles": ["Product", "Security"],
+        "rationale": "Active, nested, ambiguous, encrypted, and executable formats exceed the safe reference-only attachment boundary for private alpha.",
+        "reason_code": "ATTACHMENT_UNSAFE",
+        "review_by": "2026-11-20"
+      }
+    ]
+  },
+  "qa": {
+    "entries": [
+      {
+        "id": "A8V-QA-BLOCKING",
+        "configuration_key": "alpha.v1.qa.checks.blocking",
+        "value": [
+          "approved_criterion_fail_or_blocked",
+          "missing_or_dangling_criterion_evidence",
+          "format_failure",
+          "lint_failure",
+          "typecheck_failure",
+          "unit_or_route_test_failure",
+          "production_build_failure",
+          "scope_or_screen_mapping_violation",
+          "secret_or_sensitive_content_detected",
+          "tenant_policy_sandbox_or_egress_violation",
+          "broken_primary_flow_or_navigation",
+          "critical_or_serious_accessibility_violation",
+          "required_check_not_executed"
+        ],
+        "unit": "enum_set",
+        "owner_roles": ["Product", "QA", "Security"],
+        "rationale": "Failures that invalidate approved behavior, build integrity, safety, isolation, the primary flow, or required evidence cannot reach final-ready state.",
+        "reason_code": "QA_BLOCKING_CHECK_FAILED",
+        "review_by": "2026-11-20"
+      },
+      {
+        "id": "A8V-QA-ADVISORY",
+        "configuration_key": "alpha.v1.qa.checks.advisory",
+        "value": [
+          "minor_or_moderate_accessibility_finding",
+          "non_blocking_visual_polish",
+          "copy_consistency",
+          "performance_budget_warning",
+          "maintainability_observation"
+        ],
+        "unit": "enum_set",
+        "owner_roles": ["Product", "Design", "QA"],
+        "rationale": "Advisory findings remain visible without consuming rework when the approved flow, evidence, security, and build gates still pass.",
+        "reason_code": "QA_ADVISORY_FINDING",
+        "review_by": "2026-11-20"
+      },
+      {
+        "id": "A8V-QA-REGRESSION",
+        "configuration_key": "alpha.v1.qa.regression.required",
+        "value": [
+          "format",
+          "lint",
+          "typecheck",
+          "unit_and_route_tests",
+          "production_build",
+          "all_previously_passed_blocking_checks",
+          "affected_criteria_screens_and_states",
+          "primary_flow_navigation",
+          "responsive_viewports",
+          "critical_and_serious_accessibility",
+          "secret_scope_egress_and_prototype_labeling"
+        ],
+        "unit": "enum_set",
+        "owner_roles": ["Design", "QA", "Security"],
+        "rationale": "Each rework reruns affected evidence plus a fixed safety and build regression set so a local repair cannot silently break accepted behavior.",
+        "reason_code": "QA_REGRESSION_REQUIRED",
+        "review_by": "2026-11-20"
+      },
+      {
+        "id": "A8V-QA-VIEWPORTS",
+        "configuration_key": "alpha.v1.qa.viewport_widths.required",
+        "value": [360, 1440],
+        "unit": "viewport_pixels",
+        "owner_roles": ["Design", "QA"],
+        "rationale": "A narrow mobile browser width and a desktop width provide a deterministic minimum responsive check for every primary screen and state.",
+        "reason_code": "QA_VIEWPORT_CHECK_FAILED",
+        "review_by": "2026-11-20"
+      },
+      {
+        "id": "A8V-QA-A11Y-SEVERITY",
+        "configuration_key": "alpha.v1.qa.accessibility.blocking_severities",
+        "value": ["critical", "serious"],
+        "unit": "enum_set",
+        "owner_roles": ["Design", "QA"],
+        "rationale": "Critical and serious automated accessibility findings block final readiness while lesser findings remain visible and measured during alpha.",
+        "reason_code": "QA_ACCESSIBILITY_BLOCKED",
+        "review_by": "2026-11-20"
+      }
+    ]
+  },
+  "budgets": {
+    "entries": [
+      {
+        "id": "A8V-MODEL-INPUT-CALL",
+        "configuration_key": "alpha.v1.model.input_tokens.per_invocation_max",
+        "value": 32768,
+        "unit": "tokens",
+        "owner_roles": ["Product", "Engineering"],
+        "rationale": "A thirty-two Ki-token input ceiling bounds context assembly and reservation size before any provider dispatch.",
+        "reason_code": "MODEL_BUDGET_EXHAUSTED",
+        "review_by": "2026-11-20"
+      },
+      {
+        "id": "A8V-MODEL-OUTPUT-CALL",
+        "configuration_key": "alpha.v1.model.output_tokens.per_invocation_max",
+        "value": 8192,
+        "unit": "tokens",
+        "owner_roles": ["Product", "Engineering"],
+        "rationale": "An eight Ki-token output ceiling is sufficient for typed artifacts while bounding validation, repair, latency, and cost.",
+        "reason_code": "MODEL_BUDGET_EXHAUSTED",
+        "review_by": "2026-11-20"
+      },
+      {
+        "id": "A8V-MODEL-INPUT-RUN",
+        "configuration_key": "alpha.v1.model.input_tokens.per_run_max",
+        "value": 300000,
+        "unit": "tokens",
+        "owner_roles": ["Product", "Engineering"],
+        "rationale": "The run-level input ceiling permits the fixed workflow and two rework cycles without allowing an unbounded conversation or context loop.",
+        "reason_code": "RUN_BUDGET_EXHAUSTED",
+        "review_by": "2026-11-20"
+      },
+      {
+        "id": "A8V-MODEL-OUTPUT-RUN",
+        "configuration_key": "alpha.v1.model.output_tokens.per_run_max",
+        "value": 60000,
+        "unit": "tokens",
+        "owner_roles": ["Product", "Engineering"],
+        "rationale": "The run-level output ceiling bounds cumulative artifacts, retries, and repairs while leaving headroom for the fixed employee sequence.",
+        "reason_code": "RUN_BUDGET_EXHAUSTED",
+        "review_by": "2026-11-20"
+      },
+      {
+        "id": "A8V-MODEL-COST-CALL",
+        "configuration_key": "alpha.v1.model.cost_micros_usd.per_invocation_max",
+        "value": 2500000,
+        "unit": "micros_usd",
+        "owner_roles": ["Product", "Engineering"],
+        "rationale": "A two dollar and fifty cent reservation ceiling prevents one call from consuming the conservative run safety allowance.",
+        "reason_code": "MODEL_BUDGET_EXHAUSTED",
+        "review_by": "2026-11-20"
+      },
+      {
+        "id": "A8V-MODEL-COST-RUN",
+        "configuration_key": "alpha.v1.model.cost_micros_usd.per_run_max",
+        "value": 15000000,
+        "unit": "micros_usd",
+        "owner_roles": ["Product", "Engineering", "Delivery"],
+        "rationale": "A fifteen dollar hard safety ceiling limits alpha exposure but is not the deferred acceptable per-completed-run economic target.",
+        "reason_code": "RUN_BUDGET_EXHAUSTED",
+        "review_by": "2026-11-20"
+      },
+      {
+        "id": "A8V-MODEL-TIMEOUT",
+        "configuration_key": "alpha.v1.model.wall_seconds.per_invocation_max",
+        "value": 120,
+        "unit": "seconds",
+        "owner_roles": ["Engineering", "QA"],
+        "rationale": "A two-minute hard invocation deadline bounds latency and leaves post-dispatch uncertainty to explicit reconciliation rather than replay.",
+        "reason_code": "MODEL_BUDGET_EXHAUSTED",
+        "review_by": "2026-11-20"
+      },
+      {
+        "id": "A8V-MODEL-INVOCATIONS",
+        "configuration_key": "alpha.v1.model.invocations.per_run_max",
+        "value": 24,
+        "unit": "count",
+        "owner_roles": ["Product", "Engineering"],
+        "rationale": "Twenty-four invocations cover fixed stages, bounded repair, and two rework cycles while making accidental agent loops finite.",
+        "reason_code": "RUN_BUDGET_EXHAUSTED",
+        "review_by": "2026-11-20"
+      },
+      {
+        "id": "A8V-PROVIDER-EXTERNAL",
+        "configuration_key": "alpha.v1.model.external_provider.enabled",
+        "value": false,
+        "unit": "boolean",
+        "owner_roles": ["Product", "Security"],
+        "rationale": "R0 remains deterministic-fixture-only until a separate exact provider, account, terms, retention, disclosure, and spend manifest is accepted.",
+        "reason_code": "PROVIDER_DISABLED",
+        "review_by": "2026-11-20"
+      },
+      {
+        "id": "A8V-RUN-ACTIVE-WALL",
+        "configuration_key": "alpha.v1.run.active_wall_seconds.max",
+        "value": 5400,
+        "unit": "seconds",
+        "owner_roles": ["Product", "Engineering", "Delivery"],
+        "rationale": "Ninety minutes of system-active time bounds a run near the MVP sixty-minute median target while excluding persisted founder waits.",
+        "reason_code": "RUN_TIME_EXHAUSTED",
+        "review_by": "2026-11-20"
+      },
+      {
+        "id": "A8V-SANDBOX-COMMAND-WALL",
+        "configuration_key": "alpha.v1.sandbox.command_wall_seconds.max",
+        "value": 300,
+        "unit": "seconds",
+        "owner_roles": ["Engineering", "Security"],
+        "rationale": "Five minutes per allowlisted command supports the fixed build while preventing hung or adversarial processes from running indefinitely.",
+        "reason_code": "SANDBOX_LIMIT_EXCEEDED",
+        "review_by": "2026-11-20"
+      },
+      {
+        "id": "A8V-SANDBOX-RUN-WALL",
+        "configuration_key": "alpha.v1.sandbox.wall_seconds.per_run_max",
+        "value": 1800,
+        "unit": "seconds",
+        "owner_roles": ["Engineering", "Security"],
+        "rationale": "Thirty minutes of aggregate sandbox wall time bounds builds and rework inside the ninety-minute active-run ceiling.",
+        "reason_code": "SANDBOX_LIMIT_EXCEEDED",
+        "review_by": "2026-11-20"
+      },
+      {
+        "id": "A8V-SANDBOX-CPU-CORES",
+        "configuration_key": "alpha.v1.sandbox.cpu_cores.max",
+        "value": 2,
+        "unit": "cpu_cores",
+        "owner_roles": ["Engineering", "Security"],
+        "rationale": "Two CPU cores are sufficient for the pinned frontend toolchain and keep concurrent private-alpha resource demand predictable.",
+        "reason_code": "SANDBOX_LIMIT_EXCEEDED",
+        "review_by": "2026-11-20"
+      },
+      {
+        "id": "A8V-SANDBOX-CPU-SECONDS",
+        "configuration_key": "alpha.v1.sandbox.cpu_seconds.per_run_max",
+        "value": 2400,
+        "unit": "cpu_seconds",
+        "owner_roles": ["Engineering", "Security"],
+        "rationale": "Forty CPU-minutes permit bounded compilation and tests while limiting busy-loop consumption below the aggregate wall and core product.",
+        "reason_code": "SANDBOX_LIMIT_EXCEEDED",
+        "review_by": "2026-11-20"
+      },
+      {
+        "id": "A8V-SANDBOX-MEMORY",
+        "configuration_key": "alpha.v1.sandbox.memory_bytes.max",
+        "value": 2147483648,
+        "unit": "bytes",
+        "owner_roles": ["Engineering", "Security"],
+        "rationale": "Two GiB supports the fixed React and TypeScript build without granting unbounded host memory to generated code.",
+        "reason_code": "SANDBOX_LIMIT_EXCEEDED",
+        "review_by": "2026-11-20"
+      },
+      {
+        "id": "A8V-SANDBOX-PIDS",
+        "configuration_key": "alpha.v1.sandbox.processes.max",
+        "value": 128,
+        "unit": "processes",
+        "owner_roles": ["Engineering", "Security"],
+        "rationale": "A 128-process ceiling supports package tooling while preventing fork bombs and runaway process trees.",
+        "reason_code": "SANDBOX_LIMIT_EXCEEDED",
+        "review_by": "2026-11-20"
+      },
+      {
+        "id": "A8V-SANDBOX-WRITABLE",
+        "configuration_key": "alpha.v1.sandbox.writable_bytes.max",
+        "value": 536870912,
+        "unit": "bytes",
+        "owner_roles": ["Engineering", "Security"],
+        "rationale": "A 512 MiB writable ceiling contains temporary build expansion while dependency layers remain read-only and platform managed.",
+        "reason_code": "SANDBOX_LIMIT_EXCEEDED",
+        "review_by": "2026-11-20"
+      },
+      {
+        "id": "A8V-SANDBOX-FILES",
+        "configuration_key": "alpha.v1.sandbox.files.max",
+        "value": 5000,
+        "unit": "count",
+        "owner_roles": ["Engineering", "Security"],
+        "rationale": "Five thousand writable files cover generated source and build intermediates without permitting uncontrolled filesystem fan-out.",
+        "reason_code": "SANDBOX_LIMIT_EXCEEDED",
+        "review_by": "2026-11-20"
+      },
+      {
+        "id": "A8V-SOURCE-FILE",
+        "configuration_key": "alpha.v1.source.file_bytes.max",
+        "value": 1048576,
+        "unit": "bytes",
+        "owner_roles": ["Engineering", "Security"],
+        "rationale": "A one MiB source-file ceiling prevents generated blobs and logs from masquerading as maintainable text source.",
+        "reason_code": "SANDBOX_LIMIT_EXCEEDED",
+        "review_by": "2026-11-20"
+      },
+      {
+        "id": "A8V-SOURCE-SNAPSHOT",
+        "configuration_key": "alpha.v1.source.snapshot_bytes.max",
+        "value": 26214400,
+        "unit": "bytes",
+        "owner_roles": ["Engineering", "Security"],
+        "rationale": "A twenty-five MiB source snapshot is ample for five client routes while excluding dependency caches and binary bulk.",
+        "reason_code": "SANDBOX_LIMIT_EXCEEDED",
+        "review_by": "2026-11-20"
+      },
+      {
+        "id": "A8V-BUILD-OUTPUT",
+        "configuration_key": "alpha.v1.build.output_bytes.max",
+        "value": 104857600,
+        "unit": "bytes",
+        "owner_roles": ["Engineering", "Security"],
+        "rationale": "A one-hundred MiB build-output ceiling accommodates the fixed static bundle while bounding preview and export materialization.",
+        "reason_code": "SANDBOX_LIMIT_EXCEEDED",
+        "review_by": "2026-11-20"
+      },
+      {
+        "id": "A8V-COMMAND-OUTPUT",
+        "configuration_key": "alpha.v1.command.output_bytes.max",
+        "value": 1048576,
+        "unit": "bytes",
+        "owner_roles": ["Engineering", "Security"],
+        "rationale": "One MiB of captured output per command preserves actionable diagnostics without allowing unbounded or content-bearing logs.",
+        "reason_code": "SANDBOX_LIMIT_EXCEEDED",
+        "review_by": "2026-11-20"
+      },
+      {
+        "id": "A8V-LOGS-RUN",
+        "configuration_key": "alpha.v1.logs.retained_bytes.per_run_max",
+        "value": 10485760,
+        "unit": "bytes",
+        "owner_roles": ["Engineering", "Security", "QA"],
+        "rationale": "Ten MiB of redacted retained logs bounds storage and disclosure while preserving structured evidence for a failed run.",
+        "reason_code": "RUN_BUDGET_EXHAUSTED",
+        "review_by": "2026-11-20"
+      },
+      {
+        "id": "A8V-STORAGE-RUN",
+        "configuration_key": "alpha.v1.storage.bytes.per_run_max",
+        "value": 268435456,
+        "unit": "bytes",
+        "owner_roles": ["Product", "Engineering", "Security"],
+        "rationale": "A 256 MiB run ceiling contains attachments, source, build output, artifacts, and bounded evidence without setting retention duration.",
+        "reason_code": "RUN_BUDGET_EXHAUSTED",
+        "review_by": "2026-11-20"
+      },
+      {
+        "id": "A8V-RUNTIME-RETRY",
+        "configuration_key": "alpha.v1.retry.transient_per_attempt.max",
+        "value": 1,
+        "unit": "count",
+        "owner_roles": ["Engineering", "QA"],
+        "rationale": "One persisted transient retry limits cost and delay while preserving a deterministic attempt and evidence boundary.",
+        "reason_code": "RETRY_LIMIT_EXHAUSTED",
+        "review_by": "2026-11-20"
+      },
+      {
+        "id": "A8V-SCHEMA-REPAIR",
+        "configuration_key": "alpha.v1.repair.schema_per_invocation.max",
+        "value": 1,
+        "unit": "count",
+        "owner_roles": ["Engineering", "QA"],
+        "rationale": "One separately reserved schema repair matches the accepted provider contract and prevents self-amplifying repair loops.",
+        "reason_code": "RETRY_LIMIT_EXHAUSTED",
+        "review_by": "2026-11-20"
+      },
+      {
+        "id": "A8V-TASK-ATTEMPTS",
+        "configuration_key": "alpha.v1.task.attempts.max",
+        "value": 3,
+        "unit": "count",
+        "owner_roles": ["Engineering", "QA"],
+        "rationale": "Three recorded task attempts bound initial work, one eligible retry, and one replacement path without hiding each outcome.",
+        "reason_code": "RETRY_LIMIT_EXHAUSTED",
+        "review_by": "2026-11-20"
+      },
+      {
+        "id": "A8V-SDK-RETRIES",
+        "configuration_key": "alpha.v1.provider.sdk_retries.max",
+        "value": 0,
+        "unit": "count",
+        "owner_roles": ["Engineering", "Security"],
+        "rationale": "Provider SDK retries remain disabled so every invocation, reservation, timeout, and outcome is visible to the durable runtime.",
+        "reason_code": "RETRY_LIMIT_EXHAUSTED",
+        "review_by": "2026-11-20"
+      },
+      {
+        "id": "A8V-COMMAND-RETRIES",
+        "configuration_key": "alpha.v1.command.retries.max",
+        "value": 0,
+        "unit": "count",
+        "owner_roles": ["Engineering", "Security"],
+        "rationale": "Build commands do not repeat automatically; a new attempt requires a classified durable decision and fresh budget reservation.",
+        "reason_code": "RETRY_LIMIT_EXHAUSTED",
+        "review_by": "2026-11-20"
+      },
+      {
+        "id": "A8V-UNKNOWN-REPLAY",
+        "configuration_key": "alpha.v1.unknown_outcome.auto_replays.max",
+        "value": 0,
+        "unit": "count",
+        "owner_roles": ["Engineering", "Security"],
+        "rationale": "Unknown post-dispatch outcomes block for reconciliation and are never automatically replayed as though no effect occurred.",
+        "reason_code": "RETRY_LIMIT_EXHAUSTED",
+        "review_by": "2026-11-20"
+      },
+      {
+        "id": "A8V-QA-REWORK",
+        "configuration_key": "alpha.v1.qa.automatic_rework_cycles.max",
+        "value": 2,
+        "unit": "count",
+        "owner_roles": ["Product", "QA", "Delivery"],
+        "rationale": "Two automatic Engineer and QA rework cycles are an authoritative MVP boundary and stop further automatic cost expansion.",
+        "reason_code": "REWORK_LIMIT_EXHAUSTED",
+        "review_by": "2026-11-20"
+      }
+    ]
+  },
+  "capacity": {
+    "entries": [
+      {
+        "id": "A8V-CAPACITY-FOUNDERS",
+        "configuration_key": "alpha.v1.capacity.alpha_founders.max",
+        "value": 5,
+        "unit": "count",
+        "owner_roles": ["Product", "Delivery"],
+        "rationale": "The invite-only cohort is capped at five founders so support, cost, and incident response remain attributable during alpha.",
+        "reason_code": "ALPHA_COHORT_FULL",
+        "review_by": "2026-11-20"
+      },
+      {
+        "id": "A8V-CAPACITY-COMPANY-RUNS",
+        "configuration_key": "alpha.v1.capacity.active_runs_per_company.max",
+        "value": 1,
+        "unit": "count",
+        "owner_roles": ["Product", "Engineering"],
+        "rationale": "One active run per company matches the Prototype Initiative invariant and prevents self-contention and ambiguous founder decisions.",
+        "reason_code": "CAPACITY_UNAVAILABLE",
+        "review_by": "2026-11-20"
+      },
+      {
+        "id": "A8V-CAPACITY-RUNS",
+        "configuration_key": "alpha.v1.capacity.active_runs_global.max",
+        "value": 2,
+        "unit": "count",
+        "owner_roles": ["Engineering", "Delivery"],
+        "rationale": "Two globally active runs provide limited overlap while keeping the small-team worker, storage, and support surface observable.",
+        "reason_code": "CAPACITY_UNAVAILABLE",
+        "review_by": "2026-11-20"
+      },
+      {
+        "id": "A8V-CAPACITY-BUILDS",
+        "configuration_key": "alpha.v1.capacity.active_builds_global.max",
+        "value": 1,
+        "unit": "count",
+        "owner_roles": ["Engineering", "Security"],
+        "rationale": "One active isolated build prevents host oversubscription until sandbox measurements demonstrate safe parallel capacity.",
+        "reason_code": "CAPACITY_UNAVAILABLE",
+        "review_by": "2026-11-20"
+      },
+      {
+        "id": "A8V-CAPACITY-MODELS",
+        "configuration_key": "alpha.v1.capacity.active_model_invocations_global.max",
+        "value": 2,
+        "unit": "count",
+        "owner_roles": ["Engineering", "Delivery"],
+        "rationale": "Two concurrent model invocations match the active-run ceiling and bound quota, spend, cancellation, and rate-limit pressure.",
+        "reason_code": "CAPACITY_UNAVAILABLE",
+        "review_by": "2026-11-20"
+      },
+      {
+        "id": "A8V-CAPACITY-FACTOR",
+        "configuration_key": "alpha.v1.capacity.test_safety_factor",
+        "value": 2,
+        "unit": "factor",
+        "owner_roles": ["Engineering", "QA", "Delivery"],
+        "rationale": "The SRS requires a capacity test at approved alpha concurrency plus a two-times safety factor before launch.",
+        "reason_code": "CAPACITY_UNAVAILABLE",
+        "review_by": "2026-11-20"
+      },
+      {
+        "id": "A8V-CAPACITY-TEST-RUNS",
+        "configuration_key": "alpha.v1.capacity.test_active_runs.target",
+        "value": 4,
+        "unit": "count",
+        "owner_roles": ["Engineering", "QA", "Delivery"],
+        "rationale": "Four active test runs prove the two-run alpha ceiling at the required two-times safety factor.",
+        "reason_code": "CAPACITY_UNAVAILABLE",
+        "review_by": "2026-11-20"
+      },
+      {
+        "id": "A8V-CAPACITY-TEST-BUILDS",
+        "configuration_key": "alpha.v1.capacity.test_active_builds.target",
+        "value": 2,
+        "unit": "count",
+        "owner_roles": ["Engineering", "QA", "Security"],
+        "rationale": "Two active test builds prove the single-build alpha ceiling at the required two-times safety factor.",
+        "reason_code": "CAPACITY_UNAVAILABLE",
+        "review_by": "2026-11-20"
+      },
+      {
+        "id": "A8V-CAPACITY-TEST-MODELS",
+        "configuration_key": "alpha.v1.capacity.test_model_invocations.target",
+        "value": 4,
+        "unit": "count",
+        "owner_roles": ["Engineering", "QA", "Delivery"],
+        "rationale": "Four concurrent fixture invocations prove the two-invocation alpha ceiling at the required two-times safety factor.",
+        "reason_code": "CAPACITY_UNAVAILABLE",
+        "review_by": "2026-11-20"
+      }
+    ]
+  },
+  "stop_policy": {
+    "pre_effect_exhaustion": "DENY_BEFORE_RESERVATION_OR_DISPATCH",
+    "in_flight_exhaustion": "CANCEL_ELIGIBLE_WORK_AND_FENCE_LATE_RESULTS",
+    "unknown_outcome": "BLOCK_FOR_RECONCILIATION_NO_AUTO_REPLAY",
+    "unenforceable_limit": "FAIL_CLOSED_CONFIGURATION",
+    "founder_state": "PERSIST_BLOCKED_WITH_REASON_AND_SAFE_NEXT_ACTION",
+    "prohibited_success_claim": "NO_SUCCESS_WITHOUT_COMMITTED_EVIDENCE"
+  },
+  "reason_codes": [
+    {
+      "code": "GOAL_CATEGORY_UNSUPPORTED",
+      "founder_message": "This prototype category is not enabled for the private alpha.",
+      "next_action": "Choose an eligible category or submit a new, narrower goal version."
+    },
+    {
+      "code": "GOAL_TOO_MANY_PERSONAS",
+      "founder_message": "The goal contains more than one primary persona.",
+      "next_action": "Choose one primary persona and submit a new goal version."
+    },
+    {
+      "code": "GOAL_TOO_MANY_FLOWS",
+      "founder_message": "The goal contains more than one primary user flow.",
+      "next_action": "Choose one flow to prototype and submit a new goal version."
+    },
+    {
+      "code": "GOAL_TOO_MANY_SCREENS",
+      "founder_message": "The proposed flow needs more than five screens or routes.",
+      "next_action": "Narrow the flow to five screens or fewer and submit a new goal version."
+    },
+    {
+      "code": "GOAL_PLATFORM_UNSUPPORTED",
+      "founder_message": "The requested output is not a responsive browser prototype.",
+      "next_action": "Reframe the goal as a responsive web flow or cancel this initiative."
+    },
+    {
+      "code": "GOAL_TEMPLATE_UNAVAILABLE",
+      "founder_message": "The requested stack does not fit the fixed private-alpha template.",
+      "next_action": "Accept the fixed React and TypeScript template or narrow the goal."
+    },
+    {
+      "code": "GOAL_REQUIRES_BACKEND",
+      "founder_message": "The requested behavior requires a generated backend or production service.",
+      "next_action": "Replace it with a client-side mock interaction and submit a new goal version."
+    },
+    {
+      "code": "GOAL_REQUIRES_REAL_DATA",
+      "founder_message": "The requested behavior requires real, sensitive, or external data.",
+      "next_action": "Use safe local mock data and submit a new goal version."
+    },
+    {
+      "code": "GOAL_CAPABILITY_UNSUPPORTED",
+      "founder_message": "The goal requests a capability outside the private-alpha boundary.",
+      "next_action": "Review the cited limitation, remove that capability, and submit a new goal version."
+    },
+    {
+      "code": "GOAL_NEEDS_CLARIFICATION",
+      "founder_message": "The goal is missing information required to qualify the primary flow.",
+      "next_action": "Answer the bounded clarification questions or cancel the initiative."
+    },
+    {
+      "code": "ATTACHMENT_TYPE_UNSUPPORTED",
+      "founder_message": "An attachment type is not allowed for private alpha.",
+      "next_action": "Upload plain text, Markdown, PDF, PNG, JPEG, or WebP instead."
+    },
+    {
+      "code": "ATTACHMENT_COUNT_EXCEEDED",
+      "founder_message": "The goal includes more than five attachments.",
+      "next_action": "Remove extra references and resubmit the goal version."
+    },
+    {
+      "code": "ATTACHMENT_TOO_LARGE",
+      "founder_message": "An attachment exceeds its allowed file-size limit.",
+      "next_action": "Reduce or replace the file and submit it again."
+    },
+    {
+      "code": "ATTACHMENT_TOTAL_EXCEEDED",
+      "founder_message": "The combined attachments exceed the twenty MiB run limit.",
+      "next_action": "Remove or reduce attachments and submit them again."
+    },
+    {
+      "code": "ATTACHMENT_PDF_TOO_LONG",
+      "founder_message": "A PDF contains more than fifty pages.",
+      "next_action": "Provide a shorter excerpt that contains only the necessary reference pages."
+    },
+    {
+      "code": "ATTACHMENT_IMAGE_TOO_LARGE",
+      "founder_message": "An image exceeds the decoded-pixel safety limit.",
+      "next_action": "Resize the image below twenty megapixels and upload it again."
+    },
+    {
+      "code": "ATTACHMENT_VALIDATION_FAILED",
+      "founder_message": "An attachment could not be safely validated.",
+      "next_action": "Replace the file with a clean supported reference and try again."
+    },
+    {
+      "code": "ATTACHMENT_UNSAFE",
+      "founder_message": "An attachment contains an unsupported or unsafe content class.",
+      "next_action": "Remove active, encrypted, nested, or executable content and provide a safe reference."
+    },
+    {
+      "code": "QA_BLOCKING_CHECK_FAILED",
+      "founder_message": "A required quality or safety check did not pass.",
+      "next_action": "Review the linked finding and wait for bounded rework or choose a founder action."
+    },
+    {
+      "code": "QA_ADVISORY_FINDING",
+      "founder_message": "QA found a non-blocking improvement opportunity.",
+      "next_action": "Review the advisory finding; it does not prevent the current final decision."
+    },
+    {
+      "code": "QA_REGRESSION_REQUIRED",
+      "founder_message": "A change requires affected checks and the fixed regression set to run again.",
+      "next_action": "Wait for the new QA evidence before making the final decision."
+    },
+    {
+      "code": "QA_VIEWPORT_CHECK_FAILED",
+      "founder_message": "The prototype failed a required narrow or desktop viewport check.",
+      "next_action": "Review the affected screen and wait for bounded rework."
+    },
+    {
+      "code": "QA_ACCESSIBILITY_BLOCKED",
+      "founder_message": "A critical or serious automated accessibility issue remains.",
+      "next_action": "Review the finding and wait for bounded rework before final approval."
+    },
+    {
+      "code": "MODEL_BUDGET_EXHAUSTED",
+      "founder_message": "The current model invocation reached a hard time, token, or cost limit.",
+      "next_action": "Review the blocker; no additional model work will start without an eligible recovery action."
+    },
+    {
+      "code": "RUN_BUDGET_EXHAUSTED",
+      "founder_message": "The run reached a hard token, cost, storage, output, or invocation limit.",
+      "next_action": "Review the budget summary and choose an available recovery or cancellation action."
+    },
+    {
+      "code": "RUN_TIME_EXHAUSTED",
+      "founder_message": "The run reached its hard active-execution time limit.",
+      "next_action": "Review the persisted blocker and choose an available recovery or cancellation action."
+    },
+    {
+      "code": "SANDBOX_LIMIT_EXCEEDED",
+      "founder_message": "The isolated build reached a hard resource or output limit.",
+      "next_action": "Review the bounded build evidence; unsafe or late output was not accepted."
+    },
+    {
+      "code": "RETRY_LIMIT_EXHAUSTED",
+      "founder_message": "The allowed retry or repair attempts are exhausted.",
+      "next_action": "Review the last classified failure and choose an available founder action."
+    },
+    {
+      "code": "REWORK_LIMIT_EXHAUSTED",
+      "founder_message": "The two automatic QA rework cycles are exhausted.",
+      "next_action": "Review the remaining findings and choose a bounded founder decision."
+    },
+    {
+      "code": "CAPACITY_UNAVAILABLE",
+      "founder_message": "Private-alpha execution capacity is currently full.",
+      "next_action": "Keep the run queued without side effects or try again after capacity is available."
+    },
+    {
+      "code": "ALPHA_COHORT_FULL",
+      "founder_message": "The private-alpha founder cohort is currently full.",
+      "next_action": "Remain on the waitlist until an explicitly approved cohort slot is available."
+    },
+    {
+      "code": "PROVIDER_DISABLED",
+      "founder_message": "External model execution is not enabled for this policy version.",
+      "next_action": "Use deterministic internal fixtures only; wait for a separately accepted provider configuration."
+    }
+  ],
+  "downstream_owners": [
+    "AICO-017",
+    "AICO-019",
+    "AICO-033",
+    "AICO-047",
+    "AICO-051",
+    "AICO-060",
+    "AICO-064",
+    "AICO-072",
+    "AICO-080",
+    "AICO-082",
+    "AICO-086",
+    "AICO-091"
+  ],
+  "acceptance": {
+    "decision": "ACCEPTED",
+    "candidate_sha": "e6d064f89b332145fde888a254197a740041684d",
+    "hosted_run_url": "https://github.com/duckvhuynh/aico-backend/actions/runs/31893135845/job/95032289440",
+    "accepted_by": "duckvhuynh",
+    "accepted_at": "2026-08-15",
+    "evidence_url": "https://github.com/duckvhuynh/aico-backend/pull/30#issuecomment-5303040180"
+  }
+}
