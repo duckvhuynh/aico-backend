@@ -1,0 +1,39 @@
+name: AICO-005 Provider Runtime Proof
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  prove:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24.18.0
+          cache: npm
+      - name: Run canonical verification and bounded provider-runtime proof
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+          GH_TOKEN: ${{ github.token }}
+          AICO_PREVIEW_PROOF_EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          AICO_PROVIDER_DECISION_EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          AICO_PROVIDER_RUNTIME_PROOF_EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: node scripts/aico-005-provider-runtime-proof.mjs
+      - name: Retain bounded AICO-005 provider-runtime proof evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: aico-005-provider-proof-${{ github.event.pull_request.head.sha || github.sha }}
+          path: .aico-evidence/aico-005-provider-proof.json
+          if-no-files-found: error
+          retention-days: 90
