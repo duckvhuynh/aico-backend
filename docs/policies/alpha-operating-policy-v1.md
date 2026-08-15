@@ -1,6 +1,9 @@
 # Alpha Operating Policy v1
 
-- **Status:** Candidate for AICO-008 owner acceptance
+- **Status:** Accepted on 2026-08-15
+- **Candidate state:** Candidate for AICO-008 owner acceptance at semantic SHA `e6d064f89b332145fde888a254197a740041684d`
+- **Owner decision:** [Accepted by `@duckvhuynh`](https://github.com/duckvhuynh/aico-backend/pull/30#issuecomment-5303040180)
+- **Hosted exact-SHA validation:** [Passed](https://github.com/duckvhuynh/aico-backend/actions/runs/31893135845/job/95032289440)
 - **Policy ID/version:** `alpha-operating-policy` / `1.0.0`
 - **Parent:** `duckvhuynh/aicompanyos#8`
 - **Implementation child:** `duckvhuynh/aico-backend#29`
@@ -178,17 +181,17 @@ The policy package does not implement or complete those issues.
 
 ## 10. Acceptance gate — `A8-ACCEPT-01`
 
-Current owner decision: **Pending**.
+Current owner decision: **Accepted** by `@duckvhuynh` on 2026-08-15 for exact Candidate SHA `e6d064f89b332145fde888a254197a740041684d`; [decision evidence](https://github.com/duckvhuynh/aico-backend/pull/30#issuecomment-5303040180).
 
-Before the Candidate can become `Accepted`:
+The Candidate became `Accepted` after:
 
-1. the semantic package is committed at one clean exact 40-hex Candidate SHA;
-2. hosted `AICO-008 Alpha Operating Policy` validation succeeds on that exact SHA;
-3. an attributable Product/Design/QA/Security owner reviews the JSON, this record, all hard values, reason messages, retained gaps, and hosted result;
-4. the owner posts `ACCEPTED` or `REQUEST_CHANGES`, exact Candidate SHA, identity, date, evidence URL, and disputed IDs on child #29 or its PR; and
-5. a metadata-only revision records the decision without changing semantic values or validation controls.
+1. the semantic package was committed at exact Candidate SHA `e6d064f89b332145fde888a254197a740041684d`;
+2. hosted `AICO-008 Alpha Operating Policy`, canonical verification, and fail-closed/provider proof succeeded on that exact SHA;
+3. the Product/Design/QA/Security owner reviewed the JSON, this record, all hard values, reason messages, retained gaps, validation-control correction, and hosted results;
+4. the owner posted `ACCEPTED`, exact Candidate SHA, identity, date, evidence URL, disputed IDs, and the superseded prior approval on PR #30; and
+5. this metadata-only revision recorded the decision without changing semantic values or validation controls.
 
-Agent-authored text, a green check, issue assignment, reaction, PR merge, or generic approval is not owner acceptance. Any requested semantic change creates a new Candidate and invalidates the prior review.
+Agent-authored text, a green check, issue assignment, reaction, PR merge, or generic approval is not owner acceptance. The attributable owner comment above is the authority for this transition. Any later semantic or validation-control change creates a new Candidate and invalidates this review.
 
 ## 11. Explicit non-goals
 

@@ -3,7 +3,7 @@
   "schema_version": "aico.alpha-operating-policy/1.0",
   "policy_id": "alpha-operating-policy",
   "policy_version": "1.0.0",
-  "status": "CANDIDATE",
+  "status": "ACCEPTED",
   "authority": {
     "parent_issue": "duckvhuynh/aicompanyos#8",
     "product_repository": "duckvhuynh/aicompanyos",
@@ -964,11 +964,11 @@
     "AICO-091"
   ],
   "acceptance": {
-    "decision": "PENDING",
-    "candidate_sha": null,
-    "hosted_run_url": null,
-    "accepted_by": null,
-    "accepted_at": null,
-    "evidence_url": null
+    "decision": "ACCEPTED",
+    "candidate_sha": "e6d064f89b332145fde888a254197a740041684d",
+    "hosted_run_url": "https://github.com/duckvhuynh/aico-backend/actions/runs/31893135845/job/95032289440",
+    "accepted_by": "duckvhuynh",
+    "accepted_at": "2026-08-15",
+    "evidence_url": "https://github.com/duckvhuynh/aico-backend/pull/30#issuecomment-5303040180"
   }
 }

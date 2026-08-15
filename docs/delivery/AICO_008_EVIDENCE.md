@@ -2,7 +2,10 @@
 
 - **Parent:** `duckvhuynh/aicompanyos#8`
 - **Child:** `duckvhuynh/aico-backend#29`
-- **Status:** Candidate; owner acceptance Pending
+- **Status:** Accepted on 2026-08-15; owner acceptance Pending at Candidate publication
+- **Candidate semantic SHA:** `e6d064f89b332145fde888a254197a740041684d`
+- **Owner decision:** [Accepted by `@duckvhuynh`](https://github.com/duckvhuynh/aico-backend/pull/30#issuecomment-5303040180)
+- **Hosted exact-SHA validation:** [Passed](https://github.com/duckvhuynh/aico-backend/actions/runs/31893135845/job/95032289440)
 - **Policy:** `docs/policies/alpha-operating-policy-v1.json`
 - **Decision record:** `docs/policies/alpha-operating-policy-v1.md`
 - **Schema:** `docs/contracts/schemas/alpha-operating-policy.v1.schema.json`
@@ -11,17 +14,17 @@
 
 ## Criterion map
 
-| Criterion        | Candidate evidence                                                                                                                                                 | Remaining completion gate                                                           |
-| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------- |
-| `A8-QUAL-01`     | Closed eligible-category and denial registries; exact one-persona/one-flow/five-route/client/mock/template limits; immutable narrowing behavior                    | AICO-019 production implementation and Product/Design acceptance                    |
-| `A8-ATTACH-01`   | Closed media allowlist, count/per-type/aggregate/page/pixel limits, required validation registry, denied classes, fail-closed quarantine/rejection rule            | AICO-017 implementation, AICO-082 release adversarial evidence, Security acceptance |
-| `A8-QA-01`       | Blocking/advisory/affected-plus-regression registries; two viewports; critical/serious accessibility boundary; missing required evidence is blocked                | AICO-060/AICO-064 implementation and QA acceptance                                  |
-| `A8-BUDGET-01`   | Exact model token/cost/time/invocation, sandbox compute/storage/file/output, retry/repair/rework values                                                            | AICO-033/AICO-051 implementation and measured AICO-086 evidence                     |
-| `A8-CAPACITY-01` | Five-founder cohort, one run/company, global 2 run/1 build/2 invocation ceilings, exact 2x test targets                                                            | AICO-080 launch-environment capacity proof                                          |
-| `A8-META-01`     | Strict entry schema requires stable ID/key, typed value/unit, owner roles, rationale, reason, review date; semantic validator requires exact closed registries     | Product/Design/QA/Security owner review of exact Candidate SHA                      |
-| `A8-STOP-01`     | Exact pre-effect deny, eligible cancellation/fencing, unknown reconciliation/no replay, invalid-config fail-closed, persisted founder state, no fabricated success | AICO-033/AICO-051/AICO-064 implementation evidence                                  |
-| `A8-VALIDATE-01` | AJV schema validation, exact-value/registry comparison, cross-field invariants, and deliberate failure probes in one foreground command                            | Hosted exact-Candidate run                                                          |
-| `A8-ACCEPT-01`   | Candidate/Accepted evidence-state coherence is enforced; current fields remain Pending/null                                                                        | Attributable owner decision and metadata-only reconciliation                        |
+| Criterion        | Accepted evidence                                                                                                                                                  | Retained downstream gate                                         |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------- |
+| `A8-QUAL-01`     | Closed eligible-category and denial registries; exact one-persona/one-flow/five-route/client/mock/template limits; immutable narrowing behavior                    | AICO-019 production implementation                               |
+| `A8-ATTACH-01`   | Closed media allowlist, count/per-type/aggregate/page/pixel limits, required validation registry, denied classes, fail-closed quarantine/rejection rule            | AICO-017 implementation and AICO-082 adversarial evidence        |
+| `A8-QA-01`       | Blocking/advisory/affected-plus-regression registries; two viewports; critical/serious accessibility boundary; missing required evidence is blocked                | AICO-060/AICO-064 implementation                                 |
+| `A8-BUDGET-01`   | Exact model token/cost/time/invocation, sandbox compute/storage/file/output, retry/repair/rework values                                                            | AICO-033/AICO-051 implementation and measured AICO-086 evidence  |
+| `A8-CAPACITY-01` | Five-founder cohort, one run/company, global 2 run/1 build/2 invocation ceilings, exact 2x test targets                                                            | AICO-080 launch-environment capacity proof                       |
+| `A8-META-01`     | Strict entry schema, closed registries, and exact-SHA Product/Design/QA/Security owner acceptance                                                                  | Fresh review for any later semantic or validation-control change |
+| `A8-STOP-01`     | Exact pre-effect deny, eligible cancellation/fencing, unknown reconciliation/no replay, invalid-config fail-closed, persisted founder state, no fabricated success | AICO-033/AICO-051/AICO-064 implementation evidence               |
+| `A8-VALIDATE-01` | AJV schema validation, exact-value/registry comparison, cross-field invariants, 15 deliberate failure probes, and exact-SHA hosted validation                      | None for AICO-008                                                |
+| `A8-ACCEPT-01`   | Attributable exact-SHA owner decision and metadata-only Accepted reconciliation                                                                                    | None for AICO-008                                                |
 
 ## Closed verification registry
 
@@ -45,16 +48,16 @@ The canonical command must run a successful baseline plus these deliberate inval
 
 The expected probe set is compared by equality. A missing, duplicate, skipped, unexpectedly passing, or unrelated-failure probe fails the command. The command performs no network/provider/storage/sandbox effect and uses no production credential or paid service.
 
-## Candidate evidence fields
+## Decision evidence fields
 
-| Field                               | Value                |
-| ----------------------------------- | -------------------- |
-| Candidate semantic SHA              | Pending clean commit |
-| Hosted workflow URL                 | Pending              |
-| Hosted workflow SHA/result          | Pending              |
-| Product/Design/QA/Security decision | Pending              |
-| Accepted by/date/evidence           | Pending              |
-| Disputed IDs                        | None                 |
+| Field                               | Value                                                                                                                     |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| Candidate semantic SHA              | `e6d064f89b332145fde888a254197a740041684d`                                                                                |
+| Hosted workflow URL                 | [AICO-008 Alpha Operating Policy](https://github.com/duckvhuynh/aico-backend/actions/runs/31893135845/job/95032289440)    |
+| Hosted workflow SHA/result          | `e6d064f89b332145fde888a254197a740041684d` / Passed                                                                       |
+| Product/Design/QA/Security decision | `ACCEPTED`                                                                                                                |
+| Accepted by/date/evidence           | [`@duckvhuynh` / 2026-08-15 / PR #30 comment](https://github.com/duckvhuynh/aico-backend/pull/30#issuecomment-5303040180) |
+| Disputed IDs                        | None                                                                                                                      |
 
 ## Scope boundary
 
