@@ -23,5 +23,16 @@ jobs:
           cache: npm
       - name: Install exact dependencies
         run: npm ci --ignore-scripts
+      - name: Check AICO-008 package formatting
+        run: >-
+          npx prettier --check
+          .github/workflows/aico-008-alpha-policy.yml
+          docs/contracts/schemas/alpha-operating-policy.v1.schema.json
+          docs/delivery/AICO_008_EVIDENCE.md
+          docs/policies/alpha-operating-policy-v1.json
+          docs/policies/alpha-operating-policy-v1.md
+          scripts/prove-aico-008-policy-fail-closed.mjs
+          scripts/validate-aico-008-policy.mjs
+          scripts/verify-aico-008-alpha-policy.mjs
       - name: Validate closed policy and deliberate failure registry
-        run: npm run verify:alpha-policy
+        run: node scripts/verify-aico-008-alpha-policy.mjs

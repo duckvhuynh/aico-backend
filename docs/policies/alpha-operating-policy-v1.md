@@ -145,7 +145,7 @@ Capacity admission queues or denies before a provider, sandbox, object, token, o
 
 ## 8. Completeness contract — `A8-META-01`, `A8-VALIDATE-01`
 
-`npm run verify:alpha-policy` must pass as one foreground paid-service-free command. It validates:
+`node scripts/verify-aico-008-alpha-policy.mjs` must pass as one foreground paid-service-free command. It validates:
 
 - the strict JSON Schema and closed top-level shape;
 - the exact qualification, attachment, QA, budget, capacity, reason-code, and downstream-owner registries;

@@ -6,7 +6,7 @@
 - **Policy:** `docs/policies/alpha-operating-policy-v1.json`
 - **Decision record:** `docs/policies/alpha-operating-policy-v1.md`
 - **Schema:** `docs/contracts/schemas/alpha-operating-policy.v1.schema.json`
-- **Command:** `npm run verify:alpha-policy`
+- **Command:** `node scripts/verify-aico-008-alpha-policy.mjs`
 - **Review by:** 2026-11-20
 
 ## Criterion map
