@@ -357,6 +357,7 @@ const probes = {
   'accepted-without-evidence': () => {
     policy.status = 'ACCEPTED';
     policy.acceptance.decision = 'ACCEPTED';
+    policy.acceptance.candidate_sha = null;
   },
   'missing-downstream-owner': () => {
     policy.downstream_owners = policy.downstream_owners.filter((id) => id !== 'AICO-082');
