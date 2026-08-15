@@ -11,9 +11,11 @@
 - Corrected decision semantic SHA: `0f355699848a5e1c388c70b33dd7bfe61e3fbb4c`
 - Architecture/Security decision: [PR #23 comment 5291254107](https://github.com/duckvhuynh/aico-backend/pull/23#issuecomment-5291254107)
 - Product/Platform decision: [PR #23 comment 5291254854](https://github.com/duckvhuynh/aico-backend/pull/23#issuecomment-5291254854)
-- Proof candidate revision: Pending clean commit
-- Hosted verification: Pending
-- QA/Security evidence: Pending
+- Accepted proof semantic SHA: [`cb93673e1891a92a81966f4d811d880512602509`](https://github.com/duckvhuynh/aico-backend/commit/cb93673e1891a92a81966f4d811d880512602509)
+- Hosted semantic verification: [Backend CI run 31791120796](https://github.com/duckvhuynh/aico-backend/actions/runs/31791120796)
+- Retained semantic artifact: `aico-007-preview-proof-cb93673e1891a92a81966f4d811d880512602509` (artifact `9216022086`; expires 2026-11-12)
+- Hosted semantic manifest self-digest: `sha256:714788a30180ed7672884ba3bd12b5c0dcfa20960550f6687004f05f6e77a21b`
+- QA/Security acceptance: [PR #24 comment 5300021809](https://github.com/duckvhuynh/aico-backend/pull/24#issuecomment-5300021809)
 
 The earlier decision SHA `d30b76fb6aa47212450aee4cd592577f8df1300a` is historical
 evidence only. Delivery review found contradictions between its ADR, browser-token schema, and
@@ -132,7 +134,9 @@ unbounded evidence, or malformed records fail the proof.
 
 ## Required merge evidence
 
-Proof child #21 remains open until all evidence points to the same clean final proof SHA:
+Proof child #21 remains open until all evidence points to the same accepted clean semantic proof
+SHA. A later metadata-only reconciliation commit may record those permanent links, but it must not
+change proof code, fixtures, cases, mutations, controls, or verification behavior:
 
 - corrected ADR-010 bundle accepted on its own clean semantic SHA;
 - 39/39 stable cases pass with exact registry equality;
