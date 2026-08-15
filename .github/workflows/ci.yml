@@ -6,6 +6,7 @@ on:
     branches: [main]
 
 permissions:
+  actions: read
   contents: read
 
 jobs:
@@ -24,8 +25,17 @@ jobs:
       - name: Run the canonical foreground verifier
         env:
           PR_BODY: ${{ github.event.pull_request.body }}
+          GH_TOKEN: ${{ github.token }}
           AICO_PREVIEW_PROOF_EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          AICO_PROVIDER_DECISION_EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: npm run verify:ci
+      - name: Retain bounded AICO-005 decision evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: aico-005-provider-decision-${{ github.event.pull_request.head.sha || github.sha }}
+          path: .aico-evidence/aico-005-provider-decision.json
+          if-no-files-found: error
+          retention-days: 90
       - name: Retain bounded AICO-007 proof evidence
         if: ${{ hashFiles('.aico-evidence/aico-007-preview-proof.json') != '' }}
         uses: actions/upload-artifact@v4

@@ -1,0 +1,83 @@
+{
+  "contract": "aico.model-provider-configuration",
+  "schema_version": "1.0",
+  "meta": {
+    "message_id": "20000000-0000-4000-8000-000000000001",
+    "correlation_id": "20000000-0000-4000-8000-000000000002",
+    "causation_id": "20000000-0000-4000-8000-000000000003",
+    "trace_id": "22222222222222222222222222222222",
+    "span_id": "2222222222222222",
+    "emitted_at": "2026-08-15T04:01:00Z"
+  },
+  "configuration_ref": {
+    "id": "20000000-0000-4000-8000-000000000010",
+    "kind": "PROVIDER_CONFIGURATION",
+    "logical_key": "provider.external-candidate",
+    "semantic_version": "1.0.0",
+    "content_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+  },
+  "configuration_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+  "provider_key": "OPENAI_RESPONSES_DIRECT",
+  "adapter_kind": "DIRECT_PROVIDER",
+  "execution_mode": "EXTERNAL",
+  "model_key": "candidate-not-accepted",
+  "model_revision": "candidate-not-accepted-v1",
+  "capabilities": {
+    "structured_output": true,
+    "tool_proposals": false,
+    "abort_signal": true,
+    "idempotency_lookup": false,
+    "status_reconciliation": false
+  },
+  "credential_mode": "SECRET_MANAGER_RUNTIME_ONLY",
+  "network_access": "PROVIDER_ENDPOINT_ALLOWLIST_ONLY",
+  "provider_sdk_retry_count": 0,
+  "automatic_cross_provider_fallback": false,
+  "content_use": {
+    "training_use": "PROHIBITED",
+    "training_opt_in_surface": false,
+    "founder_customer_content": "EXCLUDED",
+    "external_data_transfer": "MANIFEST_GATED",
+    "retention_profile_ref": null,
+    "data_controls_acceptance_ref": null,
+    "disclosure_acceptance_ref": null
+  },
+  "limits": {
+    "timeout_ms": 30000,
+    "maximum_input_tokens": "4096",
+    "maximum_output_tokens": "1024",
+    "maximum_cost_micros": "0",
+    "currency": "USD",
+    "maximum_content_bytes": 131072,
+    "maximum_tool_proposals": 0
+  },
+  "pricing_catalog_ref": {
+    "id": "20000000-0000-4000-8000-000000000011",
+    "kind": "PRICING_CATALOG",
+    "logical_key": "pricing.external-unaccepted",
+    "semantic_version": "1.0.0",
+    "content_digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+  },
+  "safety_policy_ref": {
+    "id": "20000000-0000-4000-8000-000000000012",
+    "kind": "SAFETY_POLICY",
+    "logical_key": "safety.external-unaccepted",
+    "semantic_version": "1.0.0",
+    "content_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+  },
+  "redaction_policy_ref": {
+    "id": "20000000-0000-4000-8000-000000000013",
+    "kind": "REDACTION_POLICY",
+    "logical_key": "redaction.provider-boundary",
+    "semantic_version": "1.0.0",
+    "content_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222"
+  },
+  "activation": {
+    "status": "DISABLED",
+    "allowed_environments": [],
+    "acceptance_manifest_ref": null,
+    "activated_at": null,
+    "disabled_reason": "MANIFEST_ACCEPTANCE_REQUIRED"
+  },
+  "created_at": "2026-08-15T04:01:00Z"
+}

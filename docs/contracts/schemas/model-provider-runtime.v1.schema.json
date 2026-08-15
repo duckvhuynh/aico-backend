@@ -1,0 +1,2178 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aicompanyos.dev/schemas/model-provider-runtime.v1.schema.json",
+  "title": "AI Company OS Model Provider Runtime Contract v1",
+  "description": "Closed provider-neutral request, result, repair, configuration, targeting, circuit, and redacted evidence messages for AICO-005.",
+  "oneOf": [
+    { "$ref": "#/$defs/modelProviderInvocationRequest" },
+    { "$ref": "#/$defs/modelProviderInvocationResult" },
+    { "$ref": "#/$defs/modelProviderRepairRequest" },
+    { "$ref": "#/$defs/modelProviderConfiguration" },
+    { "$ref": "#/$defs/modelProviderTargetDecision" },
+    { "$ref": "#/$defs/modelProviderCircuitDecision" },
+    { "$ref": "#/$defs/modelProviderEvidence" }
+  ],
+  "$defs": {
+    "uuid": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "rfc3339Utc": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "Z$",
+      "maxLength": 35
+    },
+    "semanticVersion": {
+      "type": "string",
+      "pattern": "^[1-9][0-9]*\\.[0-9]+\\.[0-9]+(?:-[a-z0-9.-]+)?$",
+      "maxLength": 80
+    },
+    "versionToken": {
+      "type": "string",
+      "pattern": "^(?!latest$)[A-Za-z0-9][A-Za-z0-9._/-]{0,79}$"
+    },
+    "safeIdentifier": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$"
+    },
+    "safeReasonCode": {
+      "type": "string",
+      "pattern": "^[A-Z][A-Z0-9_]{1,79}$"
+    },
+    "logicalKey": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{15,199}$"
+    },
+    "decimalInteger": {
+      "type": "string",
+      "pattern": "^(?:0|[1-9][0-9]*)$",
+      "maxLength": 30
+    },
+    "positiveDecimalInteger": {
+      "type": "string",
+      "pattern": "^[1-9][0-9]*$",
+      "maxLength": 30
+    },
+    "currency": {
+      "type": "string",
+      "pattern": "^[A-Z]{3}$"
+    },
+    "traceId": {
+      "type": "string",
+      "pattern": "^(?!0{32}$)[a-f0-9]{32}$"
+    },
+    "spanId": {
+      "type": "string",
+      "pattern": "^(?!0{16}$)[a-f0-9]{16}$"
+    },
+    "jsonPointer": {
+      "type": "string",
+      "pattern": "^(?:|/(?:[^~/]|~[01])*)$",
+      "maxLength": 240
+    },
+    "messageMeta": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "message_id",
+        "correlation_id",
+        "causation_id",
+        "trace_id",
+        "span_id",
+        "emitted_at"
+      ],
+      "properties": {
+        "message_id": { "$ref": "#/$defs/uuid" },
+        "correlation_id": { "$ref": "#/$defs/uuid" },
+        "causation_id": { "$ref": "#/$defs/uuid" },
+        "trace_id": { "$ref": "#/$defs/traceId" },
+        "span_id": { "$ref": "#/$defs/spanId" },
+        "emitted_at": { "$ref": "#/$defs/rfc3339Utc" }
+      }
+    },
+    "versionRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind", "logical_key", "semantic_version", "content_digest"],
+      "properties": {
+        "id": { "$ref": "#/$defs/uuid" },
+        "kind": {
+          "enum": [
+            "WORKFLOW",
+            "POLICY",
+            "EMPLOYEE_DEFINITION",
+            "INSTRUCTION_BUNDLE",
+            "INPUT_SCHEMA",
+            "OUTPUT_SCHEMA",
+            "RUBRIC",
+            "TOOL_DEFINITION",
+            "TOOLSET",
+            "PROVIDER_CONFIGURATION",
+            "PRICING_CATALOG",
+            "BUDGET_POLICY",
+            "REDACTION_POLICY",
+            "SAFETY_POLICY",
+            "EVALUATOR",
+            "CHECK_SET"
+          ]
+        },
+        "logical_key": { "$ref": "#/$defs/safeIdentifier" },
+        "semantic_version": { "$ref": "#/$defs/semanticVersion" },
+        "content_digest": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "workflowRef": {
+      "allOf": [
+        { "$ref": "#/$defs/versionRef" },
+        { "type": "object", "properties": { "kind": { "const": "WORKFLOW" } } }
+      ]
+    },
+    "policyRef": {
+      "allOf": [
+        { "$ref": "#/$defs/versionRef" },
+        { "type": "object", "properties": { "kind": { "const": "POLICY" } } }
+      ]
+    },
+    "employeeDefinitionRef": {
+      "allOf": [
+        { "$ref": "#/$defs/versionRef" },
+        { "type": "object", "properties": { "kind": { "const": "EMPLOYEE_DEFINITION" } } }
+      ]
+    },
+    "instructionBundleRef": {
+      "allOf": [
+        { "$ref": "#/$defs/versionRef" },
+        { "type": "object", "properties": { "kind": { "const": "INSTRUCTION_BUNDLE" } } }
+      ]
+    },
+    "inputSchemaRef": {
+      "allOf": [
+        { "$ref": "#/$defs/versionRef" },
+        { "type": "object", "properties": { "kind": { "const": "INPUT_SCHEMA" } } }
+      ]
+    },
+    "outputSchemaRef": {
+      "allOf": [
+        { "$ref": "#/$defs/versionRef" },
+        { "type": "object", "properties": { "kind": { "const": "OUTPUT_SCHEMA" } } }
+      ]
+    },
+    "rubricRef": {
+      "allOf": [
+        { "$ref": "#/$defs/versionRef" },
+        { "type": "object", "properties": { "kind": { "const": "RUBRIC" } } }
+      ]
+    },
+    "toolDefinitionRef": {
+      "allOf": [
+        { "$ref": "#/$defs/versionRef" },
+        { "type": "object", "properties": { "kind": { "const": "TOOL_DEFINITION" } } }
+      ]
+    },
+    "toolsetRef": {
+      "allOf": [
+        { "$ref": "#/$defs/versionRef" },
+        { "type": "object", "properties": { "kind": { "const": "TOOLSET" } } }
+      ]
+    },
+    "providerConfigurationRef": {
+      "allOf": [
+        { "$ref": "#/$defs/versionRef" },
+        { "type": "object", "properties": { "kind": { "const": "PROVIDER_CONFIGURATION" } } }
+      ]
+    },
+    "pricingCatalogRef": {
+      "allOf": [
+        { "$ref": "#/$defs/versionRef" },
+        { "type": "object", "properties": { "kind": { "const": "PRICING_CATALOG" } } }
+      ]
+    },
+    "budgetPolicyRef": {
+      "allOf": [
+        { "$ref": "#/$defs/versionRef" },
+        { "type": "object", "properties": { "kind": { "const": "BUDGET_POLICY" } } }
+      ]
+    },
+    "redactionPolicyRef": {
+      "allOf": [
+        { "$ref": "#/$defs/versionRef" },
+        { "type": "object", "properties": { "kind": { "const": "REDACTION_POLICY" } } }
+      ]
+    },
+    "safetyPolicyRef": {
+      "allOf": [
+        { "$ref": "#/$defs/versionRef" },
+        { "type": "object", "properties": { "kind": { "const": "SAFETY_POLICY" } } }
+      ]
+    },
+    "evaluatorRef": {
+      "allOf": [
+        { "$ref": "#/$defs/versionRef" },
+        { "type": "object", "properties": { "kind": { "const": "EVALUATOR" } } }
+      ]
+    },
+    "checkSetRef": {
+      "allOf": [
+        { "$ref": "#/$defs/versionRef" },
+        { "type": "object", "properties": { "kind": { "const": "CHECK_SET" } } }
+      ]
+    },
+    "nullableRubricRef": {
+      "oneOf": [{ "$ref": "#/$defs/rubricRef" }, { "type": "null" }]
+    },
+    "nullableProviderConfigurationRef": {
+      "oneOf": [{ "$ref": "#/$defs/providerConfigurationRef" }, { "type": "null" }]
+    },
+    "nullableRetentionPolicyRef": {
+      "oneOf": [{ "$ref": "#/$defs/policyRef" }, { "type": "null" }]
+    },
+    "immutableBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version", "digest"],
+      "properties": {
+        "id": { "$ref": "#/$defs/uuid" },
+        "version": { "$ref": "#/$defs/versionToken" },
+        "digest": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "nullableImmutableBinding": {
+      "oneOf": [{ "$ref": "#/$defs/immutableBinding" }, { "type": "null" }]
+    },
+    "redactionReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "policy_ref",
+        "outcome",
+        "reason_codes",
+        "redacted_field_paths",
+        "input_digest",
+        "output_digest"
+      ],
+      "properties": {
+        "policy_ref": { "$ref": "#/$defs/redactionPolicyRef" },
+        "outcome": { "enum": ["PASS", "REDACTED", "DROPPED"] },
+        "reason_codes": {
+          "type": "array",
+          "maxItems": 16,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/safeReasonCode" }
+        },
+        "redacted_field_paths": {
+          "type": "array",
+          "maxItems": 32,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/jsonPointer" }
+        },
+        "input_digest": { "$ref": "#/$defs/sha256" },
+        "output_digest": {
+          "oneOf": [{ "$ref": "#/$defs/sha256" }, { "type": "null" }]
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "outcome": { "const": "DROPPED" } } },
+          "then": { "properties": { "output_digest": { "type": "null" } } },
+          "else": { "properties": { "output_digest": { "$ref": "#/$defs/sha256" } } }
+        }
+      ]
+    },
+    "r0ContentClassification": { "const": "SYNTHETIC" },
+    "r0DispatchableRedactionReceipt": {
+      "allOf": [
+        { "$ref": "#/$defs/redactionReceipt" },
+        {
+          "type": "object",
+          "properties": { "outcome": { "enum": ["PASS", "REDACTED"] } }
+        }
+      ]
+    },
+    "objectReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["object_id", "version", "digest", "media_type", "size_bytes"],
+      "properties": {
+        "object_id": { "$ref": "#/$defs/uuid" },
+        "version": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "digest": { "$ref": "#/$defs/sha256" },
+        "media_type": {
+          "enum": [
+            "application/json",
+            "text/plain",
+            "text/markdown",
+            "application/vnd.aico.artifact+json"
+          ]
+        },
+        "size_bytes": { "$ref": "#/$defs/positiveDecimalInteger" }
+      }
+    },
+    "textContentPart": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "classification", "text", "content_digest", "redaction"],
+      "properties": {
+        "kind": { "const": "TEXT" },
+        "classification": { "$ref": "#/$defs/r0ContentClassification" },
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 32768
+        },
+        "content_digest": { "$ref": "#/$defs/sha256" },
+        "redaction": { "$ref": "#/$defs/r0DispatchableRedactionReceipt" }
+      }
+    },
+    "jsonContentPart": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "classification",
+        "schema_ref",
+        "canonical_json",
+        "content_digest",
+        "redaction"
+      ],
+      "properties": {
+        "kind": { "const": "JSON" },
+        "classification": { "$ref": "#/$defs/r0ContentClassification" },
+        "schema_ref": { "$ref": "#/$defs/inputSchemaRef" },
+        "canonical_json": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 32768,
+          "contentMediaType": "application/json"
+        },
+        "content_digest": { "$ref": "#/$defs/sha256" },
+        "redaction": { "$ref": "#/$defs/r0DispatchableRedactionReceipt" }
+      }
+    },
+    "referenceContentPart": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "classification",
+        "reference",
+        "allowed_field_paths",
+        "content_digest",
+        "redaction"
+      ],
+      "properties": {
+        "kind": { "const": "REFERENCE" },
+        "classification": { "$ref": "#/$defs/r0ContentClassification" },
+        "reference": { "$ref": "#/$defs/objectReference" },
+        "allowed_field_paths": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 64,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/jsonPointer" }
+        },
+        "content_digest": { "$ref": "#/$defs/sha256" },
+        "redaction": { "$ref": "#/$defs/r0DispatchableRedactionReceipt" }
+      }
+    },
+    "contentPart": {
+      "oneOf": [
+        { "$ref": "#/$defs/textContentPart" },
+        { "$ref": "#/$defs/jsonContentPart" },
+        { "$ref": "#/$defs/referenceContentPart" }
+      ]
+    },
+    "message": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["role", "content_parts"],
+      "properties": {
+        "role": { "enum": ["SYSTEM", "USER", "TOOL_RESULT"] },
+        "content_parts": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 32,
+          "items": { "$ref": "#/$defs/contentPart" }
+        }
+      }
+    },
+    "strictSchemaDeclaration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_ref",
+        "canonical_schema_digest",
+        "strict",
+        "unknown_fields",
+        "maximum_serialized_bytes"
+      ],
+      "properties": {
+        "schema_ref": { "$ref": "#/$defs/versionRef" },
+        "canonical_schema_digest": { "$ref": "#/$defs/sha256" },
+        "strict": { "const": true },
+        "unknown_fields": { "const": "REJECT" },
+        "maximum_serialized_bytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1048576
+        }
+      }
+    },
+    "strictInputSchemaDeclaration": {
+      "allOf": [
+        { "$ref": "#/$defs/strictSchemaDeclaration" },
+        {
+          "type": "object",
+          "properties": { "schema_ref": { "$ref": "#/$defs/inputSchemaRef" } }
+        }
+      ]
+    },
+    "strictOutputSchemaDeclaration": {
+      "allOf": [
+        { "$ref": "#/$defs/strictSchemaDeclaration" },
+        {
+          "type": "object",
+          "properties": { "schema_ref": { "$ref": "#/$defs/outputSchemaRef" } }
+        }
+      ]
+    },
+    "toolDeclaration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "tool_ref",
+        "action",
+        "description_digest",
+        "parameters_schema",
+        "result_schema",
+        "proposal_only"
+      ],
+      "properties": {
+        "tool_ref": { "$ref": "#/$defs/toolDefinitionRef" },
+        "action": { "$ref": "#/$defs/safeIdentifier" },
+        "description_digest": { "$ref": "#/$defs/sha256" },
+        "parameters_schema": { "$ref": "#/$defs/strictInputSchemaDeclaration" },
+        "result_schema": { "$ref": "#/$defs/strictOutputSchemaDeclaration" },
+        "proposal_only": { "const": true }
+      }
+    },
+    "requestLimits": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "timeout_ms",
+        "maximum_input_tokens",
+        "maximum_output_tokens",
+        "maximum_cost_micros",
+        "currency",
+        "maximum_content_bytes",
+        "maximum_tool_proposals"
+      ],
+      "properties": {
+        "timeout_ms": {
+          "type": "integer",
+          "minimum": 100,
+          "maximum": 300000
+        },
+        "maximum_input_tokens": { "$ref": "#/$defs/positiveDecimalInteger" },
+        "maximum_output_tokens": { "$ref": "#/$defs/positiveDecimalInteger" },
+        "maximum_cost_micros": { "$ref": "#/$defs/decimalInteger" },
+        "currency": { "$ref": "#/$defs/currency" },
+        "maximum_content_bytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1048576
+        },
+        "maximum_tool_proposals": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 16
+        }
+      }
+    },
+    "budgetReservation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reservation_id", "category", "amount", "state"],
+      "properties": {
+        "reservation_id": { "$ref": "#/$defs/uuid" },
+        "category": {
+          "enum": [
+            "MODEL_INPUT_TOKENS",
+            "MODEL_OUTPUT_TOKENS",
+            "MODEL_COST_MICROS",
+            "WALL_MILLISECONDS",
+            "SCHEMA_REPAIRS",
+            "TRANSIENT_RETRIES"
+          ]
+        },
+        "amount": { "$ref": "#/$defs/decimalInteger" },
+        "state": { "const": "RESERVED" }
+      }
+    },
+    "versionBindings": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "workflow",
+        "policy",
+        "employee_definition",
+        "instruction_bundle",
+        "input_schema",
+        "output_schema",
+        "rubric",
+        "toolset",
+        "provider_configuration",
+        "pricing_catalog",
+        "budget_policy",
+        "redaction_policy"
+      ],
+      "properties": {
+        "workflow": { "$ref": "#/$defs/workflowRef" },
+        "policy": { "$ref": "#/$defs/policyRef" },
+        "employee_definition": { "$ref": "#/$defs/employeeDefinitionRef" },
+        "instruction_bundle": { "$ref": "#/$defs/instructionBundleRef" },
+        "input_schema": { "$ref": "#/$defs/inputSchemaRef" },
+        "output_schema": { "$ref": "#/$defs/outputSchemaRef" },
+        "rubric": { "$ref": "#/$defs/nullableRubricRef" },
+        "toolset": { "$ref": "#/$defs/toolsetRef" },
+        "provider_configuration": { "$ref": "#/$defs/providerConfigurationRef" },
+        "pricing_catalog": { "$ref": "#/$defs/pricingCatalogRef" },
+        "budget_policy": { "$ref": "#/$defs/budgetPolicyRef" },
+        "redaction_policy": { "$ref": "#/$defs/redactionPolicyRef" }
+      }
+    },
+    "requestPrivacy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "credentials_present",
+        "hidden_reasoning_present",
+        "raw_transcript_present",
+        "foreign_tenant_content_present",
+        "prohibited_content_scan",
+        "scan_policy_ref",
+        "scan_digest"
+      ],
+      "properties": {
+        "credentials_present": { "const": false },
+        "hidden_reasoning_present": { "const": false },
+        "raw_transcript_present": { "const": false },
+        "foreign_tenant_content_present": { "const": false },
+        "prohibited_content_scan": { "const": "PASS" },
+        "scan_policy_ref": { "$ref": "#/$defs/redactionPolicyRef" },
+        "scan_digest": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "repairLinkage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "original_invocation_id",
+        "original_result_digest",
+        "repair_ordinal",
+        "repair_cap",
+        "separate_invocation_and_reservation"
+      ],
+      "properties": {
+        "original_invocation_id": { "$ref": "#/$defs/uuid" },
+        "original_result_digest": { "$ref": "#/$defs/sha256" },
+        "repair_ordinal": { "const": 1 },
+        "repair_cap": { "const": 1 },
+        "separate_invocation_and_reservation": { "const": true }
+      }
+    },
+    "repairInvocationBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "invocation_id",
+        "logical_idempotency_key",
+        "request_digest",
+        "provider_configuration_ref",
+        "context_manifest",
+        "repair_linkage"
+      ],
+      "properties": {
+        "invocation_id": { "$ref": "#/$defs/uuid" },
+        "logical_idempotency_key": { "$ref": "#/$defs/logicalKey" },
+        "request_digest": { "$ref": "#/$defs/sha256" },
+        "provider_configuration_ref": { "$ref": "#/$defs/providerConfigurationRef" },
+        "context_manifest": { "$ref": "#/$defs/immutableBinding" },
+        "repair_linkage": { "$ref": "#/$defs/repairLinkage" }
+      }
+    },
+    "repairSemanticValidationReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "receipt_version",
+        "validator_ref",
+        "outcome",
+        "validated_repair_request_digest",
+        "reservation_sets_digest",
+        "invariants",
+        "receipt_digest",
+        "validated_at"
+      ],
+      "properties": {
+        "receipt_version": { "const": "1.0" },
+        "validator_ref": { "$ref": "#/$defs/evaluatorRef" },
+        "outcome": { "const": "PASS" },
+        "validated_repair_request_digest": { "$ref": "#/$defs/sha256" },
+        "reservation_sets_digest": { "$ref": "#/$defs/sha256" },
+        "invariants": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "original_and_repair_reservations_disjoint",
+            "new_invocation_identity",
+            "failed_invocation_link_matches",
+            "failed_result_digest_matches",
+            "context_manifest_matches",
+            "repair_cap_not_exceeded"
+          ],
+          "properties": {
+            "original_and_repair_reservations_disjoint": { "const": true },
+            "new_invocation_identity": { "const": true },
+            "failed_invocation_link_matches": { "const": true },
+            "failed_result_digest_matches": { "const": true },
+            "context_manifest_matches": { "const": true },
+            "repair_cap_not_exceeded": { "const": true }
+          }
+        },
+        "receipt_digest": { "$ref": "#/$defs/sha256" },
+        "validated_at": { "$ref": "#/$defs/rfc3339Utc" }
+      }
+    },
+    "r0ExecutionGuard": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "environment",
+        "provider_key",
+        "adapter_kind",
+        "execution_mode",
+        "network_access",
+        "external_data_transfer",
+        "content_scope",
+        "configuration_ref",
+        "configuration_status",
+        "target_decision_id",
+        "target_decision_digest",
+        "target_decision_status",
+        "target_decision_kind",
+        "resolved_target_digest",
+        "binding_invariants",
+        "external_content_authorized",
+        "guard_validator_ref",
+        "guard_validation_outcome",
+        "guard_receipt_digest",
+        "evaluated_at"
+      ],
+      "properties": {
+        "environment": { "enum": ["LOCAL", "TEST", "CI"] },
+        "provider_key": { "const": "DETERMINISTIC_FIXTURE" },
+        "adapter_kind": { "const": "DETERMINISTIC_FIXTURE" },
+        "execution_mode": { "const": "DETERMINISTIC_ONLY" },
+        "network_access": { "const": "DENY" },
+        "external_data_transfer": { "const": "NONE" },
+        "content_scope": { "const": "APPROVED_SYNTHETIC_FIXTURE_ONLY" },
+        "configuration_ref": { "$ref": "#/$defs/providerConfigurationRef" },
+        "configuration_status": { "const": "ACTIVE" },
+        "target_decision_id": { "$ref": "#/$defs/uuid" },
+        "target_decision_digest": { "$ref": "#/$defs/sha256" },
+        "target_decision_status": { "const": "APPLIED" },
+        "target_decision_kind": { "enum": ["ACTIVATE", "ROLLBACK"] },
+        "resolved_target_digest": { "$ref": "#/$defs/sha256" },
+        "binding_invariants": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "configuration_matches_version_binding",
+            "target_matches_request_binding",
+            "resolved_target_matches_configuration"
+          ],
+          "properties": {
+            "configuration_matches_version_binding": { "const": true },
+            "target_matches_request_binding": { "const": true },
+            "resolved_target_matches_configuration": { "const": true }
+          }
+        },
+        "external_content_authorized": { "const": false },
+        "guard_validator_ref": { "$ref": "#/$defs/evaluatorRef" },
+        "guard_validation_outcome": { "const": "PASS" },
+        "guard_receipt_digest": { "$ref": "#/$defs/sha256" },
+        "evaluated_at": { "$ref": "#/$defs/rfc3339Utc" }
+      }
+    },
+    "modelProviderInvocationRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract",
+        "schema_version",
+        "meta",
+        "company_id",
+        "run_id",
+        "task_id",
+        "attempt_id",
+        "invocation_id",
+        "logical_idempotency_key",
+        "request_digest",
+        "employee_key",
+        "attempt_manifest",
+        "context_manifest",
+        "versions",
+        "target_decision_id",
+        "target_decision_digest",
+        "execution_guard",
+        "messages",
+        "output_schema",
+        "declared_tools",
+        "limits",
+        "deadline_at",
+        "budget_reservations",
+        "budget_reservations_digest",
+        "repair_linkage",
+        "provider_sdk_retry_count",
+        "runtime_retry_owner",
+        "worker_wait_strategy",
+        "automatic_cross_provider_fallback",
+        "privacy"
+      ],
+      "properties": {
+        "contract": { "const": "aico.model-provider-invocation-request" },
+        "schema_version": { "const": "1.0" },
+        "meta": { "$ref": "#/$defs/messageMeta" },
+        "company_id": { "$ref": "#/$defs/uuid" },
+        "run_id": { "$ref": "#/$defs/uuid" },
+        "task_id": { "$ref": "#/$defs/uuid" },
+        "attempt_id": { "$ref": "#/$defs/uuid" },
+        "invocation_id": { "$ref": "#/$defs/uuid" },
+        "logical_idempotency_key": { "$ref": "#/$defs/logicalKey" },
+        "request_digest": { "$ref": "#/$defs/sha256" },
+        "employee_key": { "enum": ["EMP-PM", "EMP-DES", "EMP-ENG", "EMP-QA"] },
+        "attempt_manifest": { "$ref": "#/$defs/immutableBinding" },
+        "context_manifest": { "$ref": "#/$defs/immutableBinding" },
+        "versions": { "$ref": "#/$defs/versionBindings" },
+        "target_decision_id": { "$ref": "#/$defs/uuid" },
+        "target_decision_digest": { "$ref": "#/$defs/sha256" },
+        "execution_guard": { "$ref": "#/$defs/r0ExecutionGuard" },
+        "messages": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 64,
+          "items": { "$ref": "#/$defs/message" }
+        },
+        "output_schema": { "$ref": "#/$defs/strictOutputSchemaDeclaration" },
+        "declared_tools": {
+          "type": "array",
+          "maxItems": 16,
+          "items": { "$ref": "#/$defs/toolDeclaration" }
+        },
+        "limits": { "$ref": "#/$defs/requestLimits" },
+        "deadline_at": { "$ref": "#/$defs/rfc3339Utc" },
+        "budget_reservations": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 8,
+          "items": { "$ref": "#/$defs/budgetReservation" }
+        },
+        "budget_reservations_digest": { "$ref": "#/$defs/sha256" },
+        "repair_linkage": {
+          "oneOf": [{ "$ref": "#/$defs/repairLinkage" }, { "type": "null" }]
+        },
+        "provider_sdk_retry_count": { "const": 0 },
+        "runtime_retry_owner": { "const": "PERSISTED_SCHEDULER" },
+        "worker_wait_strategy": { "const": "PERSISTED_NEXT_ATTEMPT_AT" },
+        "automatic_cross_provider_fallback": { "const": false },
+        "privacy": { "$ref": "#/$defs/requestPrivacy" }
+      }
+    },
+    "validationDiagnostic": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "instance_path", "schema_path", "keyword", "expected_class"],
+      "properties": {
+        "code": { "$ref": "#/$defs/safeReasonCode" },
+        "instance_path": { "$ref": "#/$defs/jsonPointer" },
+        "schema_path": { "$ref": "#/$defs/jsonPointer" },
+        "keyword": { "$ref": "#/$defs/safeIdentifier" },
+        "expected_class": {
+          "enum": ["TYPE", "REQUIRED", "ENUM", "FORMAT", "BOUND", "SEMANTIC", "UNKNOWN_FIELD"]
+        }
+      }
+    },
+    "candidateOutput": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_ref",
+        "canonical_json",
+        "content_digest",
+        "trust",
+        "state_authority",
+        "artifact_authority",
+        "tool_authority"
+      ],
+      "properties": {
+        "schema_ref": { "$ref": "#/$defs/outputSchemaRef" },
+        "canonical_json": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 1048576,
+          "contentMediaType": "application/json"
+        },
+        "content_digest": { "$ref": "#/$defs/sha256" },
+        "trust": { "const": "UNTRUSTED_CANDIDATE" },
+        "state_authority": { "const": "NONE" },
+        "artifact_authority": { "const": "NONE" },
+        "tool_authority": { "const": "NONE" }
+      }
+    },
+    "proposedToolRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "proposal_id",
+        "tool_ref",
+        "action",
+        "parameters_schema_ref",
+        "parameters_canonical_json",
+        "parameters_digest",
+        "execution_authority"
+      ],
+      "properties": {
+        "proposal_id": { "$ref": "#/$defs/uuid" },
+        "tool_ref": { "$ref": "#/$defs/toolDefinitionRef" },
+        "action": { "$ref": "#/$defs/safeIdentifier" },
+        "parameters_schema_ref": { "$ref": "#/$defs/inputSchemaRef" },
+        "parameters_canonical_json": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 65536,
+          "contentMediaType": "application/json"
+        },
+        "parameters_digest": { "$ref": "#/$defs/sha256" },
+        "execution_authority": { "const": "NONE" }
+      }
+    },
+    "tokenMeasurement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["provenance", "quantity", "source"],
+      "properties": {
+        "provenance": { "enum": ["REPORTED", "ESTIMATED", "UNAVAILABLE"] },
+        "quantity": {
+          "oneOf": [{ "$ref": "#/$defs/decimalInteger" }, { "type": "null" }]
+        },
+        "source": { "enum": ["PROVIDER", "RUNTIME", "FIXTURE", "UNAVAILABLE"] }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "provenance": { "const": "UNAVAILABLE" } } },
+          "then": {
+            "properties": {
+              "quantity": { "type": "null" },
+              "source": { "const": "UNAVAILABLE" }
+            }
+          },
+          "else": {
+            "properties": {
+              "quantity": { "$ref": "#/$defs/decimalInteger" },
+              "source": { "enum": ["PROVIDER", "RUNTIME", "FIXTURE"] }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "provenance": { "const": "REPORTED" } } },
+          "then": { "properties": { "source": { "enum": ["PROVIDER", "FIXTURE"] } } }
+        },
+        {
+          "if": { "properties": { "provenance": { "const": "ESTIMATED" } } },
+          "then": { "properties": { "source": { "enum": ["RUNTIME", "FIXTURE"] } } }
+        }
+      ]
+    },
+    "usage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "input_tokens",
+        "output_tokens",
+        "cached_input_tokens",
+        "reasoning_tokens",
+        "total_tokens",
+        "usage_digest"
+      ],
+      "properties": {
+        "input_tokens": { "$ref": "#/$defs/tokenMeasurement" },
+        "output_tokens": { "$ref": "#/$defs/tokenMeasurement" },
+        "cached_input_tokens": { "$ref": "#/$defs/tokenMeasurement" },
+        "reasoning_tokens": { "$ref": "#/$defs/tokenMeasurement" },
+        "total_tokens": { "$ref": "#/$defs/tokenMeasurement" },
+        "usage_digest": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "cost": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "provenance",
+        "amount_micros",
+        "currency",
+        "source",
+        "pricing_catalog_ref",
+        "pricing_rule_key"
+      ],
+      "properties": {
+        "provenance": { "enum": ["REPORTED", "ESTIMATED", "UNAVAILABLE"] },
+        "amount_micros": {
+          "oneOf": [{ "$ref": "#/$defs/decimalInteger" }, { "type": "null" }]
+        },
+        "currency": {
+          "oneOf": [{ "$ref": "#/$defs/currency" }, { "type": "null" }]
+        },
+        "source": { "enum": ["PROVIDER", "CATALOG", "FIXTURE", "UNAVAILABLE"] },
+        "pricing_catalog_ref": { "$ref": "#/$defs/pricingCatalogRef" },
+        "pricing_rule_key": {
+          "oneOf": [{ "$ref": "#/$defs/safeIdentifier" }, { "type": "null" }]
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "provenance": { "const": "UNAVAILABLE" } } },
+          "then": {
+            "properties": {
+              "amount_micros": { "type": "null" },
+              "currency": { "type": "null" },
+              "source": { "const": "UNAVAILABLE" },
+              "pricing_rule_key": { "type": "null" }
+            }
+          },
+          "else": {
+            "properties": {
+              "amount_micros": { "$ref": "#/$defs/decimalInteger" },
+              "currency": { "$ref": "#/$defs/currency" },
+              "source": { "enum": ["PROVIDER", "CATALOG", "FIXTURE"] },
+              "pricing_rule_key": { "$ref": "#/$defs/safeIdentifier" }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "provenance": { "const": "REPORTED" } } },
+          "then": { "properties": { "source": { "enum": ["PROVIDER", "FIXTURE"] } } }
+        },
+        {
+          "if": { "properties": { "provenance": { "const": "ESTIMATED" } } },
+          "then": { "properties": { "source": { "enum": ["CATALOG", "FIXTURE"] } } }
+        }
+      ]
+    },
+    "latency": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["queue_ms", "provider_ms", "total_ms"],
+      "properties": {
+        "queue_ms": { "type": "integer", "minimum": 0, "maximum": 86400000 },
+        "provider_ms": { "type": "integer", "minimum": 0, "maximum": 86400000 },
+        "total_ms": { "type": "integer", "minimum": 0, "maximum": 86400000 }
+      }
+    },
+    "resolvedProviderFacts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "provenance",
+        "provider_key",
+        "model_key",
+        "model_revision",
+        "fingerprint",
+        "model_resolution",
+        "model_resolution_accepted",
+        "reproducibility_grade"
+      ],
+      "properties": {
+        "provenance": { "enum": ["REPORTED", "ESTIMATED", "UNAVAILABLE"] },
+        "provider_key": {
+          "oneOf": [
+            { "enum": ["DETERMINISTIC_FIXTURE", "OPENAI_RESPONSES_DIRECT"] },
+            { "type": "null" }
+          ]
+        },
+        "model_key": {
+          "oneOf": [{ "$ref": "#/$defs/safeIdentifier" }, { "type": "null" }]
+        },
+        "model_revision": {
+          "oneOf": [{ "$ref": "#/$defs/versionToken" }, { "type": "null" }]
+        },
+        "fingerprint": {
+          "oneOf": [{ "$ref": "#/$defs/sha256" }, { "type": "null" }]
+        },
+        "model_resolution": {
+          "enum": ["NONE", "EXPECTED_RESOLUTION", "UNACCEPTED_DRIFT", "UNAVAILABLE"]
+        },
+        "model_resolution_accepted": { "type": "boolean" },
+        "reproducibility_grade": {
+          "enum": ["DETERMINISTIC", "INPUT_REPRODUCIBLE", "DEGRADED"]
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "provenance": { "const": "UNAVAILABLE" } } },
+          "then": {
+            "properties": {
+              "provider_key": { "type": "null" },
+              "model_key": { "type": "null" },
+              "model_revision": { "type": "null" },
+              "fingerprint": { "type": "null" },
+              "model_resolution": { "const": "UNAVAILABLE" },
+              "model_resolution_accepted": { "const": false },
+              "reproducibility_grade": { "const": "DEGRADED" }
+            }
+          },
+          "else": {
+            "properties": {
+              "provider_key": {
+                "enum": ["DETERMINISTIC_FIXTURE", "OPENAI_RESPONSES_DIRECT"]
+              },
+              "model_key": { "$ref": "#/$defs/safeIdentifier" },
+              "model_revision": { "$ref": "#/$defs/versionToken" },
+              "fingerprint": { "$ref": "#/$defs/sha256" },
+              "model_resolution": {
+                "enum": ["NONE", "EXPECTED_RESOLUTION", "UNACCEPTED_DRIFT"]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "model_resolution": { "const": "UNACCEPTED_DRIFT" } }
+          },
+          "then": {
+            "properties": {
+              "model_resolution_accepted": { "const": false },
+              "reproducibility_grade": { "const": "DEGRADED" }
+            }
+          }
+        }
+      ]
+    },
+    "r0SuccessfulResolvedProviderFacts": {
+      "allOf": [
+        { "$ref": "#/$defs/resolvedProviderFacts" },
+        {
+          "type": "object",
+          "properties": {
+            "provenance": { "const": "REPORTED" },
+            "provider_key": { "const": "DETERMINISTIC_FIXTURE" },
+            "model_resolution": { "enum": ["NONE", "EXPECTED_RESOLUTION"] },
+            "model_resolution_accepted": { "const": true }
+          }
+        }
+      ]
+    },
+    "successfulFinishReason": {
+      "enum": ["COMPLETED", "LENGTH", "TOOL_PROPOSAL"]
+    },
+    "r0SuccessfulSafety": {
+      "allOf": [
+        { "$ref": "#/$defs/safety" },
+        {
+          "type": "object",
+          "properties": { "outcome": { "enum": ["PASS", "REDACTED"] } }
+        }
+      ]
+    },
+    "r0SuccessfulRedactionReceipt": {
+      "allOf": [
+        { "$ref": "#/$defs/redactionReceipt" },
+        {
+          "type": "object",
+          "properties": { "outcome": { "enum": ["PASS", "REDACTED"] } }
+        }
+      ]
+    },
+    "safety": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["outcome", "policy_ref", "reason_codes"],
+      "properties": {
+        "outcome": { "enum": ["PASS", "REDACTED", "BLOCKED", "UNKNOWN"] },
+        "policy_ref": { "$ref": "#/$defs/safetyPolicyRef" },
+        "reason_codes": {
+          "type": "array",
+          "maxItems": 16,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/safeReasonCode" }
+        }
+      }
+    },
+    "validation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "validator_ref",
+        "validated_schema_ref",
+        "diagnostics",
+        "semantic_checks_digest",
+        "authority_after_validation"
+      ],
+      "properties": {
+        "status": { "enum": ["NOT_RUN", "PASSED", "FAILED"] },
+        "validator_ref": { "$ref": "#/$defs/evaluatorRef" },
+        "validated_schema_ref": { "$ref": "#/$defs/outputSchemaRef" },
+        "diagnostics": {
+          "type": "array",
+          "maxItems": 32,
+          "items": { "$ref": "#/$defs/validationDiagnostic" }
+        },
+        "semantic_checks_digest": { "$ref": "#/$defs/sha256" },
+        "authority_after_validation": { "const": "NONE_UNTIL_APPLICATION_COMMIT" }
+      }
+    },
+    "runtimeFailure": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "failure_id",
+        "classification",
+        "reason_code",
+        "safe_message",
+        "dispatch_phase",
+        "retry_guidance",
+        "retryable",
+        "retry_after",
+        "reconciliation_required",
+        "reconciliation_action",
+        "provider_safe_code",
+        "diagnostic_ref"
+      ],
+      "properties": {
+        "failure_id": { "$ref": "#/$defs/uuid" },
+        "classification": {
+          "enum": [
+            "PRE_DISPATCH_TRANSIENT",
+            "RATE_LIMITED",
+            "VALIDATION",
+            "REFUSAL_SAFETY",
+            "CANCELED",
+            "POST_DISPATCH_TIMEOUT_UNKNOWN",
+            "POLICY_DENIED",
+            "BUDGET_EXHAUSTED",
+            "TERMINAL_PROVIDER",
+            "INTEGRITY",
+            "CONFIGURATION",
+            "TARGET_KILLED",
+            "CIRCUIT_OPEN"
+          ]
+        },
+        "reason_code": { "$ref": "#/$defs/safeReasonCode" },
+        "safe_message": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 240
+        },
+        "dispatch_phase": { "enum": ["NOT_DISPATCHED", "DISPATCHED", "UNCERTAIN"] },
+        "retry_guidance": {
+          "enum": [
+            "NO_RETRY",
+            "PERSISTED_RETRY_SCHEDULE",
+            "REPAIR_INVOCATION",
+            "RECONCILE_BEFORE_DECISION",
+            "BLOCKED_OWNER_DECISION"
+          ]
+        },
+        "retryable": { "type": "boolean" },
+        "retry_after": {
+          "oneOf": [{ "$ref": "#/$defs/rfc3339Utc" }, { "type": "null" }]
+        },
+        "reconciliation_required": { "type": "boolean" },
+        "reconciliation_action": {
+          "enum": [
+            "NONE",
+            "LOOKUP_STATUS",
+            "CANCEL_OR_LOOKUP",
+            "OWNER_DECISION",
+            "QUARANTINE_AND_OWNER_DECISION"
+          ]
+        },
+        "provider_safe_code": {
+          "oneOf": [{ "$ref": "#/$defs/safeIdentifier" }, { "type": "null" }]
+        },
+        "diagnostic_ref": { "$ref": "#/$defs/nullableImmutableBinding" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "classification": { "const": "PRE_DISPATCH_TRANSIENT" } } },
+          "then": {
+            "properties": {
+              "dispatch_phase": { "const": "NOT_DISPATCHED" },
+              "retry_guidance": { "const": "PERSISTED_RETRY_SCHEDULE" },
+              "retryable": { "const": true },
+              "reconciliation_required": { "const": false },
+              "reconciliation_action": { "const": "NONE" }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "classification": { "const": "RATE_LIMITED" } } },
+          "then": {
+            "properties": {
+              "retry_guidance": { "const": "PERSISTED_RETRY_SCHEDULE" },
+              "retryable": { "const": true },
+              "reconciliation_required": { "const": false },
+              "reconciliation_action": { "const": "NONE" }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "classification": { "const": "VALIDATION" } } },
+          "then": {
+            "properties": {
+              "dispatch_phase": { "enum": ["NOT_DISPATCHED", "DISPATCHED"] }
+            }
+          }
+        },
+        {
+          "if": {
+            "allOf": [
+              { "properties": { "classification": { "const": "VALIDATION" } } },
+              { "properties": { "dispatch_phase": { "const": "NOT_DISPATCHED" } } }
+            ]
+          },
+          "then": {
+            "properties": {
+              "retry_guidance": { "const": "NO_RETRY" },
+              "retryable": { "const": false },
+              "reconciliation_required": { "const": false },
+              "reconciliation_action": { "const": "NONE" }
+            }
+          }
+        },
+        {
+          "if": {
+            "allOf": [
+              { "properties": { "classification": { "const": "VALIDATION" } } },
+              { "properties": { "dispatch_phase": { "const": "DISPATCHED" } } }
+            ]
+          },
+          "then": {
+            "properties": {
+              "retry_guidance": { "const": "REPAIR_INVOCATION" },
+              "retryable": { "const": false },
+              "reconciliation_required": { "const": false },
+              "reconciliation_action": { "const": "NONE" }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "classification": { "const": "POST_DISPATCH_TIMEOUT_UNKNOWN" } }
+          },
+          "then": {
+            "properties": {
+              "dispatch_phase": { "enum": ["DISPATCHED", "UNCERTAIN"] },
+              "retry_guidance": { "const": "RECONCILE_BEFORE_DECISION" },
+              "retryable": { "const": false },
+              "reconciliation_required": { "const": true },
+              "reconciliation_action": { "enum": ["LOOKUP_STATUS", "CANCEL_OR_LOOKUP"] }
+            }
+          }
+        },
+        {
+          "if": {
+            "allOf": [
+              { "properties": { "classification": { "const": "CANCELED" } } },
+              { "properties": { "dispatch_phase": { "const": "NOT_DISPATCHED" } } }
+            ]
+          },
+          "then": {
+            "properties": {
+              "retry_guidance": { "const": "NO_RETRY" },
+              "retryable": { "const": false },
+              "reconciliation_required": { "const": false },
+              "reconciliation_action": { "const": "NONE" }
+            }
+          }
+        },
+        {
+          "if": {
+            "allOf": [
+              { "properties": { "classification": { "const": "CANCELED" } } },
+              {
+                "properties": {
+                  "dispatch_phase": { "enum": ["DISPATCHED", "UNCERTAIN"] }
+                }
+              }
+            ]
+          },
+          "then": {
+            "properties": {
+              "retry_guidance": { "const": "NO_RETRY" },
+              "retryable": { "const": false },
+              "reconciliation_required": { "const": true },
+              "reconciliation_action": { "const": "CANCEL_OR_LOOKUP" }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "classification": { "enum": ["REFUSAL_SAFETY", "TERMINAL_PROVIDER"] }
+            }
+          },
+          "then": {
+            "properties": {
+              "retry_guidance": { "const": "NO_RETRY" },
+              "retryable": { "const": false },
+              "reconciliation_required": { "const": false },
+              "reconciliation_action": { "const": "NONE" }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "classification": { "const": "INTEGRITY" } } },
+          "then": {
+            "properties": {
+              "dispatch_phase": { "const": "UNCERTAIN" },
+              "retry_guidance": { "const": "BLOCKED_OWNER_DECISION" },
+              "retryable": { "const": false },
+              "reconciliation_required": { "const": true },
+              "reconciliation_action": { "const": "QUARANTINE_AND_OWNER_DECISION" }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "classification": {
+                "enum": [
+                  "POLICY_DENIED",
+                  "BUDGET_EXHAUSTED",
+                  "CONFIGURATION",
+                  "TARGET_KILLED",
+                  "CIRCUIT_OPEN"
+                ]
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "dispatch_phase": { "const": "NOT_DISPATCHED" },
+              "retry_guidance": { "enum": ["NO_RETRY", "BLOCKED_OWNER_DECISION"] },
+              "retryable": { "const": false },
+              "reconciliation_required": { "const": false },
+              "reconciliation_action": { "const": "NONE" }
+            }
+          }
+        }
+      ]
+    },
+    "resultPrivacy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "raw_prompt_present",
+        "raw_completion_present",
+        "provider_error_body_present",
+        "credential_present",
+        "tenant_content_present",
+        "hidden_reasoning_present",
+        "signed_url_present",
+        "prohibited_content_scan",
+        "scan_digest"
+      ],
+      "properties": {
+        "raw_prompt_present": { "const": false },
+        "raw_completion_present": { "const": false },
+        "provider_error_body_present": { "const": false },
+        "credential_present": { "const": false },
+        "tenant_content_present": { "const": false },
+        "hidden_reasoning_present": { "const": false },
+        "signed_url_present": { "const": false },
+        "prohibited_content_scan": { "const": "PASS" },
+        "scan_digest": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "modelProviderInvocationResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract",
+        "schema_version",
+        "meta",
+        "result_id",
+        "result_digest",
+        "request_digest",
+        "company_id",
+        "run_id",
+        "task_id",
+        "attempt_id",
+        "invocation_id",
+        "status",
+        "candidate_output",
+        "proposed_tool_requests",
+        "provider_request_id",
+        "requested_provider",
+        "requested_model",
+        "provider_configuration_ref",
+        "resolved",
+        "usage",
+        "cost",
+        "latency",
+        "finish_reason",
+        "safety",
+        "redaction",
+        "validation",
+        "failure",
+        "state_authority",
+        "artifact_authority",
+        "tool_authority",
+        "privacy",
+        "completed_at"
+      ],
+      "properties": {
+        "contract": { "const": "aico.model-provider-invocation-result" },
+        "schema_version": { "const": "1.0" },
+        "meta": { "$ref": "#/$defs/messageMeta" },
+        "result_id": { "$ref": "#/$defs/uuid" },
+        "result_digest": { "$ref": "#/$defs/sha256" },
+        "request_digest": { "$ref": "#/$defs/sha256" },
+        "company_id": { "$ref": "#/$defs/uuid" },
+        "run_id": { "$ref": "#/$defs/uuid" },
+        "task_id": { "$ref": "#/$defs/uuid" },
+        "attempt_id": { "$ref": "#/$defs/uuid" },
+        "invocation_id": { "$ref": "#/$defs/uuid" },
+        "status": { "enum": ["SUCCEEDED", "FAILED", "CANCELED", "UNKNOWN"] },
+        "candidate_output": {
+          "oneOf": [{ "$ref": "#/$defs/candidateOutput" }, { "type": "null" }]
+        },
+        "proposed_tool_requests": {
+          "type": "array",
+          "maxItems": 16,
+          "items": { "$ref": "#/$defs/proposedToolRequest" }
+        },
+        "provider_request_id": {
+          "oneOf": [{ "$ref": "#/$defs/safeIdentifier" }, { "type": "null" }]
+        },
+        "requested_provider": { "const": "DETERMINISTIC_FIXTURE" },
+        "requested_model": { "$ref": "#/$defs/safeIdentifier" },
+        "provider_configuration_ref": { "$ref": "#/$defs/providerConfigurationRef" },
+        "resolved": { "$ref": "#/$defs/resolvedProviderFacts" },
+        "usage": { "$ref": "#/$defs/usage" },
+        "cost": { "$ref": "#/$defs/cost" },
+        "latency": { "$ref": "#/$defs/latency" },
+        "finish_reason": {
+          "enum": [
+            "COMPLETED",
+            "LENGTH",
+            "TOOL_PROPOSAL",
+            "REFUSAL",
+            "SAFETY",
+            "CANCELED",
+            "TIMEOUT",
+            "ERROR",
+            "UNKNOWN"
+          ]
+        },
+        "safety": { "$ref": "#/$defs/safety" },
+        "redaction": { "$ref": "#/$defs/redactionReceipt" },
+        "validation": { "$ref": "#/$defs/validation" },
+        "failure": {
+          "oneOf": [{ "$ref": "#/$defs/runtimeFailure" }, { "type": "null" }]
+        },
+        "state_authority": { "const": "NONE" },
+        "artifact_authority": { "const": "NONE" },
+        "tool_authority": { "const": "NONE" },
+        "privacy": { "$ref": "#/$defs/resultPrivacy" },
+        "completed_at": { "$ref": "#/$defs/rfc3339Utc" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "status": { "const": "SUCCEEDED" } } },
+          "then": {
+            "properties": {
+              "candidate_output": { "$ref": "#/$defs/candidateOutput" },
+              "failure": { "type": "null" },
+              "finish_reason": { "$ref": "#/$defs/successfulFinishReason" },
+              "validation": {
+                "type": "object",
+                "properties": { "status": { "const": "PASSED" } }
+              },
+              "safety": { "$ref": "#/$defs/r0SuccessfulSafety" },
+              "redaction": { "$ref": "#/$defs/r0SuccessfulRedactionReceipt" },
+              "resolved": { "$ref": "#/$defs/r0SuccessfulResolvedProviderFacts" }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "status": { "const": "FAILED" } } },
+          "then": {
+            "properties": {
+              "candidate_output": { "type": "null" },
+              "failure": {
+                "allOf": [
+                  { "$ref": "#/$defs/runtimeFailure" },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "classification": {
+                        "enum": [
+                          "PRE_DISPATCH_TRANSIENT",
+                          "RATE_LIMITED",
+                          "VALIDATION",
+                          "REFUSAL_SAFETY",
+                          "POLICY_DENIED",
+                          "BUDGET_EXHAUSTED",
+                          "TERMINAL_PROVIDER",
+                          "CONFIGURATION",
+                          "TARGET_KILLED",
+                          "CIRCUIT_OPEN"
+                        ]
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "status": { "const": "CANCELED" } } },
+          "then": {
+            "properties": {
+              "candidate_output": { "type": "null" },
+              "failure": {
+                "allOf": [
+                  { "$ref": "#/$defs/runtimeFailure" },
+                  {
+                    "type": "object",
+                    "properties": { "classification": { "const": "CANCELED" } }
+                  }
+                ]
+              },
+              "finish_reason": { "const": "CANCELED" }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "status": { "const": "UNKNOWN" } } },
+          "then": {
+            "properties": {
+              "candidate_output": { "type": "null" },
+              "failure": {
+                "allOf": [
+                  { "$ref": "#/$defs/runtimeFailure" },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "classification": {
+                        "enum": ["POST_DISPATCH_TIMEOUT_UNKNOWN", "INTEGRITY"]
+                      }
+                    }
+                  }
+                ]
+              },
+              "finish_reason": { "enum": ["TIMEOUT", "ERROR", "UNKNOWN"] }
+            }
+          }
+        }
+      ]
+    },
+    "modelProviderRepairRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract",
+        "schema_version",
+        "meta",
+        "repair_request_id",
+        "failed_invocation_id",
+        "failed_result_digest",
+        "failed_output_digest",
+        "repair_ordinal",
+        "repair_cap",
+        "safe_validation_diagnostics",
+        "diagnostics_digest",
+        "original_context_manifest",
+        "original_reservation_ids",
+        "repair_reservation_ids",
+        "separate_invocation_and_reservation",
+        "semantic_validation_receipt",
+        "repair_invocation",
+        "privacy"
+      ],
+      "properties": {
+        "contract": { "const": "aico.model-provider-repair-request" },
+        "schema_version": { "const": "1.0" },
+        "meta": { "$ref": "#/$defs/messageMeta" },
+        "repair_request_id": { "$ref": "#/$defs/uuid" },
+        "failed_invocation_id": { "$ref": "#/$defs/uuid" },
+        "failed_result_digest": { "$ref": "#/$defs/sha256" },
+        "failed_output_digest": { "$ref": "#/$defs/sha256" },
+        "repair_ordinal": { "const": 1 },
+        "repair_cap": { "const": 1 },
+        "safe_validation_diagnostics": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 32,
+          "items": { "$ref": "#/$defs/validationDiagnostic" }
+        },
+        "diagnostics_digest": { "$ref": "#/$defs/sha256" },
+        "original_context_manifest": { "$ref": "#/$defs/immutableBinding" },
+        "original_reservation_ids": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 8,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/uuid" }
+        },
+        "repair_reservation_ids": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 8,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/uuid" }
+        },
+        "separate_invocation_and_reservation": { "const": true },
+        "semantic_validation_receipt": {
+          "$ref": "#/$defs/repairSemanticValidationReceipt"
+        },
+        "repair_invocation": { "$ref": "#/$defs/repairInvocationBinding" },
+        "privacy": { "$ref": "#/$defs/resultPrivacy" }
+      }
+    },
+    "contentUsePolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "training_use",
+        "training_opt_in_surface",
+        "founder_customer_content",
+        "external_data_transfer",
+        "retention_profile_ref",
+        "data_controls_acceptance_ref",
+        "disclosure_acceptance_ref"
+      ],
+      "properties": {
+        "training_use": { "const": "PROHIBITED" },
+        "training_opt_in_surface": { "const": false },
+        "founder_customer_content": { "const": "EXCLUDED" },
+        "external_data_transfer": { "enum": ["NONE", "MANIFEST_GATED"] },
+        "retention_profile_ref": { "$ref": "#/$defs/nullableRetentionPolicyRef" },
+        "data_controls_acceptance_ref": { "$ref": "#/$defs/nullableImmutableBinding" },
+        "disclosure_acceptance_ref": { "$ref": "#/$defs/nullableImmutableBinding" }
+      }
+    },
+    "configurationActivation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "allowed_environments",
+        "acceptance_manifest_ref",
+        "activated_at",
+        "disabled_reason"
+      ],
+      "properties": {
+        "status": { "enum": ["ACTIVE", "DISABLED", "PENDING_MANIFEST_ACCEPTANCE"] },
+        "allowed_environments": {
+          "type": "array",
+          "maxItems": 5,
+          "uniqueItems": true,
+          "items": { "enum": ["LOCAL", "TEST", "CI", "STAGING", "PRODUCTION"] }
+        },
+        "acceptance_manifest_ref": { "$ref": "#/$defs/nullableImmutableBinding" },
+        "activated_at": {
+          "oneOf": [{ "$ref": "#/$defs/rfc3339Utc" }, { "type": "null" }]
+        },
+        "disabled_reason": {
+          "oneOf": [{ "$ref": "#/$defs/safeReasonCode" }, { "type": "null" }]
+        }
+      }
+    },
+    "modelProviderConfiguration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract",
+        "schema_version",
+        "meta",
+        "configuration_ref",
+        "configuration_digest",
+        "provider_key",
+        "adapter_kind",
+        "execution_mode",
+        "model_key",
+        "model_revision",
+        "capabilities",
+        "credential_mode",
+        "network_access",
+        "provider_sdk_retry_count",
+        "automatic_cross_provider_fallback",
+        "content_use",
+        "limits",
+        "pricing_catalog_ref",
+        "safety_policy_ref",
+        "redaction_policy_ref",
+        "activation",
+        "created_at"
+      ],
+      "properties": {
+        "contract": { "const": "aico.model-provider-configuration" },
+        "schema_version": { "const": "1.0" },
+        "meta": { "$ref": "#/$defs/messageMeta" },
+        "configuration_ref": { "$ref": "#/$defs/providerConfigurationRef" },
+        "configuration_digest": { "$ref": "#/$defs/sha256" },
+        "provider_key": {
+          "enum": ["DETERMINISTIC_FIXTURE", "OPENAI_RESPONSES_DIRECT"]
+        },
+        "adapter_kind": { "enum": ["DETERMINISTIC_FIXTURE", "DIRECT_PROVIDER"] },
+        "execution_mode": { "enum": ["DETERMINISTIC_ONLY", "EXTERNAL"] },
+        "model_key": { "$ref": "#/$defs/safeIdentifier" },
+        "model_revision": { "$ref": "#/$defs/versionToken" },
+        "capabilities": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "structured_output",
+            "tool_proposals",
+            "abort_signal",
+            "idempotency_lookup",
+            "status_reconciliation"
+          ],
+          "properties": {
+            "structured_output": { "const": true },
+            "tool_proposals": { "type": "boolean" },
+            "abort_signal": { "const": true },
+            "idempotency_lookup": { "type": "boolean" },
+            "status_reconciliation": { "type": "boolean" }
+          }
+        },
+        "credential_mode": { "enum": ["NONE", "SECRET_MANAGER_RUNTIME_ONLY"] },
+        "network_access": { "enum": ["DENY", "PROVIDER_ENDPOINT_ALLOWLIST_ONLY"] },
+        "provider_sdk_retry_count": { "const": 0 },
+        "automatic_cross_provider_fallback": { "const": false },
+        "content_use": { "$ref": "#/$defs/contentUsePolicy" },
+        "limits": { "$ref": "#/$defs/requestLimits" },
+        "pricing_catalog_ref": { "$ref": "#/$defs/pricingCatalogRef" },
+        "safety_policy_ref": { "$ref": "#/$defs/safetyPolicyRef" },
+        "redaction_policy_ref": { "$ref": "#/$defs/redactionPolicyRef" },
+        "activation": { "$ref": "#/$defs/configurationActivation" },
+        "created_at": { "$ref": "#/$defs/rfc3339Utc" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "provider_key": { "const": "DETERMINISTIC_FIXTURE" } } },
+          "then": {
+            "properties": {
+              "adapter_kind": { "const": "DETERMINISTIC_FIXTURE" },
+              "execution_mode": { "const": "DETERMINISTIC_ONLY" },
+              "credential_mode": { "const": "NONE" },
+              "network_access": { "const": "DENY" },
+              "content_use": {
+                "type": "object",
+                "properties": {
+                  "external_data_transfer": { "const": "NONE" },
+                  "retention_profile_ref": { "type": "null" },
+                  "data_controls_acceptance_ref": { "type": "null" },
+                  "disclosure_acceptance_ref": { "type": "null" }
+                }
+              },
+              "activation": {
+                "type": "object",
+                "properties": {
+                  "status": { "const": "ACTIVE" },
+                  "allowed_environments": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": { "enum": ["LOCAL", "TEST", "CI"] }
+                  },
+                  "acceptance_manifest_ref": { "type": "null" },
+                  "activated_at": { "$ref": "#/$defs/rfc3339Utc" },
+                  "disabled_reason": { "type": "null" }
+                }
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "provider_key": { "const": "OPENAI_RESPONSES_DIRECT" },
+              "adapter_kind": { "const": "DIRECT_PROVIDER" },
+              "execution_mode": { "const": "EXTERNAL" },
+              "credential_mode": { "const": "SECRET_MANAGER_RUNTIME_ONLY" },
+              "network_access": { "const": "PROVIDER_ENDPOINT_ALLOWLIST_ONLY" },
+              "content_use": {
+                "type": "object",
+                "properties": {
+                  "external_data_transfer": { "const": "MANIFEST_GATED" },
+                  "retention_profile_ref": { "type": "null" },
+                  "data_controls_acceptance_ref": { "type": "null" },
+                  "disclosure_acceptance_ref": { "type": "null" }
+                }
+              },
+              "activation": {
+                "type": "object",
+                "properties": {
+                  "status": { "enum": ["DISABLED", "PENDING_MANIFEST_ACCEPTANCE"] },
+                  "allowed_environments": { "type": "array", "maxItems": 0 },
+                  "acceptance_manifest_ref": { "type": "null" },
+                  "activated_at": { "type": "null" },
+                  "disabled_reason": { "$ref": "#/$defs/safeReasonCode" }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "modelProviderTargetDecision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract",
+        "schema_version",
+        "meta",
+        "decision_id",
+        "decision_digest",
+        "environment",
+        "cohort",
+        "decision_kind",
+        "decision_status",
+        "selected_configuration_ref",
+        "previous_configuration_ref",
+        "resolved_target",
+        "reason_code",
+        "eligible_new_attempts_only",
+        "in_flight_policy",
+        "historical_lineage_rewrite",
+        "automatic_cross_provider_fallback",
+        "external_content_authorized",
+        "authorization_manifest_ref",
+        "effective_at",
+        "decided_by_actor_id"
+      ],
+      "properties": {
+        "contract": { "const": "aico.model-provider-target-decision" },
+        "schema_version": { "const": "1.0" },
+        "meta": { "$ref": "#/$defs/messageMeta" },
+        "decision_id": { "$ref": "#/$defs/uuid" },
+        "decision_digest": { "$ref": "#/$defs/sha256" },
+        "environment": { "enum": ["LOCAL", "TEST", "CI", "STAGING", "PRODUCTION"] },
+        "cohort": { "$ref": "#/$defs/safeIdentifier" },
+        "decision_kind": { "enum": ["ACTIVATE", "PAUSE", "KILL", "ROLLBACK"] },
+        "decision_status": { "enum": ["APPLIED", "DENIED", "BLOCKED"] },
+        "selected_configuration_ref": { "$ref": "#/$defs/providerConfigurationRef" },
+        "previous_configuration_ref": { "$ref": "#/$defs/nullableProviderConfigurationRef" },
+        "resolved_target": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "provider_key",
+            "execution_mode",
+            "model_key",
+            "model_revision",
+            "target_digest"
+          ],
+          "properties": {
+            "provider_key": {
+              "enum": ["DETERMINISTIC_FIXTURE", "OPENAI_RESPONSES_DIRECT"]
+            },
+            "execution_mode": { "enum": ["DETERMINISTIC_ONLY", "EXTERNAL"] },
+            "model_key": { "$ref": "#/$defs/safeIdentifier" },
+            "model_revision": { "$ref": "#/$defs/versionToken" },
+            "target_digest": { "$ref": "#/$defs/sha256" }
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": { "provider_key": { "const": "DETERMINISTIC_FIXTURE" } }
+              },
+              "then": {
+                "properties": { "execution_mode": { "const": "DETERMINISTIC_ONLY" } }
+              },
+              "else": {
+                "properties": {
+                  "provider_key": { "const": "OPENAI_RESPONSES_DIRECT" },
+                  "execution_mode": { "const": "EXTERNAL" }
+                }
+              }
+            }
+          ]
+        },
+        "reason_code": { "$ref": "#/$defs/safeReasonCode" },
+        "eligible_new_attempts_only": { "const": true },
+        "in_flight_policy": { "enum": ["KEEP_PINNED", "EXPLICIT_CANCEL_REQUIRED"] },
+        "historical_lineage_rewrite": { "const": false },
+        "automatic_cross_provider_fallback": { "const": false },
+        "external_content_authorized": { "const": false },
+        "authorization_manifest_ref": { "$ref": "#/$defs/nullableImmutableBinding" },
+        "effective_at": { "$ref": "#/$defs/rfc3339Utc" },
+        "decided_by_actor_id": { "$ref": "#/$defs/uuid" }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "decision_status": { "const": "APPLIED" },
+              "decision_kind": { "enum": ["ACTIVATE", "ROLLBACK"] }
+            },
+            "required": ["decision_status", "decision_kind"]
+          },
+          "then": {
+            "properties": {
+              "environment": { "enum": ["LOCAL", "TEST", "CI"] },
+              "resolved_target": {
+                "type": "object",
+                "properties": {
+                  "provider_key": { "const": "DETERMINISTIC_FIXTURE" },
+                  "execution_mode": { "const": "DETERMINISTIC_ONLY" }
+                }
+              },
+              "authorization_manifest_ref": { "type": "null" }
+            }
+          }
+        }
+      ]
+    },
+    "modelProviderCircuitDecision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract",
+        "schema_version",
+        "meta",
+        "circuit_decision_id",
+        "decision_digest",
+        "provider_configuration_ref",
+        "from_state",
+        "to_state",
+        "reason_code",
+        "signal_window_digest",
+        "retry_after",
+        "eligible_new_attempts_only",
+        "historical_lineage_rewrite",
+        "automatic_fallback_target_ref",
+        "half_open_probe_requires_new_reservation",
+        "decided_at",
+        "decided_by_actor_id"
+      ],
+      "properties": {
+        "contract": { "const": "aico.model-provider-circuit-decision" },
+        "schema_version": { "const": "1.0" },
+        "meta": { "$ref": "#/$defs/messageMeta" },
+        "circuit_decision_id": { "$ref": "#/$defs/uuid" },
+        "decision_digest": { "$ref": "#/$defs/sha256" },
+        "provider_configuration_ref": { "$ref": "#/$defs/providerConfigurationRef" },
+        "from_state": { "enum": ["CLOSED", "OPEN", "HALF_OPEN"] },
+        "to_state": { "enum": ["CLOSED", "OPEN", "HALF_OPEN"] },
+        "reason_code": { "$ref": "#/$defs/safeReasonCode" },
+        "signal_window_digest": { "$ref": "#/$defs/sha256" },
+        "retry_after": {
+          "oneOf": [{ "$ref": "#/$defs/rfc3339Utc" }, { "type": "null" }]
+        },
+        "eligible_new_attempts_only": { "const": true },
+        "historical_lineage_rewrite": { "const": false },
+        "automatic_fallback_target_ref": { "type": "null" },
+        "half_open_probe_requires_new_reservation": { "const": true },
+        "decided_at": { "$ref": "#/$defs/rfc3339Utc" },
+        "decided_by_actor_id": { "$ref": "#/$defs/uuid" }
+      }
+    },
+    "evidenceAssertion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["assertion_id", "outcome", "reason_code", "subject_digest"],
+      "properties": {
+        "assertion_id": { "$ref": "#/$defs/safeIdentifier" },
+        "outcome": { "enum": ["PASS", "FAIL", "BLOCKED"] },
+        "reason_code": { "$ref": "#/$defs/safeReasonCode" },
+        "subject_digest": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "evidencePrivacy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "raw_prompt_present",
+        "raw_completion_present",
+        "provider_response_body_present",
+        "credential_present",
+        "tenant_content_present",
+        "hidden_reasoning_present",
+        "arbitrary_transcript_present",
+        "signed_url_present",
+        "state_authority",
+        "artifact_authority",
+        "tool_authority",
+        "prohibited_content_scan",
+        "scan_digest"
+      ],
+      "properties": {
+        "raw_prompt_present": { "const": false },
+        "raw_completion_present": { "const": false },
+        "provider_response_body_present": { "const": false },
+        "credential_present": { "const": false },
+        "tenant_content_present": { "const": false },
+        "hidden_reasoning_present": { "const": false },
+        "arbitrary_transcript_present": { "const": false },
+        "signed_url_present": { "const": false },
+        "state_authority": { "const": "NONE" },
+        "artifact_authority": { "const": "NONE" },
+        "tool_authority": { "const": "NONE" },
+        "prohibited_content_scan": { "const": "PASS" },
+        "scan_digest": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "modelProviderEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract",
+        "schema_version",
+        "meta",
+        "evidence_id",
+        "evidence_digest",
+        "evidence_kind",
+        "producer_ref",
+        "check_key",
+        "check_version",
+        "subject",
+        "environment",
+        "result",
+        "result_code",
+        "assertions",
+        "counters",
+        "redaction",
+        "privacy",
+        "classification",
+        "retention_class",
+        "collected_at",
+        "expires_at"
+      ],
+      "properties": {
+        "contract": { "const": "aico.model-provider-evidence" },
+        "schema_version": { "const": "1.0" },
+        "meta": { "$ref": "#/$defs/messageMeta" },
+        "evidence_id": { "$ref": "#/$defs/uuid" },
+        "evidence_digest": { "$ref": "#/$defs/sha256" },
+        "evidence_kind": {
+          "enum": [
+            "CONTRACT_VALIDATION",
+            "DETERMINISTIC_INVOCATION",
+            "FAILURE_CLASSIFICATION",
+            "REPAIR_BOUND",
+            "TARGET_ROLLBACK",
+            "PRIVACY_SCAN",
+            "ACCOUNTING_RECONCILIATION"
+          ]
+        },
+        "producer_ref": { "$ref": "#/$defs/checkSetRef" },
+        "check_key": { "$ref": "#/$defs/safeIdentifier" },
+        "check_version": { "$ref": "#/$defs/semanticVersion" },
+        "subject": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "id", "version", "digest"],
+          "properties": {
+            "kind": {
+              "enum": ["INVOCATION", "RESULT", "CONFIGURATION", "TARGET_DECISION", "PROOF_RUN"]
+            },
+            "id": { "$ref": "#/$defs/uuid" },
+            "version": { "$ref": "#/$defs/versionToken" },
+            "digest": { "$ref": "#/$defs/sha256" }
+          }
+        },
+        "environment": { "enum": ["LOCAL", "TEST", "CI"] },
+        "result": { "enum": ["PASS", "FAIL", "BLOCKED"] },
+        "result_code": { "$ref": "#/$defs/safeReasonCode" },
+        "assertions": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 128,
+          "items": { "$ref": "#/$defs/evidenceAssertion" }
+        },
+        "counters": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "checks",
+            "passed",
+            "failed",
+            "blocked",
+            "prohibited_content_hits",
+            "unauthorized_state_effects",
+            "unauthorized_artifact_effects",
+            "unauthorized_tool_effects"
+          ],
+          "properties": {
+            "checks": { "type": "integer", "minimum": 0, "maximum": 10000 },
+            "passed": { "type": "integer", "minimum": 0, "maximum": 10000 },
+            "failed": { "type": "integer", "minimum": 0, "maximum": 10000 },
+            "blocked": { "type": "integer", "minimum": 0, "maximum": 10000 },
+            "prohibited_content_hits": { "const": 0 },
+            "unauthorized_state_effects": { "const": 0 },
+            "unauthorized_artifact_effects": { "const": 0 },
+            "unauthorized_tool_effects": { "const": 0 }
+          }
+        },
+        "redaction": { "$ref": "#/$defs/redactionReceipt" },
+        "privacy": { "$ref": "#/$defs/evidencePrivacy" },
+        "classification": { "enum": ["PUBLIC", "INTERNAL", "SECURITY_RESTRICTED"] },
+        "retention_class": { "$ref": "#/$defs/safeIdentifier" },
+        "collected_at": { "$ref": "#/$defs/rfc3339Utc" },
+        "expires_at": {
+          "oneOf": [{ "$ref": "#/$defs/rfc3339Utc" }, { "type": "null" }]
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "result": { "const": "PASS" } } },
+          "then": {
+            "properties": {
+              "assertions": {
+                "type": "array",
+                "items": {
+                  "allOf": [
+                    { "$ref": "#/$defs/evidenceAssertion" },
+                    {
+                      "type": "object",
+                      "properties": { "outcome": { "const": "PASS" } }
+                    }
+                  ]
+                }
+              },
+              "counters": {
+                "type": "object",
+                "properties": {
+                  "passed": { "type": "integer", "minimum": 1 },
+                  "failed": { "const": 0 },
+                  "blocked": { "const": 0 },
+                  "prohibited_content_hits": { "const": 0 },
+                  "unauthorized_state_effects": { "const": 0 },
+                  "unauthorized_artifact_effects": { "const": 0 },
+                  "unauthorized_tool_effects": { "const": 0 }
+                }
+              },
+              "redaction": {
+                "type": "object",
+                "properties": { "outcome": { "enum": ["PASS", "REDACTED"] } }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

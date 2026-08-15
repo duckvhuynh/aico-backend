@@ -1,0 +1,42 @@
+{
+  "contract": "aico.model-provider-target-decision",
+  "schema_version": "1.0",
+  "meta": {
+    "message_id": "50000000-0000-4000-8000-000000000001",
+    "correlation_id": "50000000-0000-4000-8000-000000000002",
+    "causation_id": "50000000-0000-4000-8000-000000000003",
+    "trace_id": "55555555555555555555555555555555",
+    "span_id": "5555555555555555",
+    "emitted_at": "2026-08-15T04:03:00Z"
+  },
+  "decision_id": "50000000-0000-4000-8000-000000000010",
+  "decision_digest": "sha256:5050505050505050505050505050505050505050505050505050505050505050",
+  "environment": "CI",
+  "cohort": "architecture-proof",
+  "decision_kind": "ACTIVATE",
+  "decision_status": "APPLIED",
+  "selected_configuration_ref": {
+    "id": "10000000-0000-4000-8000-000000000010",
+    "kind": "PROVIDER_CONFIGURATION",
+    "logical_key": "provider.local-fixture",
+    "semantic_version": "1.0.0",
+    "content_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  "previous_configuration_ref": null,
+  "resolved_target": {
+    "provider_key": "DETERMINISTIC_FIXTURE",
+    "execution_mode": "DETERMINISTIC_ONLY",
+    "model_key": "fixture-model",
+    "model_revision": "fixture-v1",
+    "target_digest": "sha256:5151515151515151515151515151515151515151515151515151515151515151"
+  },
+  "reason_code": "DETERMINISTIC_PROOF_TARGET",
+  "eligible_new_attempts_only": true,
+  "in_flight_policy": "KEEP_PINNED",
+  "historical_lineage_rewrite": false,
+  "automatic_cross_provider_fallback": false,
+  "external_content_authorized": false,
+  "authorization_manifest_ref": null,
+  "effective_at": "2026-08-15T04:03:00Z",
+  "decided_by_actor_id": "50000000-0000-4000-8000-000000000011"
+}

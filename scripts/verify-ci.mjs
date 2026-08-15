@@ -20,13 +20,16 @@ const environment = {
   AICO_MINIO_PORT: minioPort,
   AICO_MINIO_CONSOLE_PORT: process.env.AICO_VERIFY_MINIO_CONSOLE_PORT ?? '19019',
 };
-const previewArchitecture = readFileSync(
-  'docs/architecture/010-preview-isolation-selection.md',
-  'utf8',
+const architectureDecisionFiles = [
+  ['docs/architecture/010-preview-isolation-selection.md', 'AICO-007'],
+  ['docs/architecture/011-model-provider-employee-runtime-selection.md', 'AICO-005'],
+];
+const allArchitectureDecisionsAccepted = architectureDecisionFiles.every(([path, issue]) =>
+  new RegExp(`^-?\\s*\\*\\*Status:\\*\\* Accepted for ${issue}\\b`, 'm').test(
+    readFileSync(path, 'utf8'),
+  ),
 );
-const architectureVerificationScript = /^\*\*Status:\*\* Accepted for AICO-007\b/m.test(
-  previewArchitecture,
-)
+const architectureVerificationScript = allArchitectureDecisionsAccepted
   ? 'verify:architecture:accepted'
   : 'verify:architecture';
 const compose = (...args) =>
@@ -45,6 +48,7 @@ try {
     },
   });
   gate('architecture', 'npm', ['run', architectureVerificationScript]);
+  gate('provider-decision-evidence', 'npm', ['run', 'prove:provider-decision']);
   gate('fail-closed', 'npm', ['run', 'verify:fail-closed']);
   gate('format', 'npm', ['run', 'format:check']);
   gate('lint', 'npm', ['run', 'lint']);

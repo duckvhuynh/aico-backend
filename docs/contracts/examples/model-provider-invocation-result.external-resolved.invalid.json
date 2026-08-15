@@ -1,0 +1,166 @@
+{
+  "contract": "aico.model-provider-invocation-result",
+  "schema_version": "1.0",
+  "meta": {
+    "message_id": "40000000-0000-4000-8000-000000000001",
+    "correlation_id": "30000000-0000-4000-8000-000000000002",
+    "causation_id": "30000000-0000-4000-8000-000000000014",
+    "trace_id": "33333333333333333333333333333333",
+    "span_id": "4444444444444444",
+    "emitted_at": "2026-08-15T04:02:01Z"
+  },
+  "result_id": "40000000-0000-4000-8000-000000000010",
+  "result_digest": "sha256:4242424242424242424242424242424242424242424242424242424242424242",
+  "request_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+  "company_id": "30000000-0000-4000-8000-000000000010",
+  "run_id": "30000000-0000-4000-8000-000000000011",
+  "task_id": "30000000-0000-4000-8000-000000000012",
+  "attempt_id": "30000000-0000-4000-8000-000000000013",
+  "invocation_id": "30000000-0000-4000-8000-000000000014",
+  "status": "SUCCEEDED",
+  "candidate_output": {
+    "schema_ref": {
+      "id": "30000000-0000-4000-8000-000000000025",
+      "kind": "OUTPUT_SCHEMA",
+      "logical_key": "schema.product-brief-output",
+      "semantic_version": "1.0.0",
+      "content_digest": "sha256:2525252525252525252525252525252525252525252525252525252525252525"
+    },
+    "canonical_json": "{\"fixture_status\":\"complete\"}",
+    "content_digest": "sha256:4343434343434343434343434343434343434343434343434343434343434343",
+    "trust": "UNTRUSTED_CANDIDATE",
+    "state_authority": "NONE",
+    "artifact_authority": "NONE",
+    "tool_authority": "NONE"
+  },
+  "proposed_tool_requests": [],
+  "provider_request_id": "fixture-request-0001",
+  "requested_provider": "DETERMINISTIC_FIXTURE",
+  "requested_model": "fixture-model",
+  "provider_configuration_ref": {
+    "id": "10000000-0000-4000-8000-000000000010",
+    "kind": "PROVIDER_CONFIGURATION",
+    "logical_key": "provider.local-fixture",
+    "semantic_version": "1.0.0",
+    "content_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  "resolved": {
+    "provenance": "REPORTED",
+    "provider_key": "OPENAI_RESPONSES_DIRECT",
+    "model_key": "fixture-model",
+    "model_revision": "fixture-v1",
+    "fingerprint": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+    "model_resolution": "NONE",
+    "model_resolution_accepted": true,
+    "reproducibility_grade": "DETERMINISTIC"
+  },
+  "usage": {
+    "input_tokens": {
+      "provenance": "REPORTED",
+      "quantity": "64",
+      "source": "FIXTURE"
+    },
+    "output_tokens": {
+      "provenance": "REPORTED",
+      "quantity": "12",
+      "source": "FIXTURE"
+    },
+    "cached_input_tokens": {
+      "provenance": "REPORTED",
+      "quantity": "0",
+      "source": "FIXTURE"
+    },
+    "reasoning_tokens": {
+      "provenance": "REPORTED",
+      "quantity": "0",
+      "source": "FIXTURE"
+    },
+    "total_tokens": {
+      "provenance": "REPORTED",
+      "quantity": "76",
+      "source": "FIXTURE"
+    },
+    "usage_digest": "sha256:4848484848484848484848484848484848484848484848484848484848484848"
+  },
+  "cost": {
+    "provenance": "REPORTED",
+    "amount_micros": "0",
+    "currency": "USD",
+    "source": "FIXTURE",
+    "pricing_catalog_ref": {
+      "id": "10000000-0000-4000-8000-000000000011",
+      "kind": "PRICING_CATALOG",
+      "logical_key": "pricing.local-fixture",
+      "semantic_version": "1.0.0",
+      "content_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+    },
+    "pricing_rule_key": "fixture.zero-cost"
+  },
+  "latency": {
+    "queue_ms": 1,
+    "provider_ms": 25,
+    "total_ms": 26
+  },
+  "finish_reason": "COMPLETED",
+  "safety": {
+    "outcome": "PASS",
+    "policy_ref": {
+      "id": "10000000-0000-4000-8000-000000000012",
+      "kind": "SAFETY_POLICY",
+      "logical_key": "safety.local-fixture",
+      "semantic_version": "1.0.0",
+      "content_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+    },
+    "reason_codes": []
+  },
+  "redaction": {
+    "policy_ref": {
+      "id": "10000000-0000-4000-8000-000000000013",
+      "kind": "REDACTION_POLICY",
+      "logical_key": "redaction.provider-boundary",
+      "semantic_version": "1.0.0",
+      "content_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+    },
+    "outcome": "PASS",
+    "reason_codes": [],
+    "redacted_field_paths": [],
+    "input_digest": "sha256:4343434343434343434343434343434343434343434343434343434343434343",
+    "output_digest": "sha256:4343434343434343434343434343434343434343434343434343434343434343"
+  },
+  "validation": {
+    "status": "PASSED",
+    "validator_ref": {
+      "id": "40000000-0000-4000-8000-000000000020",
+      "kind": "EVALUATOR",
+      "logical_key": "validator.employee-output",
+      "semantic_version": "1.0.0",
+      "content_digest": "sha256:4545454545454545454545454545454545454545454545454545454545454545"
+    },
+    "validated_schema_ref": {
+      "id": "30000000-0000-4000-8000-000000000025",
+      "kind": "OUTPUT_SCHEMA",
+      "logical_key": "schema.product-brief-output",
+      "semantic_version": "1.0.0",
+      "content_digest": "sha256:2525252525252525252525252525252525252525252525252525252525252525"
+    },
+    "diagnostics": [],
+    "semantic_checks_digest": "sha256:4646464646464646464646464646464646464646464646464646464646464646",
+    "authority_after_validation": "NONE_UNTIL_APPLICATION_COMMIT"
+  },
+  "failure": null,
+  "state_authority": "NONE",
+  "artifact_authority": "NONE",
+  "tool_authority": "NONE",
+  "privacy": {
+    "raw_prompt_present": false,
+    "raw_completion_present": false,
+    "provider_error_body_present": false,
+    "credential_present": false,
+    "tenant_content_present": false,
+    "hidden_reasoning_present": false,
+    "signed_url_present": false,
+    "prohibited_content_scan": "PASS",
+    "scan_digest": "sha256:4747474747474747474747474747474747474747474747474747474747474747"
+  },
+  "completed_at": "2026-08-15T04:02:01Z"
+}
