@@ -52,6 +52,22 @@ docker compose down --volumes
 
 ## Develop without containerizing Node
 
+Local development requires exactly Node `24.18.0` and npm `11.6.2`. That npm version matches the
+AICO-004 template resolver and the package-install tool explicitly bootstrapped by GitHub Actions
+and the Docker dependencies stage. The production image executes Node directly and does not use
+npm. The repository supplies `.nvmrc` and `.node-version` for common version managers; for
+example, run `nvm use`, then `npm install --global npm@11.6.2`, before installing dependencies.
+`packageManager`, exact engine constraints, and `engine-strict=true` make npm installation fail
+instead of continuing after a runtime warning.
+
+Validate the active runtime, every checked-in Node/npm pin, and the bootstrap/wiring contract
+without starting services:
+
+```bash
+npm run verify:runtime
+npm run prove:runtime-preflight
+```
+
 Start only dependencies, copy `.env.example` to `.env`, run migrations, and start the two NestJS processes in separate terminals:
 
 ```bash
@@ -71,11 +87,18 @@ npm run verify
 npm run verify:ci
 ```
 
-`npm run verify` is the fast source gate. `npm run verify:ci` is the canonical AICO-009 foreground verifier used locally and by GitHub Actions. It performs a clean lockfile install, governance validation, source/type/unit/contract/build checks, dependency audit, Compose validation, migration apply/revert/reapply, a tenant-scoped S3-compatible storage fixture, Docker image builds, and the HTTP smoke path. It owns a uniquely named disposable Compose project and removes only that project's containers and volumes in a `finally` cleanup.
+`npm run verify` is the fast source gate. `npm run verify:ci` remains the single canonical
+AICO-009 foreground verifier used locally and by GitHub Actions. Before any logical gate, it
+rejects an active or checked-in runtime pin that differs from Node `24.18.0` / npm `11.6.2` and
+runs the bounded runtime mutation/wiring proof. It then performs a clean lockfile install,
+governance validation, source/type/unit/contract/build checks, dependency audit, Compose
+validation, migration apply/revert/reapply, a tenant-scoped S3-compatible storage fixture, Docker
+image builds, and the HTTP smoke path. It owns a uniquely named disposable Compose project and
+removes only that project's containers and volumes in a `finally` cleanup.
 
 `node scripts/verify-aico-008-alpha-policy.mjs` validates the [AICO-008 alpha operating policy](docs/policies/alpha-operating-policy-v1.md), its strict machine-readable configuration, and the closed deliberate-failure registry without using a paid or external service. It is intentionally independent of the accepted architecture package manifest.
 
-The smoke test verifies readiness, authentication, company creation, identical-command replay, initiative/run creation, durable worker completion, ordered events, and a cross-tenant negative read. Run `npm run verify:fail-closed` to prove that the verifier rejects an injected failure at every named gate without changing tracked files.
+The smoke test verifies readiness, authentication, company creation, identical-command replay, initiative/run creation, durable worker completion, ordered events, and a cross-tenant negative read. Run `npm run verify:fail-closed` to prove that the verifier rejects an injected failure at every named gate without leaving tracked-file changes; the architecture fault fixture is restored byte-for-byte.
 
 ## GitHub traceability
 

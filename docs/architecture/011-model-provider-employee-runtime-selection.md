@@ -1,12 +1,13 @@
 # ADR-011: Model Provider and Employee Runtime Boundary Selection
 
-**Status:** Accepted for AICO-005
+**Status:** Proposed for AICO-005 owner acceptance
 **Date:** 2026-08-15
-**Architecture/AI evidence:** https://github.com/duckvhuynh/aico-backend/pull/27#issuecomment-5300873726
-**Product + Legal/Security evidence:** https://github.com/duckvhuynh/aico-backend/pull/27#issuecomment-5300874199
+**Architecture/AI evidence:** Pending
+**Product + Legal/Security evidence:** Pending
 **Parent:** `duckvhuynh/aicompanyos#5`
-**Decision child:** `duckvhuynh/aico-backend#25`
-**Proof child:** `duckvhuynh/aico-backend#26`, blocked until this decision is accepted
+**Historical decision child:** `duckvhuynh/aico-backend#25`, completed
+**Historical proof child:** `duckvhuynh/aico-backend#26`, completed
+**Governing change child:** `duckvhuynh/aico-backend#31`
 **Decision scope:** AICO-005 only
 **Product trace SHA:** `28d2bc0ecd9e5676a4e87f1bf5e81c602a1a0714`
 **Product trace:** Goals G-03 and G-04; SRS TD-005; PRD-FR-058, PRD-FR-061,
@@ -472,17 +473,18 @@ one clean 40-hex semantic SHA without an external call, paid service, credential
    may differ from the Candidate only through the explicit masked ADR/evidence metadata allowlist;
    contract, schema, examples, AEO audit, validators, package integration, and CI integration remain
    byte-identical.
-6. Any semantic change after acceptance requires new decisions. Decision child #25 becomes Done
-   only after `npm run verify:provider-architecture:reconciled` passes with the exact permanent
-   accepted-mode evidence.
+6. Any semantic change after acceptance requires new decisions. Historical decision child #25
+   became Done only after `npm run verify:provider-architecture:reconciled` passed with the exact
+   permanent accepted-mode evidence. Governing change child #31 now owns the fresh Candidate cycle
+   required by the runtime/package/CI semantic change.
 
 ### Gate 2 — Bounded architecture proof
 
-Proof child #26 then executes the complete deterministic success/malformed/timeout/rate-limit/
+Historical proof child #26 executed the complete deterministic success/malformed/timeout/rate-limit/
 cancellation/safety-redaction/repair/metadata/secret-exclusion/targeting/rollback matrix on the
-accepted decision. Exact-final-SHA local and hosted evidence plus attributable QA/Security approval
-are required. That proof remains internal architecture evidence; it does not activate an external
-provider or complete AICO-030/032/033.
+accepted decision and is complete. The current Candidate re-runs the same bounded hosted proof on
+its exact SHA under governing change child #31. That proof remains internal architecture evidence;
+it does not activate an external provider or complete AICO-030/032/033.
 
 ### Gate 3 — External activation and release qualification
 

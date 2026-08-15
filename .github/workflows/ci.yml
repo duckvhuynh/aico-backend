@@ -22,6 +22,10 @@ jobs:
         with:
           node-version: 24.18.0
           cache: npm
+      - name: Activate exact npm runtime
+        run: >-
+          npm install --global npm@11.6.2 --ignore-scripts --no-audit --no-fund
+          && test "$(npm --version)" = "11.6.2"
       - name: Run the canonical foreground verifier
         env:
           PR_BODY: ${{ github.event.pull_request.body }}
