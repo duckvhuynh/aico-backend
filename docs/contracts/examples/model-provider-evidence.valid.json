@@ -1,0 +1,90 @@
+{
+  "contract": "aico.model-provider-evidence",
+  "schema_version": "1.0",
+  "meta": {
+    "message_id": "70000000-0000-4000-8000-000000000001",
+    "correlation_id": "70000000-0000-4000-8000-000000000002",
+    "causation_id": "70000000-0000-4000-8000-000000000003",
+    "trace_id": "77777777777777777777777777777777",
+    "span_id": "7777777777777777",
+    "emitted_at": "2026-08-15T04:05:00Z"
+  },
+  "evidence_id": "70000000-0000-4000-8000-000000000010",
+  "evidence_digest": "sha256:7070707070707070707070707070707070707070707070707070707070707070",
+  "evidence_kind": "CONTRACT_VALIDATION",
+  "producer_ref": {
+    "id": "70000000-0000-4000-8000-000000000011",
+    "kind": "CHECK_SET",
+    "logical_key": "checks.aico-005-contract",
+    "semantic_version": "1.0.0",
+    "content_digest": "sha256:7171717171717171717171717171717171717171717171717171717171717171"
+  },
+  "check_key": "aico-005.contract.closed",
+  "check_version": "1.0.0",
+  "subject": {
+    "kind": "PROOF_RUN",
+    "id": "70000000-0000-4000-8000-000000000012",
+    "version": "1.0.0",
+    "digest": "sha256:7272727272727272727272727272727272727272727272727272727272727272"
+  },
+  "environment": "CI",
+  "result": "PASS",
+  "result_code": "ALL_ASSERTIONS_PASSED",
+  "assertions": [
+    {
+      "assertion_id": "contract.unknown-field-rejected",
+      "outcome": "PASS",
+      "reason_code": "UNKNOWN_FIELD_REJECTED",
+      "subject_digest": "sha256:7373737373737373737373737373737373737373737373737373737373737373"
+    },
+    {
+      "assertion_id": "privacy.prohibited-content-absent",
+      "outcome": "PASS",
+      "reason_code": "PROHIBITED_CONTENT_ABSENT",
+      "subject_digest": "sha256:7474747474747474747474747474747474747474747474747474747474747474"
+    }
+  ],
+  "counters": {
+    "checks": 2,
+    "passed": 2,
+    "failed": 0,
+    "blocked": 0,
+    "prohibited_content_hits": 0,
+    "unauthorized_state_effects": 0,
+    "unauthorized_artifact_effects": 0,
+    "unauthorized_tool_effects": 0
+  },
+  "redaction": {
+    "policy_ref": {
+      "id": "10000000-0000-4000-8000-000000000013",
+      "kind": "REDACTION_POLICY",
+      "logical_key": "redaction.provider-boundary",
+      "semantic_version": "1.0.0",
+      "content_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+    },
+    "outcome": "PASS",
+    "reason_codes": [],
+    "redacted_field_paths": [],
+    "input_digest": "sha256:7676767676767676767676767676767676767676767676767676767676767676",
+    "output_digest": "sha256:7676767676767676767676767676767676767676767676767676767676767676"
+  },
+  "privacy": {
+    "raw_prompt_present": false,
+    "raw_completion_present": false,
+    "provider_response_body_present": false,
+    "credential_present": false,
+    "tenant_content_present": false,
+    "hidden_reasoning_present": false,
+    "arbitrary_transcript_present": false,
+    "signed_url_present": false,
+    "state_authority": "NONE",
+    "artifact_authority": "NONE",
+    "tool_authority": "NONE",
+    "prohibited_content_scan": "PASS",
+    "scan_digest": "sha256:7575757575757575757575757575757575757575757575757575757575757575"
+  },
+  "classification": "INTERNAL",
+  "retention_class": "architecture-proof-90d",
+  "collected_at": "2026-08-15T04:05:00Z",
+  "expires_at": "2026-11-13T04:05:00Z"
+}

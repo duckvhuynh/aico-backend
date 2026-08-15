@@ -1,0 +1,83 @@
+{
+  "contract": "aico.model-provider-configuration",
+  "schema_version": "1.0",
+  "meta": {
+    "message_id": "10000000-0000-4000-8000-000000000001",
+    "correlation_id": "10000000-0000-4000-8000-000000000002",
+    "causation_id": "10000000-0000-4000-8000-000000000003",
+    "trace_id": "11111111111111111111111111111111",
+    "span_id": "1111111111111111",
+    "emitted_at": "2026-08-15T04:00:00Z"
+  },
+  "configuration_ref": {
+    "id": "10000000-0000-4000-8000-000000000010",
+    "kind": "WORKFLOW",
+    "logical_key": "provider.local-fixture",
+    "semantic_version": "1.0.0",
+    "content_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  "configuration_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "provider_key": "DETERMINISTIC_FIXTURE",
+  "adapter_kind": "DETERMINISTIC_FIXTURE",
+  "execution_mode": "DETERMINISTIC_ONLY",
+  "model_key": "fixture-model",
+  "model_revision": "fixture-v1",
+  "capabilities": {
+    "structured_output": true,
+    "tool_proposals": true,
+    "abort_signal": true,
+    "idempotency_lookup": true,
+    "status_reconciliation": true
+  },
+  "credential_mode": "NONE",
+  "network_access": "DENY",
+  "provider_sdk_retry_count": 0,
+  "automatic_cross_provider_fallback": false,
+  "content_use": {
+    "training_use": "PROHIBITED",
+    "training_opt_in_surface": false,
+    "founder_customer_content": "EXCLUDED",
+    "external_data_transfer": "NONE",
+    "retention_profile_ref": null,
+    "data_controls_acceptance_ref": null,
+    "disclosure_acceptance_ref": null
+  },
+  "limits": {
+    "timeout_ms": 5000,
+    "maximum_input_tokens": "4096",
+    "maximum_output_tokens": "1024",
+    "maximum_cost_micros": "0",
+    "currency": "USD",
+    "maximum_content_bytes": 131072,
+    "maximum_tool_proposals": 4
+  },
+  "pricing_catalog_ref": {
+    "id": "10000000-0000-4000-8000-000000000011",
+    "kind": "PRICING_CATALOG",
+    "logical_key": "pricing.local-fixture",
+    "semantic_version": "1.0.0",
+    "content_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+  },
+  "safety_policy_ref": {
+    "id": "10000000-0000-4000-8000-000000000012",
+    "kind": "SAFETY_POLICY",
+    "logical_key": "safety.local-fixture",
+    "semantic_version": "1.0.0",
+    "content_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+  },
+  "redaction_policy_ref": {
+    "id": "10000000-0000-4000-8000-000000000013",
+    "kind": "REDACTION_POLICY",
+    "logical_key": "redaction.provider-boundary",
+    "semantic_version": "1.0.0",
+    "content_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+  },
+  "activation": {
+    "status": "ACTIVE",
+    "allowed_environments": ["LOCAL", "TEST", "CI"],
+    "acceptance_manifest_ref": null,
+    "activated_at": "2026-08-15T04:00:00Z",
+    "disabled_reason": null
+  },
+  "created_at": "2026-08-15T04:00:00Z"
+}

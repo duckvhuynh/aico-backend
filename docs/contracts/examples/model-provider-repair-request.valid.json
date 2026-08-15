@@ -1,0 +1,94 @@
+{
+  "contract": "aico.model-provider-repair-request",
+  "schema_version": "1.0",
+  "meta": {
+    "message_id": "80000000-0000-4000-8000-000000000001",
+    "correlation_id": "30000000-0000-4000-8000-000000000002",
+    "causation_id": "40000000-0000-4000-8000-000000000010",
+    "trace_id": "88888888888888888888888888888888",
+    "span_id": "8888888888888888",
+    "emitted_at": "2026-08-15T04:06:00Z"
+  },
+  "repair_request_id": "80000000-0000-4000-8000-000000000010",
+  "failed_invocation_id": "30000000-0000-4000-8000-000000000014",
+  "failed_result_digest": "sha256:8080808080808080808080808080808080808080808080808080808080808080",
+  "failed_output_digest": "sha256:8181818181818181818181818181818181818181818181818181818181818181",
+  "repair_ordinal": 1,
+  "repair_cap": 1,
+  "safe_validation_diagnostics": [
+    {
+      "code": "REQUIRED_PROPERTY_MISSING",
+      "instance_path": "",
+      "schema_path": "/required",
+      "keyword": "required",
+      "expected_class": "REQUIRED"
+    }
+  ],
+  "diagnostics_digest": "sha256:8282828282828282828282828282828282828282828282828282828282828282",
+  "original_context_manifest": {
+    "id": "30000000-0000-4000-8000-000000000016",
+    "version": "1",
+    "digest": "sha256:5555555555555555555555555555555555555555555555555555555555555555"
+  },
+  "original_reservation_ids": ["30000000-0000-4000-8000-000000000040"],
+  "repair_reservation_ids": ["80000000-0000-4000-8000-000000000011"],
+  "separate_invocation_and_reservation": true,
+  "semantic_validation_receipt": {
+    "receipt_version": "1.0",
+    "validator_ref": {
+      "id": "80000000-0000-4000-8000-000000000020",
+      "kind": "EVALUATOR",
+      "logical_key": "evaluator.repair-invariants",
+      "semantic_version": "1.0.0",
+      "content_digest": "sha256:8585858585858585858585858585858585858585858585858585858585858585"
+    },
+    "outcome": "PASS",
+    "validated_repair_request_digest": "sha256:8686868686868686868686868686868686868686868686868686868686868686",
+    "reservation_sets_digest": "sha256:8787878787878787878787878787878787878787878787878787878787878787",
+    "invariants": {
+      "original_and_repair_reservations_disjoint": true,
+      "new_invocation_identity": true,
+      "failed_invocation_link_matches": true,
+      "failed_result_digest_matches": true,
+      "context_manifest_matches": true,
+      "repair_cap_not_exceeded": true
+    },
+    "receipt_digest": "sha256:8989898989898989898989898989898989898989898989898989898989898989",
+    "validated_at": "2026-08-15T04:05:59Z"
+  },
+  "repair_invocation": {
+    "invocation_id": "80000000-0000-4000-8000-000000000012",
+    "logical_idempotency_key": "model.repair.fixture.0001",
+    "request_digest": "sha256:8383838383838383838383838383838383838383838383838383838383838383",
+    "provider_configuration_ref": {
+      "id": "10000000-0000-4000-8000-000000000010",
+      "kind": "PROVIDER_CONFIGURATION",
+      "logical_key": "provider.local-fixture",
+      "semantic_version": "1.0.0",
+      "content_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    "context_manifest": {
+      "id": "30000000-0000-4000-8000-000000000016",
+      "version": "1",
+      "digest": "sha256:5555555555555555555555555555555555555555555555555555555555555555"
+    },
+    "repair_linkage": {
+      "original_invocation_id": "30000000-0000-4000-8000-000000000014",
+      "original_result_digest": "sha256:8080808080808080808080808080808080808080808080808080808080808080",
+      "repair_ordinal": 1,
+      "repair_cap": 1,
+      "separate_invocation_and_reservation": true
+    }
+  },
+  "privacy": {
+    "raw_prompt_present": false,
+    "raw_completion_present": false,
+    "provider_error_body_present": false,
+    "credential_present": false,
+    "tenant_content_present": false,
+    "hidden_reasoning_present": false,
+    "signed_url_present": false,
+    "prohibited_content_scan": "PASS",
+    "scan_digest": "sha256:8484848484848484848484848484848484848484848484848484848484848484"
+  }
+}

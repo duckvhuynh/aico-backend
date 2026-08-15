@@ -1,0 +1,243 @@
+{
+  "contract": "aico.model-provider-invocation-request",
+  "schema_version": "1.0",
+  "meta": {
+    "message_id": "30000000-0000-4000-8000-000000000001",
+    "correlation_id": "30000000-0000-4000-8000-000000000002",
+    "causation_id": "30000000-0000-4000-8000-000000000003",
+    "trace_id": "33333333333333333333333333333333",
+    "span_id": "3333333333333333",
+    "emitted_at": "2026-08-15T04:02:00Z"
+  },
+  "company_id": "30000000-0000-4000-8000-000000000010",
+  "run_id": "30000000-0000-4000-8000-000000000011",
+  "task_id": "30000000-0000-4000-8000-000000000012",
+  "attempt_id": "30000000-0000-4000-8000-000000000013",
+  "invocation_id": "30000000-0000-4000-8000-000000000014",
+  "logical_idempotency_key": "model.invoke.fixture.0001",
+  "request_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+  "employee_key": "EMP-PM",
+  "attempt_manifest": {
+    "id": "30000000-0000-4000-8000-000000000015",
+    "version": "1.0.0",
+    "digest": "sha256:4444444444444444444444444444444444444444444444444444444444444444"
+  },
+  "context_manifest": {
+    "id": "30000000-0000-4000-8000-000000000016",
+    "version": "1",
+    "digest": "sha256:5555555555555555555555555555555555555555555555555555555555555555"
+  },
+  "versions": {
+    "workflow": {
+      "id": "30000000-0000-4000-8000-000000000020",
+      "kind": "WORKFLOW",
+      "logical_key": "workflow.prototype-run",
+      "semantic_version": "1.0.0",
+      "content_digest": "sha256:2020202020202020202020202020202020202020202020202020202020202020"
+    },
+    "policy": {
+      "id": "30000000-0000-4000-8000-000000000021",
+      "kind": "POLICY",
+      "logical_key": "policy.employee-runtime",
+      "semantic_version": "1.0.0",
+      "content_digest": "sha256:2121212121212121212121212121212121212121212121212121212121212121"
+    },
+    "employee_definition": {
+      "id": "30000000-0000-4000-8000-000000000022",
+      "kind": "EMPLOYEE_DEFINITION",
+      "logical_key": "employee.emp-pm",
+      "semantic_version": "1.0.0",
+      "content_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222"
+    },
+    "instruction_bundle": {
+      "id": "30000000-0000-4000-8000-000000000023",
+      "kind": "INSTRUCTION_BUNDLE",
+      "logical_key": "instructions.emp-pm",
+      "semantic_version": "1.0.0",
+      "content_digest": "sha256:2323232323232323232323232323232323232323232323232323232323232323"
+    },
+    "input_schema": {
+      "id": "30000000-0000-4000-8000-000000000024",
+      "kind": "INPUT_SCHEMA",
+      "logical_key": "schema.product-brief-input",
+      "semantic_version": "1.0.0",
+      "content_digest": "sha256:2424242424242424242424242424242424242424242424242424242424242424"
+    },
+    "output_schema": {
+      "id": "30000000-0000-4000-8000-000000000025",
+      "kind": "OUTPUT_SCHEMA",
+      "logical_key": "schema.product-brief-output",
+      "semantic_version": "1.0.0",
+      "content_digest": "sha256:2525252525252525252525252525252525252525252525252525252525252525"
+    },
+    "rubric": {
+      "id": "30000000-0000-4000-8000-000000000026",
+      "kind": "RUBRIC",
+      "logical_key": "rubric.product-brief",
+      "semantic_version": "1.0.0",
+      "content_digest": "sha256:2626262626262626262626262626262626262626262626262626262626262626"
+    },
+    "toolset": {
+      "id": "30000000-0000-4000-8000-000000000027",
+      "kind": "TOOLSET",
+      "logical_key": "toolset.emp-pm-none",
+      "semantic_version": "1.0.0",
+      "content_digest": "sha256:2727272727272727272727272727272727272727272727272727272727272727"
+    },
+    "provider_configuration": {
+      "id": "10000000-0000-4000-8000-000000000010",
+      "kind": "PROVIDER_CONFIGURATION",
+      "logical_key": "provider.local-fixture",
+      "semantic_version": "1.0.0",
+      "content_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    "pricing_catalog": {
+      "id": "10000000-0000-4000-8000-000000000011",
+      "kind": "PRICING_CATALOG",
+      "logical_key": "pricing.local-fixture",
+      "semantic_version": "1.0.0",
+      "content_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+    },
+    "budget_policy": {
+      "id": "30000000-0000-4000-8000-000000000028",
+      "kind": "BUDGET_POLICY",
+      "logical_key": "budget.fixture-proof",
+      "semantic_version": "1.0.0",
+      "content_digest": "sha256:2828282828282828282828282828282828282828282828282828282828282828"
+    },
+    "redaction_policy": {
+      "id": "10000000-0000-4000-8000-000000000013",
+      "kind": "REDACTION_POLICY",
+      "logical_key": "redaction.provider-boundary",
+      "semantic_version": "1.0.0",
+      "content_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+    }
+  },
+  "target_decision_id": "30000000-0000-4000-8000-000000000030",
+  "target_decision_digest": "sha256:3030303030303030303030303030303030303030303030303030303030303030",
+  "execution_guard": {
+    "environment": "CI",
+    "provider_key": "DETERMINISTIC_FIXTURE",
+    "adapter_kind": "DETERMINISTIC_FIXTURE",
+    "execution_mode": "DETERMINISTIC_ONLY",
+    "network_access": "DENY",
+    "external_data_transfer": "NONE",
+    "content_scope": "APPROVED_SYNTHETIC_FIXTURE_ONLY",
+    "configuration_ref": {
+      "id": "10000000-0000-4000-8000-000000000010",
+      "kind": "PROVIDER_CONFIGURATION",
+      "logical_key": "provider.local-fixture",
+      "semantic_version": "1.0.0",
+      "content_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    "configuration_status": "ACTIVE",
+    "target_decision_id": "30000000-0000-4000-8000-000000000030",
+    "target_decision_digest": "sha256:3030303030303030303030303030303030303030303030303030303030303030",
+    "target_decision_status": "APPLIED",
+    "target_decision_kind": "ACTIVATE",
+    "resolved_target_digest": "sha256:5151515151515151515151515151515151515151515151515151515151515151",
+    "binding_invariants": {
+      "configuration_matches_version_binding": true,
+      "target_matches_request_binding": true,
+      "resolved_target_matches_configuration": true
+    },
+    "external_content_authorized": false,
+    "guard_validator_ref": {
+      "id": "30000000-0000-4000-8000-000000000031",
+      "kind": "EVALUATOR",
+      "logical_key": "evaluator.r0-provider-guard",
+      "semantic_version": "1.0.0",
+      "content_digest": "sha256:3232323232323232323232323232323232323232323232323232323232323232"
+    },
+    "guard_validation_outcome": "PASS",
+    "guard_receipt_digest": "sha256:3332323232323232323232323232323232323232323232323232323232323232",
+    "evaluated_at": "2026-08-15T04:01:59Z"
+  },
+  "messages": [
+    {
+      "role": "SYSTEM",
+      "content_parts": [
+        {
+          "kind": "REFERENCE",
+          "classification": "INTERNAL",
+          "reference": {
+            "object_id": "30000000-0000-4000-8000-000000000032",
+            "version": 1,
+            "digest": "sha256:3131313131313131313131313131313131313131313131313131313131313131",
+            "media_type": "application/json",
+            "size_bytes": "128"
+          },
+          "allowed_field_paths": ["/fixture_directive"],
+          "content_digest": "sha256:3131313131313131313131313131313131313131313131313131313131313131",
+          "redaction": {
+            "policy_ref": {
+              "id": "10000000-0000-4000-8000-000000000013",
+              "kind": "REDACTION_POLICY",
+              "logical_key": "redaction.provider-boundary",
+              "semantic_version": "1.0.0",
+              "content_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+            },
+            "outcome": "PASS",
+            "reason_codes": [],
+            "redacted_field_paths": [],
+            "input_digest": "sha256:3131313131313131313131313131313131313131313131313131313131313131",
+            "output_digest": "sha256:3131313131313131313131313131313131313131313131313131313131313131"
+          }
+        }
+      ]
+    }
+  ],
+  "output_schema": {
+    "schema_ref": {
+      "id": "30000000-0000-4000-8000-000000000025",
+      "kind": "OUTPUT_SCHEMA",
+      "logical_key": "schema.product-brief-output",
+      "semantic_version": "1.0.0",
+      "content_digest": "sha256:2525252525252525252525252525252525252525252525252525252525252525"
+    },
+    "canonical_schema_digest": "sha256:2525252525252525252525252525252525252525252525252525252525252525",
+    "strict": true,
+    "unknown_fields": "REJECT",
+    "maximum_serialized_bytes": 65536
+  },
+  "declared_tools": [],
+  "limits": {
+    "timeout_ms": 5000,
+    "maximum_input_tokens": "4096",
+    "maximum_output_tokens": "1024",
+    "maximum_cost_micros": "0",
+    "currency": "USD",
+    "maximum_content_bytes": 131072,
+    "maximum_tool_proposals": 0
+  },
+  "deadline_at": "2026-08-15T04:02:05Z",
+  "budget_reservations": [
+    {
+      "reservation_id": "30000000-0000-4000-8000-000000000040",
+      "category": "MODEL_OUTPUT_TOKENS",
+      "amount": "1024",
+      "state": "RESERVED"
+    }
+  ],
+  "budget_reservations_digest": "sha256:4040404040404040404040404040404040404040404040404040404040404040",
+  "repair_linkage": null,
+  "provider_sdk_retry_count": 0,
+  "runtime_retry_owner": "PERSISTED_SCHEDULER",
+  "worker_wait_strategy": "PERSISTED_NEXT_ATTEMPT_AT",
+  "automatic_cross_provider_fallback": false,
+  "privacy": {
+    "credentials_present": false,
+    "hidden_reasoning_present": false,
+    "raw_transcript_present": false,
+    "foreign_tenant_content_present": false,
+    "prohibited_content_scan": "PASS",
+    "scan_policy_ref": {
+      "id": "10000000-0000-4000-8000-000000000013",
+      "kind": "REDACTION_POLICY",
+      "logical_key": "redaction.provider-boundary",
+      "semantic_version": "1.0.0",
+      "content_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+    },
+    "scan_digest": "sha256:4141414141414141414141414141414141414141414141414141414141414141"
+  }
+}

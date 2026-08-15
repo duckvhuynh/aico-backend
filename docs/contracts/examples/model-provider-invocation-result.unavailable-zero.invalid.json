@@ -1,0 +1,165 @@
+{
+  "contract": "aico.model-provider-invocation-result",
+  "schema_version": "1.0",
+  "meta": {
+    "message_id": "49000000-0000-4000-8000-000000000001",
+    "correlation_id": "30000000-0000-4000-8000-000000000002",
+    "causation_id": "30000000-0000-4000-8000-000000000014",
+    "trace_id": "33333333333333333333333333333333",
+    "span_id": "4444444444444444",
+    "emitted_at": "2026-08-15T04:02:02Z"
+  },
+  "result_id": "49000000-0000-4000-8000-000000000010",
+  "result_digest": "sha256:4949494949494949494949494949494949494949494949494949494949494949",
+  "request_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+  "company_id": "30000000-0000-4000-8000-000000000010",
+  "run_id": "30000000-0000-4000-8000-000000000011",
+  "task_id": "30000000-0000-4000-8000-000000000012",
+  "attempt_id": "30000000-0000-4000-8000-000000000013",
+  "invocation_id": "30000000-0000-4000-8000-000000000014",
+  "status": "FAILED",
+  "candidate_output": null,
+  "proposed_tool_requests": [],
+  "provider_request_id": null,
+  "requested_provider": "DETERMINISTIC_FIXTURE",
+  "requested_model": "fixture-model",
+  "provider_configuration_ref": {
+    "id": "10000000-0000-4000-8000-000000000010",
+    "kind": "PROVIDER_CONFIGURATION",
+    "logical_key": "provider.local-fixture",
+    "semantic_version": "1.0.0",
+    "content_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  "resolved": {
+    "provenance": "UNAVAILABLE",
+    "provider_key": null,
+    "model_key": null,
+    "model_revision": null,
+    "fingerprint": null,
+    "model_resolution": "UNAVAILABLE",
+    "model_resolution_accepted": false,
+    "reproducibility_grade": "DEGRADED"
+  },
+  "usage": {
+    "input_tokens": {
+      "provenance": "UNAVAILABLE",
+      "quantity": "0",
+      "source": "UNAVAILABLE"
+    },
+    "output_tokens": {
+      "provenance": "UNAVAILABLE",
+      "quantity": null,
+      "source": "UNAVAILABLE"
+    },
+    "cached_input_tokens": {
+      "provenance": "UNAVAILABLE",
+      "quantity": null,
+      "source": "UNAVAILABLE"
+    },
+    "reasoning_tokens": {
+      "provenance": "UNAVAILABLE",
+      "quantity": null,
+      "source": "UNAVAILABLE"
+    },
+    "total_tokens": {
+      "provenance": "UNAVAILABLE",
+      "quantity": null,
+      "source": "UNAVAILABLE"
+    },
+    "usage_digest": "sha256:4948484848484848484848484848484848484848484848484848484848484848"
+  },
+  "cost": {
+    "provenance": "UNAVAILABLE",
+    "amount_micros": "0",
+    "currency": "USD",
+    "source": "UNAVAILABLE",
+    "pricing_catalog_ref": {
+      "id": "10000000-0000-4000-8000-000000000011",
+      "kind": "PRICING_CATALOG",
+      "logical_key": "pricing.local-fixture",
+      "semantic_version": "1.0.0",
+      "content_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+    },
+    "pricing_rule_key": null
+  },
+  "latency": {
+    "queue_ms": 1,
+    "provider_ms": 0,
+    "total_ms": 1
+  },
+  "finish_reason": "ERROR",
+  "safety": {
+    "outcome": "UNKNOWN",
+    "policy_ref": {
+      "id": "10000000-0000-4000-8000-000000000012",
+      "kind": "SAFETY_POLICY",
+      "logical_key": "safety.local-fixture",
+      "semantic_version": "1.0.0",
+      "content_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+    },
+    "reason_codes": ["NOT_DISPATCHED"]
+  },
+  "redaction": {
+    "policy_ref": {
+      "id": "10000000-0000-4000-8000-000000000013",
+      "kind": "REDACTION_POLICY",
+      "logical_key": "redaction.provider-boundary",
+      "semantic_version": "1.0.0",
+      "content_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+    },
+    "outcome": "PASS",
+    "reason_codes": [],
+    "redacted_field_paths": [],
+    "input_digest": "sha256:4343434343434343434343434343434343434343434343434343434343434343",
+    "output_digest": "sha256:4343434343434343434343434343434343434343434343434343434343434343"
+  },
+  "validation": {
+    "status": "NOT_RUN",
+    "validator_ref": {
+      "id": "40000000-0000-4000-8000-000000000020",
+      "kind": "EVALUATOR",
+      "logical_key": "validator.employee-output",
+      "semantic_version": "1.0.0",
+      "content_digest": "sha256:4545454545454545454545454545454545454545454545454545454545454545"
+    },
+    "validated_schema_ref": {
+      "id": "30000000-0000-4000-8000-000000000025",
+      "kind": "OUTPUT_SCHEMA",
+      "logical_key": "schema.product-brief-output",
+      "semantic_version": "1.0.0",
+      "content_digest": "sha256:2525252525252525252525252525252525252525252525252525252525252525"
+    },
+    "diagnostics": [],
+    "semantic_checks_digest": "sha256:4646464646464646464646464646464646464646464646464646464646464646",
+    "authority_after_validation": "NONE_UNTIL_APPLICATION_COMMIT"
+  },
+  "failure": {
+    "failure_id": "49000000-0000-4000-8000-000000000020",
+    "classification": "CONFIGURATION",
+    "reason_code": "CONFIGURATION_NOT_ACTIVE",
+    "safe_message": "The pinned provider configuration was not dispatchable.",
+    "dispatch_phase": "NOT_DISPATCHED",
+    "retry_guidance": "NO_RETRY",
+    "retryable": false,
+    "retry_after": null,
+    "reconciliation_required": false,
+    "reconciliation_action": "NONE",
+    "provider_safe_code": null,
+    "diagnostic_ref": null
+  },
+  "state_authority": "NONE",
+  "artifact_authority": "NONE",
+  "tool_authority": "NONE",
+  "privacy": {
+    "raw_prompt_present": false,
+    "raw_completion_present": false,
+    "provider_error_body_present": false,
+    "credential_present": false,
+    "tenant_content_present": false,
+    "hidden_reasoning_present": false,
+    "signed_url_present": false,
+    "prohibited_content_scan": "PASS",
+    "scan_digest": "sha256:4747474747474747474747474747474747474747474747474747474747474747"
+  },
+  "completed_at": "2026-08-15T04:02:02Z"
+}
