@@ -1,9 +1,16 @@
 # ADR-004: Deployment Topology and Runtime Operations
 
-**Status:** Proposed for MVP baseline  
+**Status:** Accepted for local/CI process topology; production hosting vendor/region is not selected  
 **Date:** 2026-08-12  
+**Accepted:** 2026-08-16  
+**Decision owner:** Duc Huynh (`duckvhuynh`)  
+**Parent gate:** `duckvhuynh/aicompanyos#95`  
+**Reconciliation child:** `duckvhuynh/aico-backend#36`  
+**Related evidence:** AICO-010 `duckvhuynh/aicompanyos#10` / `aico-backend#34` / PR #35  
 **Owners:** Software Architecture + Platform Engineering  
 **Related decision:** [ADR-001](./001-system-architecture.md)
+
+R0 accepts the three foreground entry points (`api`, `worker`, `migrate`), the local Compose data-plane (PostgreSQL + S3-compatible object storage), worker process-heartbeat liveness, and fail-closed configuration with `/health/live` distinct from `/health/ready`. Section 3 remains a **target production pattern**, not a provisioned environment, vendor, region, or credential set. AICO-010 documents `DATABASE_SSL=true` and `https` object endpoints as deployed-`APP_ENV` startup requirements; it does not provision those environments.
 
 ## 1. Decision
 
@@ -59,15 +66,15 @@ flowchart TB
 
 ### 2.1 Compose service contract
 
-| Service | Startup/health | Persistence | Exposure |
-|---|---|---|---|
-| `postgres` | health check uses authenticated `pg_isready`; explicit database/user | named volume; local data is disposable by documented opt-in command only | no host port required by default; optional developer override |
-| `object-store` | health endpoint plus bucket bootstrap job | named volume; versioning/retention behavior mirrors adapter contract | S3 port internal; console port optional in a development-only profile |
-| `migrate` | waits for healthy PostgreSQL; applies reviewed migrations and exits 0 | none | none |
-| `api` | waits for successful migration and required dependencies; `/health/live` and `/health/ready` | stateless | bind `127.0.0.1:3000:3000` locally |
-| `worker` | waits for successful migration and required dependencies; process health/heartbeat | stateless; durable state in PostgreSQL | none |
-| `otel-collector` | optional development profile | optional | local-only diagnostics ports |
-| `sandbox-manager` | optional until build milestone; capability/security health | ephemeral workspace root outside control-plane files | narrow internal port; never public |
+| Service           | Startup/health                                                                               | Persistence                                                              | Exposure                                                              |
+| ----------------- | -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ | --------------------------------------------------------------------- |
+| `postgres`        | health check uses authenticated `pg_isready`; explicit database/user                         | named volume; local data is disposable by documented opt-in command only | no host port required by default; optional developer override         |
+| `object-store`    | health endpoint plus bucket bootstrap job                                                    | named volume; versioning/retention behavior mirrors adapter contract     | S3 port internal; console port optional in a development-only profile |
+| `migrate`         | waits for healthy PostgreSQL; applies reviewed migrations and exits 0                        | none                                                                     | none                                                                  |
+| `api`             | waits for successful migration and required dependencies; `/health/live` and `/health/ready` | stateless                                                                | bind `127.0.0.1:3000:3000` locally                                    |
+| `worker`          | waits for successful migration and required dependencies; process health/heartbeat           | stateless; durable state in PostgreSQL                                   | none                                                                  |
+| `otel-collector`  | optional development profile                                                                 | optional                                                                 | local-only diagnostics ports                                          |
+| `sandbox-manager` | optional until build milestone; capability/security health                                   | ephemeral workspace root outside control-plane files                     | narrow internal port; never public                                    |
 
 Compose startup ordering is convenience only. Every process must tolerate dependency restart and enforce its own retry/backoff/readiness behavior.
 
@@ -104,16 +111,16 @@ flowchart LR
 
 ### 3.1 Security zones
 
-| Zone | Inbound | Outbound | Credentials/data allowed |
-|---|---|---|---|
-| Public edge | HTTPS from internet | API only | no database/object/model credentials |
-| Control API | edge/load balancer; internal health | identity, PostgreSQL, object metadata/access, telemetry | API DB role, object role scoped to control operations; no sandbox root or model secret unless an explicit synchronous feature is approved |
-| Worker | scheduler; no public inbound | PostgreSQL, object store, approved providers, sandbox manager, telemetry | worker DB role, scoped object/provider credentials; no founder session secret |
-| Data | API/worker/migrate approved identities | backups/telemetry as managed | encrypted authoritative state and immutable object content |
-| Sandbox manager | worker narrow protocol, operator kill | isolated execution control, staged object output, security telemetry | short-lived workload identity; no control DB access or founder/model production credentials |
-| Ephemeral build | sandbox manager only | deny; optional platform-managed dependency cache route for setup only | run-scoped workspace/token with expiry; never control-plane identity |
-| Preview | signed founder access or public policy as selected | static object fetch only; private control APIs denied | no control-plane cookies/credentials; immutable build only |
-| Operations | telemetry emitters and separately authenticated operators | alerting/run kill through audited control | redacted metadata; no founder approval authority |
+| Zone            | Inbound                                                   | Outbound                                                                 | Credentials/data allowed                                                                                                                  |
+| --------------- | --------------------------------------------------------- | ------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| Public edge     | HTTPS from internet                                       | API only                                                                 | no database/object/model credentials                                                                                                      |
+| Control API     | edge/load balancer; internal health                       | identity, PostgreSQL, object metadata/access, telemetry                  | API DB role, object role scoped to control operations; no sandbox root or model secret unless an explicit synchronous feature is approved |
+| Worker          | scheduler; no public inbound                              | PostgreSQL, object store, approved providers, sandbox manager, telemetry | worker DB role, scoped object/provider credentials; no founder session secret                                                             |
+| Data            | API/worker/migrate approved identities                    | backups/telemetry as managed                                             | encrypted authoritative state and immutable object content                                                                                |
+| Sandbox manager | worker narrow protocol, operator kill                     | isolated execution control, staged object output, security telemetry     | short-lived workload identity; no control DB access or founder/model production credentials                                               |
+| Ephemeral build | sandbox manager only                                      | deny; optional platform-managed dependency cache route for setup only    | run-scoped workspace/token with expiry; never control-plane identity                                                                      |
+| Preview         | signed founder access or public policy as selected        | static object fetch only; private control APIs denied                    | no control-plane cookies/credentials; immutable build only                                                                                |
+| Operations      | telemetry emitters and separately authenticated operators | alerting/run kill through audited control                                | redacted metadata; no founder approval authority                                                                                          |
 
 ## 4. Image and process contract
 
@@ -147,12 +154,12 @@ API and worker configuration is validated at boot through the same typed schema.
 
 ### 6.1 Configuration classes
 
-| Class | Examples | Delivery |
-|---|---|---|
-| Non-secret invariant | environment, log level, API port, workflow/policy version targets, lease/retry limits | versioned deployment configuration |
-| Secret | DB password/cert, object secret, provider API key, signing key | platform secret manager / mounted secret; never committed or baked into image |
-| Dynamic policy | budgets, qualification limits, model/template rollout target, kill switches | versioned persisted configuration with authorized change/audit |
-| Derived endpoint | database/object/provider URL | environment-specific configuration validated at startup |
+| Class                | Examples                                                                              | Delivery                                                                      |
+| -------------------- | ------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| Non-secret invariant | environment, log level, API port, workflow/policy version targets, lease/retry limits | versioned deployment configuration                                            |
+| Secret               | DB password/cert, object secret, provider API key, signing key                        | platform secret manager / mounted secret; never committed or baked into image |
+| Dynamic policy       | budgets, qualification limits, model/template rollout target, kill switches           | versioned persisted configuration with authorized change/audit                |
+| Derived endpoint     | database/object/provider URL                                                          | environment-specific configuration validated at startup                       |
 
 Local development uses an ignored `.env` generated from a committed example containing only placeholders and safe local defaults. Production secrets are injected by workload identity/secret manager. Logs, crash reports, health output, and configuration-validation errors must redact values.
 
@@ -167,12 +174,12 @@ Secret rotation requirements:
 
 ### 7.1 Roles
 
-| Role | Privileges |
-|---|---|
-| `aico_migrator` | schema migration privileges; no application traffic; available only to one-shot migration job |
-| `aico_api` | execute approved runtime queries/functions for API-owned paths; tenant context required |
-| `aico_worker` | runtime access required for claims, orchestration, outbox, and integrations; still tenant-scoped in repositories |
-| `aico_readonly_ops` | redacted operational views only; no mutations or unrestricted artifact content |
+| Role                | Privileges                                                                                                       |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `aico_migrator`     | schema migration privileges; no application traffic; available only to one-shot migration job                    |
+| `aico_api`          | execute approved runtime queries/functions for API-owned paths; tenant context required                          |
+| `aico_worker`       | runtime access required for claims, orchestration, outbox, and integrations; still tenant-scoped in repositories |
+| `aico_readonly_ops` | redacted operational views only; no mutations or unrestricted artifact content                                   |
 
 ### 7.2 Migration sequence
 
@@ -247,27 +254,27 @@ Production requirements:
 
 ## 12. Backup, recovery, and rollback
 
-| Asset | Protection | Recovery evidence |
-|---|---|---|
-| PostgreSQL | managed HA, encrypted backups, point-in-time recovery; RPO/RTO finalized before alpha | restore to isolated environment; verify row constraints, run sequences, idempotency, leases, and artifact references |
-| Object metadata/content | database metadata backup plus object versioning/lifecycle; region policy as selected | checksum all referenced objects; report missing/orphaned content without fabricating readiness |
-| Application image/config | immutable registry image, signed provenance, versioned deployment config | redeploy last compatible image and target prior workflow/provider/template version |
-| Telemetry | retention by data classification; not authoritative | absence does not prevent state recovery; alerts detect collection outage |
+| Asset                    | Protection                                                                            | Recovery evidence                                                                                                    |
+| ------------------------ | ------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| PostgreSQL               | managed HA, encrypted backups, point-in-time recovery; RPO/RTO finalized before alpha | restore to isolated environment; verify row constraints, run sequences, idempotency, leases, and artifact references |
+| Object metadata/content  | database metadata backup plus object versioning/lifecycle; region policy as selected  | checksum all referenced objects; report missing/orphaned content without fabricating readiness                       |
+| Application image/config | immutable registry image, signed provenance, versioned deployment config              | redeploy last compatible image and target prior workflow/provider/template version                                   |
+| Telemetry                | retention by data classification; not authoritative                                   | absence does not prevent state recovery; alerts detect collection outage                                             |
 
 Rollback follows **application/config rollback first**. Database rollback is used only when explicitly proven safe; forward repair is preferred after a committed expansion migration. Existing runs remain pinned to recorded workflow, policy, employee, rubric, provider configuration, template, and schema versions.
 
 ## 13. Failure and degradation matrix
 
-| Dependency/state | API | Worker | Operator/action |
-|---|---|---|---|
-| PostgreSQL unavailable | readiness false; no successful writes; safe dependency error | stop claims/commits; bounded reconnect | page immediately; no manual state mutation |
-| Object storage unavailable | metadata-only reads may remain; object commands fail/degrade explicitly | retry or block object-dependent tasks; no published artifact without durable content | alert on duration/error rate |
-| Model provider degraded | founder control/read remains available | circuit/backoff within policy; persist transient/blocked classification | switch versioned provider target only through authorized rollout |
-| Sandbox unavailable | build commands accepted only as durable pending intent if policy permits | no build execution; block/retry with visible state | isolate/restore sandbox; do not run commands in worker |
-| Outbox lag | state reads remain authoritative; timeline freshness warning if threshold exceeded | publisher retries; consumers dedupe | alert by oldest age; scale/fix publisher |
-| Telemetry unavailable | serve if safe; buffer/drop within bounded policy | continue authoritative operations if safe | alert collector path; never block indefinitely or spill sensitive payloads |
-| Preview unavailable/expired | return accurate metadata and eligible rebuild action | source/build history remains intact | restore/rebuild by policy; never embed stale preview |
-| Schema incompatible | readiness false before traffic | no claims | stop rollout; deploy compatible app or migration repair |
+| Dependency/state            | API                                                                                | Worker                                                                               | Operator/action                                                            |
+| --------------------------- | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ | -------------------------------------------------------------------------- |
+| PostgreSQL unavailable      | readiness false; no successful writes; safe dependency error                       | stop claims/commits; bounded reconnect                                               | page immediately; no manual state mutation                                 |
+| Object storage unavailable  | metadata-only reads may remain; object commands fail/degrade explicitly            | retry or block object-dependent tasks; no published artifact without durable content | alert on duration/error rate                                               |
+| Model provider degraded     | founder control/read remains available                                             | circuit/backoff within policy; persist transient/blocked classification              | switch versioned provider target only through authorized rollout           |
+| Sandbox unavailable         | build commands accepted only as durable pending intent if policy permits           | no build execution; block/retry with visible state                                   | isolate/restore sandbox; do not run commands in worker                     |
+| Outbox lag                  | state reads remain authoritative; timeline freshness warning if threshold exceeded | publisher retries; consumers dedupe                                                  | alert by oldest age; scale/fix publisher                                   |
+| Telemetry unavailable       | serve if safe; buffer/drop within bounded policy                                   | continue authoritative operations if safe                                            | alert collector path; never block indefinitely or spill sensitive payloads |
+| Preview unavailable/expired | return accurate metadata and eligible rebuild action                               | source/build history remains intact                                                  | restore/rebuild by policy; never embed stale preview                       |
+| Schema incompatible         | readiness false before traffic                                                     | no claims                                                                            | stop rollout; deploy compatible app or migration repair                    |
 
 ## 14. CI/CD and release gates
 
@@ -294,31 +301,31 @@ Release order:
 
 ## 15. Acceptance checks
 
-| Check | Expected result | Traceability |
-|---|---|---|
-| `docker compose up --build` from fresh checkout | migration exits 0; API and worker become healthy; no manual host dependency | AICO-009, AICO-010 |
-| run compose with missing required secret/config | affected process exits non-zero; output names key/reason but not value | AICO-010; SRS-NFR-012 |
-| call live while PostgreSQL is stopped | liveness remains process-accurate; readiness fails; writes never report success | AICO-010; SRS-NFR-005–006 |
-| terminate API during/after command transaction and retry key | zero partial state or original committed response; one event | AICO-002; SRS-FR-039, 076 |
-| terminate worker during external-attempt fixture | task is reclaimed after lease and produces one logical side effect | AICO-002; SRS-NFR-007 |
-| deliver one outbox event twice | consumer inbox creates one notification/task/tool effect | AICO-002; SRS-FR-039 |
-| run two-company object/row fixtures | cross-tenant requests are non-disclosing and cannot read/write | AICO-003; SRS-NFR-010 |
-| inspect networks and credentials in build fixture | no database/control credential, host mount, cross-workspace route, or unrestricted egress | AICO-004; SRS-NFR-011–012 |
-| load preview fixture | isolated origin cannot send control cookie or call private API; expiry/revocation works | AICO-007; SRS-FR-059–060 |
-| run migrate against prior schema then old/new app compatibility smoke | historical run readable; no rolling-deploy incompatibility | AICO-009, AICO-079; SRS-NFR-023–024 |
-| send termination signal during claimed work | worker stops claims and safely completes/checkpoints/releases within grace period | AICO-010; SRS-FR-074–081 |
-| restore database/object metadata to isolated environment | event order, versions, checksums, tenant scope, and resumable/blocked status reconcile | AICO-078; SRS-NFR-008 |
+| Check                                                                 | Expected result                                                                           | Traceability                        |
+| --------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- | ----------------------------------- |
+| `docker compose up --build` from fresh checkout                       | migration exits 0; API and worker become healthy; no manual host dependency               | AICO-009, AICO-010                  |
+| run compose with missing required secret/config                       | affected process exits non-zero; output names key/reason but not value                    | AICO-010; SRS-NFR-012               |
+| call live while PostgreSQL is stopped                                 | liveness remains process-accurate; readiness fails; writes never report success           | AICO-010; SRS-NFR-005–006           |
+| terminate API during/after command transaction and retry key          | zero partial state or original committed response; one event                              | AICO-002; SRS-FR-039, 076           |
+| terminate worker during external-attempt fixture                      | task is reclaimed after lease and produces one logical side effect                        | AICO-002; SRS-NFR-007               |
+| deliver one outbox event twice                                        | consumer inbox creates one notification/task/tool effect                                  | AICO-002; SRS-FR-039                |
+| run two-company object/row fixtures                                   | cross-tenant requests are non-disclosing and cannot read/write                            | AICO-003; SRS-NFR-010               |
+| inspect networks and credentials in build fixture                     | no database/control credential, host mount, cross-workspace route, or unrestricted egress | AICO-004; SRS-NFR-011–012           |
+| load preview fixture                                                  | isolated origin cannot send control cookie or call private API; expiry/revocation works   | AICO-007; SRS-FR-059–060            |
+| run migrate against prior schema then old/new app compatibility smoke | historical run readable; no rolling-deploy incompatibility                                | AICO-009, AICO-079; SRS-NFR-023–024 |
+| send termination signal during claimed work                           | worker stops claims and safely completes/checkpoints/releases within grace period         | AICO-010; SRS-FR-074–081            |
+| restore database/object metadata to isolated environment              | event order, versions, checksums, tenant scope, and resumable/blocked status reconcile    | AICO-078; SRS-NFR-008               |
 
 ## 16. Issue traceability and staged delivery
 
-| Stage | Deployment capability | GitHub issues |
-|---|---|---|
-| Sprint 0 | image/entry points, Compose database/object store, migrate job, config, liveness/readiness, CI smoke | AICO-002–004, AICO-007, AICO-009–010 |
-| Sprint 1–2 | tenant/auth roles, core schema, outbox, claims/leases, idempotency, restart/cancel tests | AICO-011–029 |
-| Sprint 2–3 | provider/policy/budget adapters and artifact/approval workflow | AICO-030–046 |
-| Sprint 4 | production-grade sandbox/template/object/preview isolation | AICO-047–058 |
-| Sprint 5–6 | evaluation/rework/export, retention, telemetry, restore/rollback operations | AICO-059–079 |
-| Sprint 7 | capacity, isolation, chaos, acceptance, restore, incident and go/no-go drills | AICO-080–092 |
+| Stage      | Deployment capability                                                                                | GitHub issues                        |
+| ---------- | ---------------------------------------------------------------------------------------------------- | ------------------------------------ |
+| Sprint 0   | image/entry points, Compose database/object store, migrate job, config, liveness/readiness, CI smoke | AICO-002–004, AICO-007, AICO-009–010 |
+| Sprint 1–2 | tenant/auth roles, core schema, outbox, claims/leases, idempotency, restart/cancel tests             | AICO-011–029                         |
+| Sprint 2–3 | provider/policy/budget adapters and artifact/approval workflow                                       | AICO-030–046                         |
+| Sprint 4   | production-grade sandbox/template/object/preview isolation                                           | AICO-047–058                         |
+| Sprint 5–6 | evaluation/rework/export, retention, telemetry, restore/rollback operations                          | AICO-059–079                         |
+| Sprint 7   | capacity, isolation, chaos, acceptance, restore, incident and go/no-go drills                        | AICO-080–092                         |
 
 ## 17. Consequences
 
@@ -337,4 +344,3 @@ Release order:
 - Managed production services require explicit TLS, identity, encryption, backup, retention, and regional configuration beyond local defaults.
 - A separate sandbox control plane and isolated preview origin add deployment work but are non-negotiable security boundaries.
 - Rolling deployments require schema and workflow/event compatibility discipline.
-

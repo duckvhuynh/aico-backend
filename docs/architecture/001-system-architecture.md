@@ -1,10 +1,16 @@
 # ADR-001: MVP System Architecture
 
-**Status:** Proposed system architecture; durable workflow selection is governed by accepted ADR-006
+**Status:** Accepted for R0 MVP control-plane decomposition; durable workflow selection remains governed by accepted ADR-006  
 **Date:** 2026-08-12  
+**Accepted:** 2026-08-16  
+**Decision owner:** Duc Huynh (`duckvhuynh`)  
+**Parent gate:** `duckvhuynh/aicompanyos#95`  
+**Reconciliation child:** `duckvhuynh/aico-backend#36`  
 **Owners:** Software Architecture + Backend Engineering  
 **Decision horizon:** Private-alpha MVP  
 **Authoritative inputs:** `../../../docs/product/SRS.md`, `../../../docs/product/MVP_SCOPE.md`, `../../../docs/delivery/BACKLOG.md`
+
+R0 accepts this ADR as the control-plane decomposition (domain-modular NestJS monolith, API + worker processes, PostgreSQL transactional truth, tenant-aware object port, sandbox/preview outside the trust zone). It does not select an identity provider, production sandbox vendor, preview CDN, final retention durations, or alpha economic targets. Those remain in the exclusions in §3 and in DEC-013/016/017/019.
 
 ## 1. Decision
 
@@ -114,13 +120,13 @@ flowchart TB
 
 ### 5.1 Deployable process responsibilities
 
-| Process | May do | Must not do |
-|---|---|---|
-| Control API | Authenticate; resolve actor/company; validate DTOs; authorize founder/operator commands; commit short transactions; return persisted views and command receipts | Invoke a model; execute generated code; wait for a workflow stage; publish from uncommitted state; trust caller-supplied tenant authority |
+| Process         | May do                                                                                                                                                                           | Must not do                                                                                                                                  |
+| --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| Control API     | Authenticate; resolve actor/company; validate DTOs; authorize founder/operator commands; commit short transactions; return persisted views and command receipts                  | Invoke a model; execute generated code; wait for a workflow stage; publish from uncommitted state; trust caller-supplied tenant authority    |
 | Workflow Worker | Claim leased durable work; evaluate policy/budget; assemble exact-version context; invoke approved adapters; validate outputs; commit results/transitions/outbox; publish outbox | Expose a public port; infer approval from model output; hold a transaction during an external call; run arbitrary shell in its own container |
-| Migration job | Apply one reviewed, forward-compatible migration batch and exit | Start application traffic; race multiple migration writers; silently auto-sync schemas |
-| Sandbox Manager | Materialize a single run workspace; enforce manifest, resources, egress, credentials, allowlisted commands, termination; return bounded evidence | Read founder sessions; connect to control-plane database; access another workspace; decide workflow or approval state |
-| Preview Service | Serve checksum-verified successful output on isolated origin with expiry/revocation and prototype labeling | Receive control-plane cookies; call private APIs; execute with control-plane credentials |
+| Migration job   | Apply one reviewed, forward-compatible migration batch and exit                                                                                                                  | Start application traffic; race multiple migration writers; silently auto-sync schemas                                                       |
+| Sandbox Manager | Materialize a single run workspace; enforce manifest, resources, egress, credentials, allowlisted commands, termination; return bounded evidence                                 | Read founder sessions; connect to control-plane database; access another workspace; decide workflow or approval state                        |
+| Preview Service | Serve checksum-verified successful output on isolated origin with expiry/revocation and prototype labeling                                                                       | Receive control-plane cookies; call private APIs; execute with control-plane credentials                                                     |
 
 API and worker use the same versioned application image and configuration schema but separate entry points. They can be scaled, restarted, or rolled back independently as long as their workflow/event/schema compatibility window is preserved.
 
@@ -173,32 +179,32 @@ Allowed dependencies point inward. Shared code is limited to stable primitives s
 
 ### 6.2 Module ownership
 
-| Module | Owns | Publishes/accepts through ports |
-|---|---|---|
-| Identity & Tenant Context | founder identity mapping, company ownership resolution, operator role separation | `ActorContext`, `TenantContext`; authentication/authorization failures |
-| Company & Initiative | companies, immutable profile versions, prototype initiatives, goal versions, context snapshots | company/profile/initiative commands and version references |
-| Workflow & Task Graph | runs, tasks, edges, task attempts, checkpoints, claims, retry/cancel state | versioned workflow commands; task-ready/blocked/stage events |
-| Artifact & Approval | artifact identities, immutable versions, lineage, checksums, approvals, final/export manifests | publish artifact; exact-version founder decision; content-reference resolution |
-| Policy & Budget | policy versions/decisions, action grants, budget ledger reservations/settlements | reason-coded allow/deny; reserve/settle/release |
-| Employee Runtime | employee definitions, typed invocation attempts, output-schema validation, provider metadata | execute typed employee task; classified result/failure |
-| Build & Preview | workspace/build/source metadata, command evidence, preview metadata and expiry | execute manifest; publish/revoke preview; never owns run state |
-| Evaluation & Rework | evaluations, criterion verdicts, findings, rework selections | QA result and finding-linked rework request |
-| Notification | idempotent founder notification records and delivery status | consumes committed audience-safe events |
-| Event Log & Outbox | ordered run events, outbox delivery state, consumer inbox/deduplication | append-in-transaction; claim/publish/ack; ordered query |
-| Operations & Telemetry | redacted audit projections, metrics/traces, kill requests | consumes safe events; issues separately authorized kill command |
+| Module                    | Owns                                                                                           | Publishes/accepts through ports                                                |
+| ------------------------- | ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| Identity & Tenant Context | founder identity mapping, company ownership resolution, operator role separation               | `ActorContext`, `TenantContext`; authentication/authorization failures         |
+| Company & Initiative      | companies, immutable profile versions, prototype initiatives, goal versions, context snapshots | company/profile/initiative commands and version references                     |
+| Workflow & Task Graph     | runs, tasks, edges, task attempts, checkpoints, claims, retry/cancel state                     | versioned workflow commands; task-ready/blocked/stage events                   |
+| Artifact & Approval       | artifact identities, immutable versions, lineage, checksums, approvals, final/export manifests | publish artifact; exact-version founder decision; content-reference resolution |
+| Policy & Budget           | policy versions/decisions, action grants, budget ledger reservations/settlements               | reason-coded allow/deny; reserve/settle/release                                |
+| Employee Runtime          | employee definitions, typed invocation attempts, output-schema validation, provider metadata   | execute typed employee task; classified result/failure                         |
+| Build & Preview           | workspace/build/source metadata, command evidence, preview metadata and expiry                 | execute manifest; publish/revoke preview; never owns run state                 |
+| Evaluation & Rework       | evaluations, criterion verdicts, findings, rework selections                                   | QA result and finding-linked rework request                                    |
+| Notification              | idempotent founder notification records and delivery status                                    | consumes committed audience-safe events                                        |
+| Event Log & Outbox        | ordered run events, outbox delivery state, consumer inbox/deduplication                        | append-in-transaction; claim/publish/ack; ordered query                        |
+| Operations & Telemetry    | redacted audit projections, metrics/traces, kill requests                                      | consumes safe events; issues separately authorized kill command                |
 
 ## 7. Data ownership and integrity
 
 ### 7.1 Authoritative versus derived data
 
-| Class | Examples | Authority and mutation rule |
-|---|---|---|
-| Transactional company state | company/profile, initiative/run, task/attempt, approval, budget, policy decision | Authoritative; only application use cases may mutate through validated state transitions |
-| Immutable version records | goal, context snapshot, artifact version, employee/workflow/policy/rubric/template versions | Append-only; referenced by stable ID/version; correction creates a new version |
-| Ordered event history | per-run event sequence, correlation/causation, audience-safe payload | Append-only and committed with material state; never reconstructed only from logs |
-| Blob content | attachments, artifact bodies, source/build/QA/export blobs | Immutable by content/version reference and checksum; metadata lives transactionally in PostgreSQL |
-| Derived projections | run summary, notification, analytics projection, search index | Rebuildable from authoritative state/events; cannot authorize transitions |
-| Ephemeral/diagnostic | worker heartbeat, cache, raw bounded logs, traces, progress narration | Operational only; must never imply a successful transition |
+| Class                       | Examples                                                                                    | Authority and mutation rule                                                                       |
+| --------------------------- | ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| Transactional company state | company/profile, initiative/run, task/attempt, approval, budget, policy decision            | Authoritative; only application use cases may mutate through validated state transitions          |
+| Immutable version records   | goal, context snapshot, artifact version, employee/workflow/policy/rubric/template versions | Append-only; referenced by stable ID/version; correction creates a new version                    |
+| Ordered event history       | per-run event sequence, correlation/causation, audience-safe payload                        | Append-only and committed with material state; never reconstructed only from logs                 |
+| Blob content                | attachments, artifact bodies, source/build/QA/export blobs                                  | Immutable by content/version reference and checksum; metadata lives transactionally in PostgreSQL |
+| Derived projections         | run summary, notification, analytics projection, search index                               | Rebuildable from authoritative state/events; cannot authorize transitions                         |
+| Ephemeral/diagnostic        | worker heartbeat, cache, raw bounded logs, traces, progress narration                       | Operational only; must never imply a successful transition                                        |
 
 ### 7.2 Database ownership rules
 
@@ -239,15 +245,15 @@ Allowed dependencies point inward. Shared code is limited to stable primitives s
 
 ## 8. Trust boundaries and enforcement
 
-| Boundary | Untrusted input | Required enforcement | Evidence |
-|---|---|---|---|
-| Browser -> API | tokens, IDs, payloads, idempotency keys, expected versions | token/session validation; server-side tenant resolution; DTO limits; ownership; optimistic concurrency; rate/size limits | request correlation, safe audit event, contract/security tests |
-| Operator -> API | support identity and exceptional command | separate audience/role; redacted diagnostic query; reason/ticket for kill; no founder gate authority | immutable operator audit record |
-| Worker -> model | assembled prompt/context and provider response | allowlisted exact versions; content/redaction policy; schema validation; time/cost limits; classified failure | attempt manifest and provider metadata, not hidden reasoning |
-| Worker -> tool/sandbox | tool request or build manifest | fresh parameter-bound policy allow; budget reservation; workspace/resource/egress/secret isolation | policy decision, tool invocation, bounded command evidence |
-| App -> object store | tenant key/ref, upload/download | canonical key builder; content type/size/safety; checksum; signed short-lived access; no arbitrary key passthrough | object metadata and audited access event |
-| Preview -> browser | generated HTML/JS/assets | separate registrable origin; no control cookies; restrictive headers; expiry/revocation; no private API CORS | isolation test and preview metadata |
-| Events -> UI/analytics/logs | domain payloads | audience/data-classification schema; allowlist/redaction; no prompts, source bodies, secrets, or foreign tenant fields | schema tests and secret-seeding tests |
+| Boundary                    | Untrusted input                                            | Required enforcement                                                                                                     | Evidence                                                       |
+| --------------------------- | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------- |
+| Browser -> API              | tokens, IDs, payloads, idempotency keys, expected versions | token/session validation; server-side tenant resolution; DTO limits; ownership; optimistic concurrency; rate/size limits | request correlation, safe audit event, contract/security tests |
+| Operator -> API             | support identity and exceptional command                   | separate audience/role; redacted diagnostic query; reason/ticket for kill; no founder gate authority                     | immutable operator audit record                                |
+| Worker -> model             | assembled prompt/context and provider response             | allowlisted exact versions; content/redaction policy; schema validation; time/cost limits; classified failure            | attempt manifest and provider metadata, not hidden reasoning   |
+| Worker -> tool/sandbox      | tool request or build manifest                             | fresh parameter-bound policy allow; budget reservation; workspace/resource/egress/secret isolation                       | policy decision, tool invocation, bounded command evidence     |
+| App -> object store         | tenant key/ref, upload/download                            | canonical key builder; content type/size/safety; checksum; signed short-lived access; no arbitrary key passthrough       | object metadata and audited access event                       |
+| Preview -> browser          | generated HTML/JS/assets                                   | separate registrable origin; no control cookies; restrictive headers; expiry/revocation; no private API CORS             | isolation test and preview metadata                            |
+| Events -> UI/analytics/logs | domain payloads                                            | audience/data-classification schema; allowlist/redaction; no prompts, source bodies, secrets, or foreign tenant fields   | schema tests and secret-seeding tests                          |
 
 Non-disclosing authorization errors use the same external status/reason family for missing and foreign resources. Internal telemetry can distinguish them without exposing foreign existence.
 
@@ -281,61 +287,61 @@ Non-disclosing authorization errors use the same external status/reason family f
 
 ## 12. Failure modes and required behavior
 
-| Failure | Detection | Required behavior | Forbidden outcome |
-|---|---|---|---|
-| API dies before commit | connection loss/transaction abort | client retries same idempotency key; no state/event exists | partial approval or orphan event |
-| API dies after commit before response | missing response with persisted command result | retry returns original result | duplicate decision/transition |
-| Worker dies with lease | heartbeat/lease expiry | another worker reclaims after visibility timeout; attempt remains auditable | local-memory-only loss or parallel commit |
-| Outbox publish fails | delivery status/age | retry stable event ID; alert on lag | missing material event |
-| Consumer receives duplicate | inbox/dedupe collision | return prior result/no-op | duplicate notification, task, or charge |
-| PostgreSQL unavailable | readiness and operation error | API not ready or safe dependency error; worker stops new claims; backoff | success acknowledgement without commit |
-| Object upload succeeds, metadata commit fails | orphan scanner/staging expiry | object remains staged and is garbage-collected; no published version points to it | mutable or unreferenced object treated as artifact |
-| Provider times out or returns malformed output | adapter timeout/schema validation | classify; bounded retry/repair; settle budget; persist visible state | prose mutates company state |
-| Budget/policy changes during external work | final expected-state/policy check | reject late result or block according to policy; audit disposition | side effect outside the exact grant |
-| Cancel races with task result | row lock/expected state | one legal terminal/next transition wins; late result cannot dispatch more work | canceled run resumes |
-| Migration incompatible with old process | deployment compatibility check | expand/migrate/switch/contract; hold rollout or roll back app | unreadable historical run |
-| Suspected sandbox escape | security signal/runner termination | terminate execution, revoke credentials, block run, alert operator | automatic unsafe retry |
+| Failure                                        | Detection                                      | Required behavior                                                                 | Forbidden outcome                                  |
+| ---------------------------------------------- | ---------------------------------------------- | --------------------------------------------------------------------------------- | -------------------------------------------------- |
+| API dies before commit                         | connection loss/transaction abort              | client retries same idempotency key; no state/event exists                        | partial approval or orphan event                   |
+| API dies after commit before response          | missing response with persisted command result | retry returns original result                                                     | duplicate decision/transition                      |
+| Worker dies with lease                         | heartbeat/lease expiry                         | another worker reclaims after visibility timeout; attempt remains auditable       | local-memory-only loss or parallel commit          |
+| Outbox publish fails                           | delivery status/age                            | retry stable event ID; alert on lag                                               | missing material event                             |
+| Consumer receives duplicate                    | inbox/dedupe collision                         | return prior result/no-op                                                         | duplicate notification, task, or charge            |
+| PostgreSQL unavailable                         | readiness and operation error                  | API not ready or safe dependency error; worker stops new claims; backoff          | success acknowledgement without commit             |
+| Object upload succeeds, metadata commit fails  | orphan scanner/staging expiry                  | object remains staged and is garbage-collected; no published version points to it | mutable or unreferenced object treated as artifact |
+| Provider times out or returns malformed output | adapter timeout/schema validation              | classify; bounded retry/repair; settle budget; persist visible state              | prose mutates company state                        |
+| Budget/policy changes during external work     | final expected-state/policy check              | reject late result or block according to policy; audit disposition                | side effect outside the exact grant                |
+| Cancel races with task result                  | row lock/expected state                        | one legal terminal/next transition wins; late result cannot dispatch more work    | canceled run resumes                               |
+| Migration incompatible with old process        | deployment compatibility check                 | expand/migrate/switch/contract; hold rollout or roll back app                     | unreadable historical run                          |
+| Suspected sandbox escape                       | security signal/runner termination             | terminate execution, revoke credentials, block run, alert operator                | automatic unsafe retry                             |
 
 ## 13. Evolution seams
 
-| Current MVP choice | Extraction trigger | Stable seam |
-|---|---|---|
-| PostgreSQL task claims | sustained claim contention, independently scaled job classes, or workflow semantics exceed the proven state machine | `WorkflowSchedulerPort`; immutable workflow/task/checkpoint contracts |
-| PostgreSQL outbox publication | external consumers, regional fan-out, or throughput exceeds DB publisher target | `EventPublisherPort`; versioned event envelope and consumer inbox |
-| Modular monolith modules | independent security/scaling/ownership need outweighs transaction simplicity | application ports and owned schemas; no cross-module table access |
-| S3-compatible object adapter | retention/legal/region needs require specialist stores | content-addressed `ObjectStorePort` and immutable metadata reference |
-| One model adapter process | provider isolation, throughput, or provider-specific failure domains justify separation | typed provider request/result envelope |
-| Sandbox Manager adapter | production isolation platform selected | execution manifest/result protocol; no control-plane DB dependency |
-| Polling run updates | event freshness or client load requires push | ordered event cursor supports SSE/WebSocket projection without changing authority |
+| Current MVP choice            | Extraction trigger                                                                                                  | Stable seam                                                                       |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| PostgreSQL task claims        | sustained claim contention, independently scaled job classes, or workflow semantics exceed the proven state machine | `WorkflowSchedulerPort`; immutable workflow/task/checkpoint contracts             |
+| PostgreSQL outbox publication | external consumers, regional fan-out, or throughput exceeds DB publisher target                                     | `EventPublisherPort`; versioned event envelope and consumer inbox                 |
+| Modular monolith modules      | independent security/scaling/ownership need outweighs transaction simplicity                                        | application ports and owned schemas; no cross-module table access                 |
+| S3-compatible object adapter  | retention/legal/region needs require specialist stores                                                              | content-addressed `ObjectStorePort` and immutable metadata reference              |
+| One model adapter process     | provider isolation, throughput, or provider-specific failure domains justify separation                             | typed provider request/result envelope                                            |
+| Sandbox Manager adapter       | production isolation platform selected                                                                              | execution manifest/result protocol; no control-plane DB dependency                |
+| Polling run updates           | event freshness or client load requires push                                                                        | ordered event cursor supports SSE/WebSocket projection without changing authority |
 
 Extraction must not weaken exact-version approvals, tenant boundaries, audit sequence, or transactionally recorded intent.
 
 ## 14. Alternatives considered
 
-| Alternative | Advantages | Why not selected for MVP |
-|---|---|---|
-| Microservices from day one | independent scaling and deployment | creates distributed transaction, schema, local orchestration, and operational cost before bounded alpha demand exists |
-| Temporal as first workflow engine | excellent durable workflow semantics and operator tooling | adds a second persistence/control system and deterministic workflow constraints before the team has validated the fixed product flow; retained as an evolution option |
-| Redis/BullMQ as system of workflow record | familiar NestJS queue and fast dispatch | does not remove the need for PostgreSQL authority/outbox and makes human waits, exact state coupling, and recovery span two stores |
-| In-process event emitter/cron only | minimal dependencies | loses durable work/events on crash and cannot meet restart/idempotency requirements |
-| Database per tenant | strongest physical separation | operationally disproportionate for one-founder private alpha; app scope + constraints + RLS provide MVP defense in depth |
-| ORM entities shared across modules | rapid initial coding | couples business rules/storage and enables cross-domain table access, making extraction and invariant testing unsafe |
-| Store artifacts in PostgreSQL only | one transaction system | large source/build/export objects inflate backup and database costs; immutable metadata plus staged object promotion preserves lineage |
+| Alternative                               | Advantages                                                | Why not selected for MVP                                                                                                                                              |
+| ----------------------------------------- | --------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Microservices from day one                | independent scaling and deployment                        | creates distributed transaction, schema, local orchestration, and operational cost before bounded alpha demand exists                                                 |
+| Temporal as first workflow engine         | excellent durable workflow semantics and operator tooling | adds a second persistence/control system and deterministic workflow constraints before the team has validated the fixed product flow; retained as an evolution option |
+| Redis/BullMQ as system of workflow record | familiar NestJS queue and fast dispatch                   | does not remove the need for PostgreSQL authority/outbox and makes human waits, exact state coupling, and recovery span two stores                                    |
+| In-process event emitter/cron only        | minimal dependencies                                      | loses durable work/events on crash and cannot meet restart/idempotency requirements                                                                                   |
+| Database per tenant                       | strongest physical separation                             | operationally disproportionate for one-founder private alpha; app scope + constraints + RLS provide MVP defense in depth                                              |
+| ORM entities shared across modules        | rapid initial coding                                      | couples business rules/storage and enables cross-domain table access, making extraction and invariant testing unsafe                                                  |
+| Store artifacts in PostgreSQL only        | one transaction system                                    | large source/build/export objects inflate backup and database costs; immutable metadata plus staged object promotion preserves lineage                                |
 
 ## 15. Requirement and GitHub issue traceability
 
-| Decision area | SRS / MVP coverage | GitHub work |
-|---|---|---|
-| Product-to-delivery baseline | SRS §§2–5, MVP-CAP-001–012 | AICO-001 |
-| Durable state, human waits, retry/cancel, outbox | TD-001, TD-006; SRS-FR-033–045, 074–083; NFR-006–008 | AICO-002, AICO-023–029, AICO-084 |
-| Tenant/object/retention boundary | TD-002, TD-006, TD-009; SRS-FR-001–012, 092; NFR-008–016 | AICO-003, AICO-011–017, AICO-076, AICO-082 |
-| Sandbox/template/dependency boundary | TD-003, TD-004; SRS-FR-048–058; NFR-011, 025–026 | AICO-004, AICO-047–056, AICO-083 |
-| Provider abstraction | TD-005; SRS-FR-084, 089–091 | AICO-005, AICO-030, AICO-032 |
-| Policy/exact-version approval | TD-007; SRS-FR-021–031, 085–088 | AICO-006, AICO-031, AICO-039–045 |
-| Preview separation | TD-008; SRS-FR-059–060; NFR-014 | AICO-007, AICO-057–058, AICO-083 |
-| Bounded alpha operation | TD-010; SRS-FR-095; NFR-004, 025–027 | AICO-008, AICO-033, AICO-080 |
-| Repository/deployment baseline | SRS §12; NFR-020–024 | AICO-009, AICO-079, AICO-085 |
-| Control plane, storage, configuration, health | CMP-02–10, CMP-15; NFR-005–010 | AICO-010 |
+| Decision area                                    | SRS / MVP coverage                                       | GitHub work                                |
+| ------------------------------------------------ | -------------------------------------------------------- | ------------------------------------------ |
+| Product-to-delivery baseline                     | SRS §§2–5, MVP-CAP-001–012                               | AICO-001                                   |
+| Durable state, human waits, retry/cancel, outbox | TD-001, TD-006; SRS-FR-033–045, 074–083; NFR-006–008     | AICO-002, AICO-023–029, AICO-084           |
+| Tenant/object/retention boundary                 | TD-002, TD-006, TD-009; SRS-FR-001–012, 092; NFR-008–016 | AICO-003, AICO-011–017, AICO-076, AICO-082 |
+| Sandbox/template/dependency boundary             | TD-003, TD-004; SRS-FR-048–058; NFR-011, 025–026         | AICO-004, AICO-047–056, AICO-083           |
+| Provider abstraction                             | TD-005; SRS-FR-084, 089–091                              | AICO-005, AICO-030, AICO-032               |
+| Policy/exact-version approval                    | TD-007; SRS-FR-021–031, 085–088                          | AICO-006, AICO-031, AICO-039–045           |
+| Preview separation                               | TD-008; SRS-FR-059–060; NFR-014                          | AICO-007, AICO-057–058, AICO-083           |
+| Bounded alpha operation                          | TD-010; SRS-FR-095; NFR-004, 025–027                     | AICO-008, AICO-033, AICO-080               |
+| Repository/deployment baseline                   | SRS §12; NFR-020–024                                     | AICO-009, AICO-079, AICO-085               |
+| Control plane, storage, configuration, health    | CMP-02–10, CMP-15; NFR-005–010                           | AICO-010                                   |
 
 ## 16. Implementable acceptance checks
 
