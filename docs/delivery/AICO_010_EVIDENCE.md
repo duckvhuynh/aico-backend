@@ -5,6 +5,9 @@
 **Evidence date:** 2026-08-16  
 **Canonical command:** `npm run verify:ci`
 
+Draft PR https://github.com/duckvhuynh/aico-backend/pull/35 carries the parent/child
+traceability body required by `scripts/check-pr-governance.mjs`.
+
 ## Scope
 
 This slice reuses the existing NestJS API/worker/migrate skeleton, PostgreSQL, and MinIO fixture as
