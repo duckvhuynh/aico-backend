@@ -165,7 +165,7 @@ async function createRun(label) {
   const runId = goal.body.data.run.id;
   const tasks = await call(`/runs/${runId}/tasks`, { headers: auth });
   return {
-    actorId: token.body.founder_id,
+    actorId: invited.founder_id,
     companyId: company.body.data.id,
     runId,
     taskId: tasks.body.data[0].id,

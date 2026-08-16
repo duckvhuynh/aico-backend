@@ -23,6 +23,8 @@ export async function authenticateInvitedFounder(call, identity) {
   return {
     invite,
     session,
+    founder_id: session.body.data.founder_id,
+    session_id: session.body.data.session_id,
     auth: { Authorization: `Bearer ${session.body.data.access_token}` },
   };
 }
