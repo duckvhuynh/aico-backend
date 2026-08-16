@@ -5,8 +5,13 @@
 **Evidence date:** 2026-08-16  
 **Canonical command:** `npm run verify:ci`
 
-Draft PR https://github.com/duckvhuynh/aico-backend/pull/35 carries the parent/child
+PR https://github.com/duckvhuynh/aico-backend/pull/35 carries the parent/child
 traceability body required by `scripts/check-pr-governance.mjs`.
+
+**Hosted PR SHA:** `49feee5da343f695b38ab46b5ee8ffc079313501`  
+**Hosted `verify`:** https://github.com/duckvhuynh/aico-backend/actions/runs/31935976899  
+**Hosted `prove`:** https://github.com/duckvhuynh/aico-backend/actions/runs/31935976871  
+**Hosted `validate`:** https://github.com/duckvhuynh/aico-backend/actions/runs/31935976891
 
 ## Scope
 
@@ -20,11 +25,11 @@ frozen verification gate.
 
 ## Acceptance reconciliation
 
-| Parent acceptance criterion                                                                                                       | Evidence                                                                                                                                                                                                                                                                                                                        | Result                  |
-| --------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
-| Fresh setup validates config, migrates isolated storage, runs tests/build, and exposes health separate from dependency readiness. | `assertConfiguration` runs before Nest listens. `GET /api/v1/health/live` performs no store I/O. `GET /api/v1/health/ready` fails when database, migrations, or object store are unavailable. `test/health.checks.spec.ts` and `test/smoke.mjs` cover the distinction. Isolated migrate/tests/build remain `npm run verify:ci`. | Pending hosted `verify` |
-| Missing configuration fails safely without secret values; transport/storage encryption settings are documented for environments.  | `test/config.validation.spec.ts` proves missing/short secrets fail without echoing values. Deployed `APP_ENV` requires `DATABASE_SSL=true` and an `https` object endpoint. Settings: `docs/delivery/AICO_010_ENVIRONMENT_ENCRYPTION.md`.                                                                                        | Pending hosted `verify` |
-| Initial migration/rollback and tenant-scoped object fixture pass CI.                                                              | Canonical gates 18 and 20 already apply/revert/reapply migrations and run tenant-keyed object put/head/get/checksum plus cross-tenant denial. This slice does not duplicate those gates.                                                                                                                                        | Pending hosted `verify` |
+| Parent acceptance criterion                                                                                                       | Evidence                                                                                                                                                                                                                                                                                                                                                                                                                          | Result |
+| --------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| Fresh setup validates config, migrates isolated storage, runs tests/build, and exposes health separate from dependency readiness. | `assertConfiguration` runs before Nest listens. `GET /api/v1/health/live` performs no store I/O. `GET /api/v1/health/ready` fails when database, migrations, or object store are unavailable. `test/health.checks.spec.ts` and `test/smoke.mjs` cover the distinction. Isolated migrate/tests/build remain `npm run verify:ci`. Hosted `verify` on `49feee5`: https://github.com/duckvhuynh/aico-backend/actions/runs/31935976899 | Pass   |
+| Missing configuration fails safely without secret values; transport/storage encryption settings are documented for environments.  | `test/config.validation.spec.ts` proves missing/short secrets fail without echoing values. Deployed `APP_ENV` requires `DATABASE_SSL=true` and an `https` object endpoint. Settings: `docs/delivery/AICO_010_ENVIRONMENT_ENCRYPTION.md`. Hosted `verify` on `49feee5`: https://github.com/duckvhuynh/aico-backend/actions/runs/31935976899                                                                                        | Pass   |
+| Initial migration/rollback and tenant-scoped object fixture pass CI.                                                              | Canonical gates 18 and 20 already apply/revert/reapply migrations and run tenant-keyed object put/head/get/checksum plus cross-tenant denial. This slice does not duplicate those gates. Hosted `verify` on `49feee5`: https://github.com/duckvhuynh/aico-backend/actions/runs/31935976899                                                                                                                                        | Pass   |
 
 ## Non-goals kept
 
