@@ -27,8 +27,8 @@ const query = (sql) =>
   ).stdout.trim();
 
 compose('run', '--rm', 'migrate');
-if (query('SELECT count(*) FROM aico_migrations;') !== '3') {
-  throw new Error('Expected all three migrations after clean apply.');
+if (query('SELECT count(*) FROM aico_migrations;') !== '4') {
+  throw new Error('Expected all four migrations after clean apply.');
 }
 if (
   query(`
@@ -37,32 +37,30 @@ if (
       AND to_regclass('public.clarification_answer_versions') IS NOT NULL
       AND to_regclass('public.context_snapshot_answers') IS NOT NULL
       AND to_regclass('public.local_event_projections') IS NOT NULL
-      AND to_regclass('public.model_invocation_effects') IS NOT NULL;
+      AND to_regclass('public.model_invocation_effects') IS NOT NULL
+      AND to_regclass('public.founder_invites') IS NOT NULL
+      AND to_regclass('public.founder_sessions') IS NOT NULL;
   `) !== 't'
 ) {
-  throw new Error('Durable wait schema was not created by migration apply.');
+  throw new Error('Durable wait or invite/session schema was not created by migration apply.');
 }
 
 proveAico011DomainSchema(query);
 
 compose('run', '--rm', 'migrate', 'npm', 'run', 'migration:revert:prod');
-if (query('SELECT count(*) FROM aico_migrations;') !== '2') {
-  throw new Error('Expected two migrations after reverting the latest migration.');
+if (query('SELECT count(*) FROM aico_migrations;') !== '3') {
+  throw new Error('Expected three migrations after reverting the latest migration.');
 }
 if (
   query(`
     SELECT
-      to_regclass('public.human_waits') IS NULL
-      AND to_regclass('public.clarification_answer_versions') IS NULL
-      AND to_regclass('public.context_snapshot_answers') IS NULL
-      AND to_regclass('public.local_event_projections') IS NULL
-      AND to_regclass('public.model_invocation_effects') IS NULL;
+      to_regclass('public.founder_invites') IS NULL
+      AND to_regclass('public.founder_sessions') IS NULL
+      AND to_regclass('public.human_waits') IS NOT NULL
+      AND to_regclass('public.task_edges') IS NOT NULL;
   `) !== 't'
 ) {
-  throw new Error('Durable wait schema was not removed by migration revert.');
-}
-if (query("SELECT to_regclass('public.task_edges') IS NOT NULL;") !== 't') {
-  throw new Error('Reverting the durable wait schema removed an earlier migration.');
+  throw new Error('Invite/session schema was not removed by migration revert.');
 }
 
 query(`
@@ -156,20 +154,18 @@ query(`
 `);
 
 compose('run', '--rm', 'migrate');
-if (query('SELECT count(*) FROM aico_migrations;') !== '3') {
-  throw new Error('Expected all three migrations after forward reapply.');
+if (query('SELECT count(*) FROM aico_migrations;') !== '4') {
+  throw new Error('Expected all four migrations after forward reapply.');
 }
 if (
   query(`
     SELECT
       to_regclass('public.human_waits') IS NOT NULL
-      AND to_regclass('public.clarification_answer_versions') IS NOT NULL
-      AND to_regclass('public.context_snapshot_answers') IS NOT NULL
-      AND to_regclass('public.local_event_projections') IS NOT NULL
-      AND to_regclass('public.model_invocation_effects') IS NOT NULL;
+      AND to_regclass('public.founder_invites') IS NOT NULL
+      AND to_regclass('public.founder_sessions') IS NOT NULL;
   `) !== 't'
 ) {
-  throw new Error('Durable wait schema was not restored by forward reapply.');
+  throw new Error('Invite/session schema was not restored by forward reapply.');
 }
 if (
   query(`
@@ -185,13 +181,16 @@ if (
 }
 
 query(`
-  INSERT INTO local_event_projections
-    (consumer_name, event_id, projection_key, result_digest)
+  INSERT INTO founder_invites
+    (id, email, display_name, token_hash, status, expires_at, session_ttl_seconds)
   VALUES (
-    'migration-fixture/v1',
-    '019c1000-0000-7000-8000-000000000008',
-    'migration-fixture-effect',
-    repeat('0', 64)
+    '019c1200-0000-7000-8000-000000000001',
+    'migration.invite@example.test',
+    'Migration Invite',
+    repeat('a', 64),
+    'PENDING',
+    now() + interval '1 day',
+    900
   );
 `);
 const blockedRevert = run(
@@ -200,15 +199,15 @@ const blockedRevert = run(
   { capture: true, allowFailure: true },
 );
 if (blockedRevert.status === 0) {
-  throw new Error('Schema-down rollback did not fail closed after durable data existed.');
+  throw new Error('Schema-down rollback did not fail closed after invite data existed.');
 }
 if (
-  query('SELECT count(*) FROM aico_migrations;') !== '3' ||
-  query("SELECT to_regclass('public.local_event_projections') IS NOT NULL;") !== 't'
+  query('SELECT count(*) FROM aico_migrations;') !== '4' ||
+  query("SELECT to_regclass('public.founder_invites') IS NOT NULL;") !== 't'
 ) {
   throw new Error('Failed schema-down rollback did not preserve forward schema and data.');
 }
 
 console.log(
-  'Migration fixture passed: clean apply, AICO-011 domain factory/invariants, pre-use revert, populated-history reapply, workflow pin, and fail-closed post-use rollback.',
+  'Migration fixture passed: clean apply, AICO-011 domain factory/invariants, AICO-012 invite/session schema, pre-use revert, populated-history reapply, workflow pin, and fail-closed post-use rollback.',
 );

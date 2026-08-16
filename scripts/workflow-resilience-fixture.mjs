@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { spawn } from 'node:child_process';
+import { authenticateInvitedFounder } from './auth-invite-session.mjs';
 import { run } from './process-utils.mjs';
 
 const project = process.env.AICO_VERIFY_PROJECT;
@@ -26,7 +27,8 @@ async function call(path, options = {}) {
   for (let attempt = 0; attempt < 10; attempt += 1) {
     try {
       const response = await fetch(`${baseUrl}${path}`, options);
-      const body = await response.json();
+      const text = await response.text();
+      const body = text ? JSON.parse(text) : {};
       return { response, body };
     } catch (error) {
       lastError = error;
@@ -100,16 +102,11 @@ function spikeAsync(command, value = {}, options = {}) {
 }
 
 async function createRun(label) {
-  const token = await call('/auth/dev-token', {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({
-      email: `a2-${label.slice(0, 12)}-${randomUUID().slice(0, 8)}@example.test`,
-      display_name: `AICO-002 ${label}`,
-    }),
+  const invited = await authenticateInvitedFounder(call, {
+    email: `a2-${label.slice(0, 12)}-${randomUUID().slice(0, 8)}@example.test`,
+    display_name: `AICO-002 ${label}`,
   });
-  assert(token.response.status === 201, `token failed: ${JSON.stringify(token.body)}`);
-  const auth = { Authorization: `Bearer ${token.body.access_token}` };
+  const auth = invited.auth;
   const company = await call('/companies', {
     method: 'POST',
     headers: { ...auth, 'content-type': 'application/json', 'idempotency-key': randomUUID() },
