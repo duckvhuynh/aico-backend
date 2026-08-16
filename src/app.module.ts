@@ -9,7 +9,7 @@ import {
   objectStorageConfig,
   workerConfig,
 } from './config/configuration';
-import { configurationSchema } from './config/validation';
+import { assertConfiguration } from './config/validation';
 import { DatabaseModule } from './infrastructure/database/database.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { CompaniesModule } from './modules/companies/companies.module';
@@ -24,8 +24,7 @@ import { RunsModule } from './modules/runs/runs.module';
       isGlobal: true,
       cache: true,
       load: [appConfig, authConfig, databaseConfig, workerConfig, objectStorageConfig],
-      validationSchema: configurationSchema,
-      validationOptions: { abortEarly: false, allowUnknown: true },
+      validate: assertConfiguration,
     }),
     LoggerModule.forRoot({
       pinoHttp: {

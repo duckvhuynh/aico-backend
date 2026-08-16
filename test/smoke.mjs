@@ -15,13 +15,25 @@ function assert(condition, message) {
 const health = await call('/health/ready');
 assert(health.response.ok, `readiness failed: ${JSON.stringify(health.body)}`);
 
+const live = await call('/health/live');
+assert(live.response.ok, `liveness failed: ${JSON.stringify(live.body)}`);
+assert(live.body.status === 'ok', `liveness body unexpected: ${JSON.stringify(live.body)}`);
+assert(!('checks' in live.body), 'liveness must not include dependency checks');
+assert(
+  !JSON.stringify(live.body).toLowerCase().includes('secret'),
+  'liveness must not include secret material',
+);
+
 const email = `founder-${randomUUID()}@example.test`;
 const tokenResult = await call('/auth/dev-token', {
   method: 'POST',
   headers: { 'content-type': 'application/json' },
   body: JSON.stringify({ email, display_name: 'Smoke Founder' }),
 });
-assert(tokenResult.response.status === 201, `dev token failed: ${JSON.stringify(tokenResult.body)}`);
+assert(
+  tokenResult.response.status === 201,
+  `dev token failed: ${JSON.stringify(tokenResult.body)}`,
+);
 const auth = { Authorization: `Bearer ${tokenResult.body.access_token}` };
 
 const companyKey = randomUUID();
@@ -100,18 +112,33 @@ for (let attempt = 0; attempt < 40; attempt += 1) {
   if (run.body.data?.state === 'AWAITING_BRIEF_APPROVAL') break;
   await new Promise((resolve) => setTimeout(resolve, 250));
 }
-assert(run?.body.data?.state === 'AWAITING_BRIEF_APPROVAL', `worker did not complete PM task: ${JSON.stringify(run?.body)}`);
+assert(
+  run?.body.data?.state === 'AWAITING_BRIEF_APPROVAL',
+  `worker did not complete PM task: ${JSON.stringify(run?.body)}`,
+);
 
 const tasks = await call(`/runs/${runId}/tasks`, { headers: auth });
-assert(tasks.body.data.some((task) => task.state === 'SUCCEEDED'), 'no succeeded task found');
+assert(
+  tasks.body.data.some((task) => task.state === 'SUCCEEDED'),
+  'no succeeded task found',
+);
 const events = await call(`/runs/${runId}/events`, { headers: auth });
-assert(events.body.data.some((event) => event.type === 'run_created'), 'run_created event missing');
-assert(events.body.data.some((event) => event.type === 'product_brief_published'), 'product brief event missing');
+assert(
+  events.body.data.some((event) => event.type === 'run_created'),
+  'run_created event missing',
+);
+assert(
+  events.body.data.some((event) => event.type === 'product_brief_published'),
+  'product brief event missing',
+);
 
 const otherToken = await call('/auth/dev-token', {
   method: 'POST',
   headers: { 'content-type': 'application/json' },
-  body: JSON.stringify({ email: `other-${randomUUID()}@example.test`, display_name: 'Other Founder' }),
+  body: JSON.stringify({
+    email: `other-${randomUUID()}@example.test`,
+    display_name: 'Other Founder',
+  }),
 });
 const crossTenant = await call(`/runs/${runId}`, {
   headers: { Authorization: `Bearer ${otherToken.body.access_token}` },
@@ -119,4 +146,3 @@ const crossTenant = await call(`/runs/${runId}`, {
 assert(crossTenant.response.status === 404, 'cross-tenant lookup did not fail closed');
 
 console.log(JSON.stringify({ status: 'passed', company_id: companyId, run_id: runId }));
-
