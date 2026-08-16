@@ -238,7 +238,7 @@ Creates an immutable founder-authored Goal Version. With `start_run=true` (requi
 }
 ```
 
-Response `201`, with `Location: /api/v1/runs/{run_id}`:
+Response `201`, with `Location: /api/v1/runs/{run_id}` and the Initiative ETag after the goal pointer advances. Prior Company Profile Versions remain readable to Runs whose Context Snapshot references them.
 
 ```json
 {
@@ -283,7 +283,20 @@ Returns persisted state only. It must not infer `working` from a worker heartbea
     "context": {
       "company_profile_version_id": "019c1234-1234-7abc-8def-1234567890ad",
       "goal_version_id": "019c1234-1234-7abc-8def-123456789111",
-      "answer_version_ids": []
+      "answer_version_ids": [],
+      "company_profile": {
+        "id": "019c1234-1234-7abc-8def-1234567890ad",
+        "version": 1,
+        "purpose": "Help independent consultants prepare concise client proposals.",
+        "target_customer": "Independent consultants serving small businesses",
+        "constraints": ["No customer PII", "English only"],
+        "normalized_limits": {
+          "max_screens": 5,
+          "primary_flows": 1,
+          "data_mode": "mock_or_local"
+        },
+        "created_at": "2026-08-12T10:30:00.000Z"
+      }
     },
     "summary": {
       "task_counts": { "QUEUED": 1 },

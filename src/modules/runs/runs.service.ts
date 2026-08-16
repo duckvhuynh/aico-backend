@@ -20,6 +20,13 @@ interface RunRow {
   company_profile_version_id: string;
   goal_version_id: string;
   answer_version_ids: string[];
+  frozen_profile_id: string;
+  frozen_profile_version: number;
+  frozen_purpose: string;
+  frozen_target_customer: string;
+  frozen_constraints: string[];
+  frozen_normalized_limits: Record<string, unknown>;
+  frozen_profile_created_at: Date;
   created_at: Date;
   updated_at: Date;
 }
@@ -52,9 +59,17 @@ export class RunsService {
     const companyId = this.requireCompany(actor);
     const rows = await this.dataSource.query<RunRow[]>(
       `
-        SELECT r.*, cs.company_profile_version_id, cs.goal_version_id, cs.answer_version_ids
+        SELECT r.id, r.initiative_id, r.context_snapshot_id, r.state, r.stage, r.row_version,
+               r.workflow_version, r.policy_version, r.blocking_reason_code, r.failure_reason_code,
+               r.created_at, r.updated_at,
+               cs.company_profile_version_id, cs.goal_version_id, cs.answer_version_ids,
+               p.id AS frozen_profile_id, p.version AS frozen_profile_version, p.purpose AS frozen_purpose,
+               p.target_customer AS frozen_target_customer, p.constraints AS frozen_constraints,
+               p.normalized_limits AS frozen_normalized_limits, p.created_at AS frozen_profile_created_at
         FROM runs r
         JOIN context_snapshots cs ON cs.id = r.context_snapshot_id AND cs.company_id = r.company_id
+        JOIN company_profile_versions p
+          ON p.id = cs.company_profile_version_id AND p.company_id = r.company_id
         WHERE r.company_id = $1 AND r.id = $2
       `,
       [companyId, runId],
@@ -79,6 +94,15 @@ export class RunsService {
         company_profile_version_id: run.company_profile_version_id,
         goal_version_id: run.goal_version_id,
         answer_version_ids: run.answer_version_ids,
+        company_profile: {
+          id: run.frozen_profile_id,
+          version: Number(run.frozen_profile_version),
+          purpose: run.frozen_purpose,
+          target_customer: run.frozen_target_customer,
+          constraints: run.frozen_constraints,
+          normalized_limits: run.frozen_normalized_limits,
+          created_at: run.frozen_profile_created_at,
+        },
       },
       summary: {
         task_counts: Object.fromEntries(counts.map((entry) => [entry.state, entry.count])),

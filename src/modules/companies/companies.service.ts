@@ -6,6 +6,7 @@ import { newId } from '../../common/domain/identifiers';
 import type { RequestActor } from '../../common/http/request-context';
 import { CommandExecutor, type CommandResult } from '../governance/command-executor.service';
 import { DomainEventService } from '../governance/domain-event.service';
+import { CompanyProfilePolicy } from './company-profile.policy';
 import type { CompanyProfileDto } from './dto/company-profile.dto';
 import type { CreateCompanyDto } from './dto/create-company.dto';
 
@@ -31,6 +32,7 @@ export class CompaniesService {
     @InjectDataSource() private readonly dataSource: DataSource,
     private readonly commandExecutor: CommandExecutor,
     private readonly events: DomainEventService,
+    private readonly profilePolicy: CompanyProfilePolicy,
   ) {}
 
   async create(
@@ -39,6 +41,7 @@ export class CompaniesService {
     correlationId: string,
     dto: CreateCompanyDto,
   ): Promise<CommandResult<Record<string, unknown>>> {
+    this.profilePolicy.assertCreate(dto.name, dto.profile);
     return this.commandExecutor.run({
       actorId: actor.id,
       operation: 'companies.create',
@@ -119,6 +122,7 @@ export class CompaniesService {
     correlationId: string,
     dto: CompanyProfileDto,
   ): Promise<CommandResult<Record<string, unknown>>> {
+    this.profilePolicy.assertProfile(dto);
     return this.commandExecutor.run({
       actorId: actor.id,
       operation: 'companies.profile.replace',
