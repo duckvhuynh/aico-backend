@@ -78,7 +78,7 @@ npm run start:dev
 npm run start:worker
 ```
 
-`AUTH_MODE=development` is rejected unless `APP_ENV` is `local` or `test`. The public `POST /api/v1/auth/dev-token` helper is therefore not a production authentication design.
+`AUTH_MODE=development` is rejected unless `APP_ENV` is `local` or `test`. Operator-provisioned invites (`POST /api/v1/auth/invites`) are the local/test DEP-07 adapter; public registration is unavailable. Redeem an invite with `POST /api/v1/auth/session` and end it with `POST /api/v1/auth/sign-out`.
 
 ## Verify
 

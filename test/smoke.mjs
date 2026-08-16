@@ -1,16 +1,27 @@
 import { randomUUID } from 'node:crypto';
+import { authenticateInvitedFounder } from '../scripts/auth-invite-session.mjs';
 
 const baseUrl = process.env.AICO_BASE_URL ?? 'http://localhost:3000/api/v1';
 
 async function call(path, options = {}) {
   const response = await fetch(`${baseUrl}${path}`, options);
-  const body = await response.json();
+  const text = await response.text();
+  const body = text ? JSON.parse(text) : {};
   return { response, body };
 }
 
 function assert(condition, message) {
   if (!condition) throw new Error(message);
 }
+
+function assertNoTenantLeak(body, ...needles) {
+  const serialized = JSON.stringify(body).toLowerCase();
+  for (const needle of needles) {
+    assert(!serialized.includes(needle.toLowerCase()), `auth failure leaked ${needle}`);
+  }
+}
+
+const delay = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
 
 const health = await call('/health/ready');
 assert(health.response.ok, `readiness failed: ${JSON.stringify(health.body)}`);
@@ -24,17 +35,88 @@ assert(
   'liveness must not include secret material',
 );
 
-const email = `founder-${randomUUID()}@example.test`;
-const tokenResult = await call('/auth/dev-token', {
+const publicRegistration = await call('/auth/register', {
   method: 'POST',
   headers: { 'content-type': 'application/json' },
-  body: JSON.stringify({ email, display_name: 'Smoke Founder' }),
+  body: JSON.stringify({ email: 'public-register@example.test', password: 'not-a-real-secret' }),
+});
+assert(publicRegistration.response.status === 404, 'public registration was available');
+assertNoTenantLeak(publicRegistration.body, 'public-register@example.test', 'not-a-real-secret');
+assert(
+  publicRegistration.response.headers.get('cache-control') === 'no-store',
+  'auth error cached',
+);
+
+const removedDevToken = await call('/auth/dev-token', {
+  method: 'POST',
+  headers: { 'content-type': 'application/json' },
+  body: JSON.stringify({ email: 'dev-token@example.test', display_name: 'Legacy Adapter' }),
+});
+assert(removedDevToken.response.status === 404, 'public dev-token registration was available');
+
+const unauthenticated = await call('/companies/current');
+assert(unauthenticated.response.status === 401, 'protected company route was public');
+assertNoTenantLeak(unauthenticated.body, 'fixture company', 'founder:');
+
+const invalidInvite = await call('/auth/session', {
+  method: 'POST',
+  headers: { 'content-type': 'application/json' },
+  body: JSON.stringify({ invite_token: 'invalid-invite-token-value' }),
+});
+assert(invalidInvite.response.status === 401, 'invalid invite was accepted');
+assertNoTenantLeak(invalidInvite.body, 'invalid-invite-token-value');
+
+const expiredInvite = await call('/auth/invites', {
+  method: 'POST',
+  headers: { 'content-type': 'application/json' },
+  body: JSON.stringify({
+    email: `expired-invite-${randomUUID()}@example.test`,
+    display_name: 'Expired Invite',
+    invite_ttl_seconds: 1,
+  }),
 });
 assert(
-  tokenResult.response.status === 201,
-  `dev token failed: ${JSON.stringify(tokenResult.body)}`,
+  expiredInvite.response.status === 201,
+  `expired invite issue failed: ${JSON.stringify(expiredInvite.body)}`,
 );
-const auth = { Authorization: `Bearer ${tokenResult.body.access_token}` };
+await delay(1500);
+const expiredRedeem = await call('/auth/session', {
+  method: 'POST',
+  headers: { 'content-type': 'application/json' },
+  body: JSON.stringify({ invite_token: expiredInvite.body.data.invite_token }),
+});
+assert(expiredRedeem.response.status === 401, 'expired invite was redeemed');
+
+const sessionIdentity = {
+  email: `session-${randomUUID()}@example.test`,
+  display_name: 'Session Founder',
+  session_ttl_seconds: 1,
+};
+const shortSession = await authenticateInvitedFounder(call, sessionIdentity);
+const expiredSessionProbe = await (async () => {
+  await delay(1500);
+  return call('/companies/current', { headers: shortSession.auth });
+})();
+assert(expiredSessionProbe.response.status === 401, 'expired session remained usable');
+assertNoTenantLeak(expiredSessionProbe.body, sessionIdentity.email, 'Session Founder');
+
+const revoked = await authenticateInvitedFounder(call, {
+  email: `revoked-${randomUUID()}@example.test`,
+  display_name: 'Revoked Founder',
+});
+const signOut = await call('/auth/sign-out', { method: 'POST', headers: revoked.auth });
+assert(signOut.response.status === 204, `sign-out failed: ${signOut.response.status}`);
+const afterSignOut = await call('/companies/current', { headers: revoked.auth });
+assert(afterSignOut.response.status === 401, 'revoked session remained usable');
+assertNoTenantLeak(afterSignOut.body, 'Revoked Founder');
+
+const email = `founder-${randomUUID()}@example.test`;
+const invited = await authenticateInvitedFounder(call, { email, display_name: 'Smoke Founder' });
+const auth = invited.auth;
+assert(
+  invited.session.response.headers.get('cache-control') === 'no-store',
+  'session response was cacheable',
+);
 
 const companyKey = randomUUID();
 const companyPayload = {
@@ -53,7 +135,18 @@ const company = await call('/companies', {
   body: JSON.stringify(companyPayload),
 });
 assert(company.response.status === 201, `company create failed: ${JSON.stringify(company.body)}`);
+assert(
+  company.response.headers.get('cache-control') === 'no-store',
+  'company response was cacheable',
+);
 const companyId = company.body.data.id;
+
+const secondCompany = await call('/companies', {
+  method: 'POST',
+  headers: { ...auth, 'content-type': 'application/json', 'idempotency-key': randomUUID() },
+  body: JSON.stringify(companyPayload),
+});
+assert(secondCompany.response.status === 409, 'second company for one founder was accepted');
 
 const replay = await call('/companies', {
   method: 'POST',
@@ -132,16 +225,12 @@ assert(
   'product brief event missing',
 );
 
-const otherToken = await call('/auth/dev-token', {
-  method: 'POST',
-  headers: { 'content-type': 'application/json' },
-  body: JSON.stringify({
-    email: `other-${randomUUID()}@example.test`,
-    display_name: 'Other Founder',
-  }),
+const otherFounder = await authenticateInvitedFounder(call, {
+  email: `other-${randomUUID()}@example.test`,
+  display_name: 'Other Founder',
 });
 const crossTenant = await call(`/runs/${runId}`, {
-  headers: { Authorization: `Bearer ${otherToken.body.access_token}` },
+  headers: otherFounder.auth,
 });
 assert(crossTenant.response.status === 404, 'cross-tenant lookup did not fail closed');
 

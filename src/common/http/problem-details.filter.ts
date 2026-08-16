@@ -87,6 +87,8 @@ export class ProblemDetailsFilter implements ExceptionFilter {
       );
     }
 
+    response.setHeader('Cache-Control', 'no-store');
+    response.setHeader('Pragma', 'no-cache');
     response.status(problem.status).type('application/problem+json').send(problem);
   }
 

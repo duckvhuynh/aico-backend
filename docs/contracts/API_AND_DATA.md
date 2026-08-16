@@ -11,7 +11,7 @@ This document defines the externally observable REST contract and the PostgreSQL
 
 ### Authentication and scope
 
-All endpoints except `/api/v1/health/live`, `/api/v1/health/ready`, and the local/test-only `/api/v1/auth/dev-token` adapter require a bearer credential accepted by the configured authentication adapter. The server resolves the credential subject to an active Founder and, when provisioned, that Founder's one Company. The client cannot select a tenant with a body field, URL field, query field, role claim, or custom company header.
+All endpoints except `/api/v1/health/live`, `/api/v1/health/ready`, `POST /api/v1/auth/session`, and the local/test-only `POST /api/v1/auth/invites` operator adapter require a bearer credential accepted by the configured authentication adapter. Public registration (`POST /api/v1/auth/register` and the retired `/api/v1/auth/dev-token` helper) is unavailable and returns the same non-disclosing `404`. The server resolves the credential subject to an active Founder session and, when provisioned, that Founder's one Company. The client cannot select a tenant with a body field, URL field, query field, role claim, or custom company header. Authenticated and error responses set `Cache-Control: no-store`. Sign-out, expiry, and revocation invalidate the session and any signed-resource grant bound to it.
 
 Resource routes may contain a resource ID, but repository lookup is always `(resolved_company_id, resource_id)`. Missing and foreign resources produce the same safe `404` response. Operator and employee APIs use separate authentication audiences and are not reachable through Founder credentials.
 
