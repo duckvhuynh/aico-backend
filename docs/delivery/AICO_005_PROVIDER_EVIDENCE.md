@@ -6,10 +6,10 @@
 **Product + Legal/Security evidence:** https://github.com/duckvhuynh/aico-backend/pull/32#issuecomment-5306136806
 **Proposed-mode hosted verification:** https://github.com/duckvhuynh/aico-backend/actions/runs/31903220678
 **Proposed-mode hosted verification SHA:** `12d5c86e2c70ccb4409b9a732ef9e143f05ec26c`
-**Accepted metadata SHA:** Pending
-**Accepted-mode hosted verification:** Pending
-**Accepted-mode hosted verification SHA:** Pending
-**Accepted-mode verification artifact digest:** Pending
+**Accepted metadata SHA:** `281971f6f974d4d733f828128342cddcfecbf184`
+**Accepted-mode hosted verification:** https://github.com/duckvhuynh/aico-backend/actions/runs/31931914921
+**Accepted-mode hosted verification SHA:** `281971f6f974d4d733f828128342cddcfecbf184`
+**Accepted-mode verification artifact digest:** sha256:fcf5cf8ed393fb9779185ea72e38163a0528caf5494a092009df743fe10ed57d
 **Decision date:** 2026-08-16
 **Disputed IDs:** None
 **Product trace SHA:** `28d2bc0ecd9e5676a4e87f1bf5e81c602a1a0714`

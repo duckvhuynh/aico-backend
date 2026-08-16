@@ -7,11 +7,11 @@
 
 ## Acceptance reconciliation
 
-| Parent acceptance criterion                                                                                               | Evidence                                                                                                                                                                                                                                                                                                                       | Result                                                   |
-| ------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------- |
-| One documented foreground command matches required CI checks; no developer-managed server/background process is required. | `scripts/verify-ci.mjs` is called locally and by the single GitHub Actions `verify` job. It owns a uniquely named disposable Compose project and removes its containers/volumes in `finally`.                                                                                                                                  | Pass                                                     |
-| Pull requests block on lint/static/type, unit/contract, migration, and production-build failures.                         | The verifier exits non-zero on any gate and `npm run verify:fail-closed` probes all named gates. GitHub Actions reports the combined `verify` status. Repository-level required-check enforcement cannot be configured on the current private GitHub plan; the API returns HTTP 403 requiring GitHub Pro or public visibility. | Verifier pass; repository enforcement externally blocked |
-| Deterministic model/build/storage fixtures run without paid external calls and a deliberate failure proves each gate.     | Deterministic PM unit test, local Docker image build, tenant-scoped MinIO fixture, 22-gate command-level fail-closed harness, and HTTP smoke test all run without paid services.                                                                                                                                               | Pass                                                     |
+| Parent acceptance criterion                                                                                               | Evidence                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | Result |
+| ------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| One documented foreground command matches required CI checks; no developer-managed server/background process is required. | `scripts/verify-ci.mjs` is called locally and by the single GitHub Actions `verify` job. It owns a uniquely named disposable Compose project and removes its containers/volumes in `finally`.                                                                                                                                                                                                                                                                                                       | Pass   |
+| Pull requests block on lint/static/type, unit/contract, migration, and production-build failures.                         | The verifier exits non-zero on any gate and `npm run verify:fail-closed` probes all named gates. Public `aico-backend` ruleset [`20905145`](https://github.com/duckvhuynh/aico-backend/rules/20905145) requires `verify`, `prove`, and `validate` on `refs/heads/main` with `strict_required_status_checks_policy=true`, empty `bypass_actors`, and `current_user_can_bypass=never`. Deliberate-red [PR #33](https://github.com/duckvhuynh/aico-backend/pull/33) was `BLOCKED` and closed unmerged. | Pass   |
+| Deterministic model/build/storage fixtures run without paid external calls and a deliberate failure proves each gate.     | Deterministic PM unit test, local Docker image build, tenant-scoped MinIO fixture, 22-gate command-level fail-closed harness, and HTTP smoke test all run without paid services.                                                                                                                                                                                                                                                                                                                    | Pass   |
 
 ## Gate manifest
 
@@ -69,23 +69,56 @@ and orphans removed. The harness checks that its execution order exactly matches
 an unrelated engine, executable, or tool failure cannot count as the intended gate kill. Cleanup is
 verified with project-label queries for zero containers, volumes, and networks.
 
-## Candidate verification status
+## Candidate and Accepted-mode verification status
 
-Current focused Candidate evidence:
+Current focused evidence:
 
+- Candidate semantic SHA `12d5c86e2c70ccb4409b9a732ef9e143f05ec26c` remains Proposed in that commit;
 - `npm run verify:fail-closed` rejects all 22 bounded command-level gate faults;
 - every negative result matches its intended fault fingerprint;
 - setup, source sentinels, disposable Compose resources, volumes, and temporary files are subject to
-  verified cleanup; and
-- syntax, formatting, diff-whitespace, and residue checks pass for this Candidate slice.
+  verified cleanup;
+- syntax, formatting, diff-whitespace, and residue checks pass for this Candidate slice;
+- owner Architecture/AI and Product + Legal/Security comments bind that Candidate SHA;
+- Accepted metadata SHA `281971f6f974d4d733f828128342cddcfecbf184` received hosted Backend CI
+  `verify` success on pull_request run
+  https://github.com/duckvhuynh/aico-backend/actions/runs/31931914921 with artifact
+  `aico-005-provider-decision-281971f6f974d4d733f828128342cddcfecbf184` (`decision_status`
+  `ACCEPTED_TRANSITION`, `self_digest`
+  `sha256:fcf5cf8ed393fb9779185ea72e38163a0528caf5494a092009df743fe10ed57d`); and
+- this reconciliation revision must receive a new hosted `verify` / `prove` / `validate` trio
+  before PR #32 may merge.
 
-A new full `npm run verify:ci` result is pending integration verification. This Candidate does not
-reuse the duration or detailed counts of an earlier canonical run as evidence for the current tree.
+This file does not reuse duration or detailed counts of an earlier canonical run as evidence for a
+later SHA.
 
-## Known external limitation
+## Repository required-check enforcement
 
-The authenticated repository APIs for branch protection and repository rulesets both return:
+DEC-005 is resolved on public `duckvhuynh/aico-backend`. Active ruleset
+[`20905145`](https://github.com/duckvhuynh/aico-backend/rules/20905145) (`AICO-009 required
+verification`) applies to `refs/heads/main` and requires exactly `verify`, `prove`, and `validate`.
+Job names match: Backend CI → `verify`; AICO-005 Provider Runtime Proof → `prove`; AICO-008 Alpha
+Operating Policy → `validate`. The ruleset also enforces `deletion` and `non_fast_forward`.
 
-> Upgrade to GitHub Pro or make this repository public to enable this feature.
+Deliberate-red [PR #33](https://github.com/duckvhuynh/aico-backend/pull/33) added an extra JSON
+property `deliberate_red` to `docs/policies/alpha-operating-policy-v1.json`. `validate` failed
+closed. `gh pr merge` was rejected with "the base branch policy prohibits the merge"
+(`mergeStateStatus=BLOCKED` while git-mergeable). The PR was closed unmerged and the branch
+deleted. Proof comment:
+https://github.com/duckvhuynh/aico-backend/pull/33#issuecomment-5306163894
 
-Consequently, this work does not claim server-side required-check enforcement. Until repository protection is available, the enforced delivery procedure is: do not merge an AICO backend pull request unless the `verify` workflow is green and the parent/child acceptance evidence has been reconciled. This limitation remains explicit evidence on the parent issue rather than a silently waived control.
+Honesty bound: PR #33 `verify` and `prove` also failed closed on PR-body governance wording, not
+only the policy mutation. The merge-block proof is valid; this file does not claim those two jobs
+isolated the AICO-008 policy fault.
+
+Canonical local/CI command remains `npm run verify:ci` (foreground; disposable Compose; no
+long-lived server).
+
+## Residual risks
+
+The following remain visible and are not silently waived:
+
+- required-check contexts are unbound (`integration_id` is absent);
+- workflow-path protection is not configured;
+- `validate` coverage is not identical to `verify` coverage;
+- a repository owner can later weaken or delete the ruleset.
