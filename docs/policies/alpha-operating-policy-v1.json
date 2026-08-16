@@ -4,6 +4,7 @@
   "policy_id": "alpha-operating-policy",
   "policy_version": "1.0.0",
   "status": "ACCEPTED",
+  "deliberate_red": true,
   "authority": {
     "parent_issue": "duckvhuynh/aicompanyos#8",
     "product_repository": "duckvhuynh/aicompanyos",
