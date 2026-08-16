@@ -1,3 +1,4 @@
+import { proveAico011DomainSchema } from './aico-011-domain-fixture.mjs';
 import { run } from './process-utils.mjs';
 
 const project = process.env.AICO_VERIFY_PROJECT;
@@ -41,6 +42,8 @@ if (
 ) {
   throw new Error('Durable wait schema was not created by migration apply.');
 }
+
+proveAico011DomainSchema(query);
 
 compose('run', '--rm', 'migrate', 'npm', 'run', 'migration:revert:prod');
 if (query('SELECT count(*) FROM aico_migrations;') !== '2') {
@@ -207,5 +210,5 @@ if (
 }
 
 console.log(
-  'Migration fixture passed: clean apply, pre-use revert, populated-history reapply, workflow pin, and fail-closed post-use rollback.',
+  'Migration fixture passed: clean apply, AICO-011 domain factory/invariants, pre-use revert, populated-history reapply, workflow pin, and fail-closed post-use rollback.',
 );
