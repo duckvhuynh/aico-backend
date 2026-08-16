@@ -1,16 +1,16 @@
 # AICO-005 Provider and Employee Runtime Decision Evidence
 
 **Status:** Accepted decision package; no external provider activation or production runtime is claimed
-**Candidate semantic SHA:** `3ccb09cf6f320872d9c964240dd6673da06713ad`
-**Architecture/AI evidence:** https://github.com/duckvhuynh/aico-backend/pull/27#issuecomment-5300873726
-**Product + Legal/Security evidence:** https://github.com/duckvhuynh/aico-backend/pull/27#issuecomment-5300874199
-**Proposed-mode hosted verification:** https://github.com/duckvhuynh/aico-backend/actions/runs/31867696746
-**Proposed-mode hosted verification SHA:** `3ccb09cf6f320872d9c964240dd6673da06713ad`
-**Accepted metadata SHA:** `2801cd6257273f3efcf92d9d4aa22f10f4a141df`
-**Accepted-mode hosted verification:** https://github.com/duckvhuynh/aico-backend/actions/runs/31868872049
-**Accepted-mode hosted verification SHA:** `2801cd6257273f3efcf92d9d4aa22f10f4a141df`
-**Accepted-mode verification artifact digest:** sha256:5a81f0e33b88ad1d5b618611fffebbc11b4e8df5cac5ed0ef8b66b7c32d4f838
-**Decision date:** 2026-08-15
+**Candidate semantic SHA:** `12d5c86e2c70ccb4409b9a732ef9e143f05ec26c`
+**Architecture/AI evidence:** https://github.com/duckvhuynh/aico-backend/pull/32#issuecomment-5306136593
+**Product + Legal/Security evidence:** https://github.com/duckvhuynh/aico-backend/pull/32#issuecomment-5306136806
+**Proposed-mode hosted verification:** https://github.com/duckvhuynh/aico-backend/actions/runs/31903220678
+**Proposed-mode hosted verification SHA:** `12d5c86e2c70ccb4409b9a732ef9e143f05ec26c`
+**Accepted metadata SHA:** `281971f6f974d4d733f828128342cddcfecbf184`
+**Accepted-mode hosted verification:** https://github.com/duckvhuynh/aico-backend/actions/runs/31931914921
+**Accepted-mode hosted verification SHA:** `281971f6f974d4d733f828128342cddcfecbf184`
+**Accepted-mode verification artifact digest:** sha256:fcf5cf8ed393fb9779185ea72e38163a0528caf5494a092009df743fe10ed57d
+**Decision date:** 2026-08-16
 **Disputed IDs:** None
 **Product trace SHA:** `28d2bc0ecd9e5676a4e87f1bf5e81c602a1a0714`
 
@@ -21,19 +21,21 @@ owner acceptance covers this trace manifest; a later Product revision requires a
 **Parent:** [`duckvhuynh/aicompanyos#5`](https://github.com/duckvhuynh/aicompanyos/issues/5)
 **Definition of Ready:**
 [`issuecomment-5300317644`](https://github.com/duckvhuynh/aicompanyos/issues/5#issuecomment-5300317644)
-**Decision child:**
-[`duckvhuynh/aico-backend#25`](https://github.com/duckvhuynh/aico-backend/issues/25)
-**Proof child:**
-[`duckvhuynh/aico-backend#26`](https://github.com/duckvhuynh/aico-backend/issues/26),
-blocked until the exact decision package is accepted
+**Historical decision child:**
+[`duckvhuynh/aico-backend#25`](https://github.com/duckvhuynh/aico-backend/issues/25), completed
+**Historical proof child:**
+[`duckvhuynh/aico-backend#26`](https://github.com/duckvhuynh/aico-backend/issues/26), completed
+**Governing change child:**
+[`duckvhuynh/aico-backend#31`](https://github.com/duckvhuynh/aico-backend/issues/31)
 
 No comment, SHA, run, artifact, account setting, provider, model, configuration, or owner decision is
 invented by this file. Candidate, Proposed-run, and owner fields must bind the same reviewed semantic
 revision. Accepted-run fields bind the later Accepted metadata SHA under the explicit masked metadata
 allowlist. Separate role decisions may be authored by the same repository owner, but they must be
 distinct comments that state the lane being exercised and cite the exact Candidate SHA.
-This decision package is governed by backend issue #25; proof child #26 remains blocked until its
-acceptance gate passes.
+This fresh Candidate cycle is governed by backend issue #31. Backend issue #25 and proof child #26
+remain completed historical evidence; they are not represented as open or blocked. The runtime,
+package, and CI semantic change must still receive fresh owner decisions and exact-SHA hosted proof.
 
 The post-Candidate masked metadata allowlist is exact: ADR-011's `**Status:**`,
 `**Architecture/AI evidence:**`, and `**Product + Legal/Security evidence:**` header values; and this
@@ -213,8 +215,9 @@ quality result, production telemetry/alerts, or provider rollout/rollback drill.
 
 ## 9. Failure and proof expectations
 
-Child #26 must use one foreground paid-service-free command on the exact reviewed SHA and emit one
-bounded canonical result manifest. At minimum it must prove:
+Historical proof child #26 used one foreground paid-service-free command and emitted one bounded
+canonical result manifest. The current Candidate must rerun that command on the exact reviewed SHA.
+At minimum it proves:
 
 1. success with exact domain/provider/result separation, independent strict/semantic validation
    `PASSED`, safe/non-dropped output, `REPORTED` and accepted model resolution, and exact reference
@@ -277,7 +280,8 @@ unclean repository make the proof fail. A compile error does not count as killin
    PR governance verifies that each cited GitHub run is attributable to its recorded SHA and
    concluded successfully.
 7. `npm run verify:provider-architecture:reconciled` passes on the final evidence-only revision.
-   Decision child #25 is then reconciled/merged/Done and proof child #26 moves Blocked to Ready.
+   Historical decision child #25 and proof child #26 remain Done; governing change child #31 records
+   the fresh Candidate acceptance and reconciliation evidence.
 
 Any semantic change after the two owner decisions invalidates both decisions. The accepted and final
 reconciliation commits may alter only the explicit masked ADR/evidence metadata fields. They cannot
@@ -286,12 +290,14 @@ contract, schema, example, audit, validator, package, or CI semantics.
 
 ### Gate 2 — `A5-READY-2 PROVED`
 
-1. #26 executes the full deterministic case and fail-closed mutation registries on one exact final
-   SHA with zero external effects and unconditional cleanup.
+1. The workflow implemented by historical proof child #26 executes the full deterministic case and
+   fail-closed mutation registries on the current exact final SHA with zero external effects and
+   unconditional cleanup.
 2. Local and hosted manifests agree on SHA, result, case/mutation equality, usage/cost/effect counts,
    prohibited-content scan, clean tree, and canonical digest.
 3. An attributable QA/Security owner accepts that exact final proof SHA and permanent hosted artifact.
-4. Child #26 merges and becomes Done; parent #5 reconciles only its bounded R0 criteria.
+4. Historical child #26 remains Done; governing change child #31 records the current rerun, and
+   parent #5 reconciles only its bounded R0 criteria.
 
 Gate 2 proves an internal architecture fixture. It does not enable OpenAI or any other external
 provider, prove external quality/terms/capacity, implement production runtime/ledger, or qualify alpha.

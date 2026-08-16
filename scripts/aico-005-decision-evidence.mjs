@@ -39,7 +39,13 @@ const examplePaths = readdirSync('docs/contracts/examples')
   .sort()
   .map((name) => `docs/contracts/examples/${name}`);
 const subjectPaths = [
+  '.node-version',
+  '.npmrc',
+  '.nvmrc',
+  '.github/workflows/aico-005-provider-runtime-proof.yml',
+  '.github/workflows/aico-008-alpha-policy.yml',
   '.github/workflows/ci.yml',
+  'Dockerfile',
   'docs/architecture/011-model-provider-employee-runtime-selection.md',
   'docs/contracts/MODEL_PROVIDER_RUNTIME.md',
   'docs/contracts/schemas/model-provider-runtime.v1.schema.json',
@@ -50,9 +56,14 @@ const subjectPaths = [
   'package-lock.json',
   'package.json',
   'scripts/aico-005-decision-evidence.mjs',
+  'scripts/node-runtime-contract.mjs',
   'scripts/process-utils.mjs',
   'scripts/prove-aico-005-validation-fail-closed.mjs',
+  'scripts/prove-node-runtime-preflight.mjs',
   'scripts/validate-aico-005-architecture.mjs',
+  'scripts/validate-node-runtime.mjs',
+  'scripts/verification-gates.mjs',
+  'scripts/verify-ci-entry.mjs',
   'scripts/verify-ci.mjs',
 ].sort();
 
@@ -214,8 +225,11 @@ const commitTimestamp = execFileSync('git', ['show', '-s', '--format=%cI', 'HEAD
 const status = reconciled ? 'ACCEPTED_RECONCILED' : accepted ? 'ACCEPTED_TRANSITION' : 'PROPOSED';
 const manifest = {
   schema_version: 'aico.a5-decision-evidence/1.0',
-  issue: 'duckvhuynh/aico-backend#25',
+  issue: 'duckvhuynh/aico-backend#31',
   parent_issue: 'duckvhuynh/aicompanyos#5',
+  change_parent_issue: 'duckvhuynh/aicompanyos#9',
+  historical_decision_issue: 'duckvhuynh/aico-backend#25',
+  historical_proof_issue: 'duckvhuynh/aico-backend#26',
   repository,
   branch,
   commit_sha: headSha,

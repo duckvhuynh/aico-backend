@@ -2,7 +2,9 @@
 FROM node:24.18.0-alpine AS dependencies
 WORKDIR /app
 COPY package.json package-lock.json ./
-RUN npm ci
+RUN npm install --global npm@11.6.2 --ignore-scripts --no-audit --no-fund \
+  && test "$(npm --version)" = "11.6.2" \
+  && npm ci
 
 FROM dependencies AS production-dependencies
 RUN npm prune --omit=dev

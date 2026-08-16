@@ -295,6 +295,7 @@ requireText('evidence', [
   'Disputed IDs: None',
   'backend issue #25',
   'proof child #26',
+  'governing change child #31',
   'exact SHA',
 ]);
 
@@ -1049,15 +1050,26 @@ if (accepted) {
       }
 
       const semanticPaths = [
+        '.node-version',
+        '.npmrc',
+        '.nvmrc',
+        'Dockerfile',
         paths.contract,
         paths.schema,
         paths.aeo,
         paths.productTrace,
         'scripts/validate-aico-005-architecture.mjs',
         'scripts/prove-aico-005-validation-fail-closed.mjs',
+        'scripts/prove-node-runtime-preflight.mjs',
         'scripts/aico-005-decision-evidence.mjs',
+        'scripts/node-runtime-contract.mjs',
         'scripts/process-utils.mjs',
+        'scripts/validate-node-runtime.mjs',
+        'scripts/verification-gates.mjs',
+        'scripts/verify-ci-entry.mjs',
         'scripts/verify-ci.mjs',
+        '.github/workflows/aico-005-provider-runtime-proof.yml',
+        '.github/workflows/aico-008-alpha-policy.yml',
         '.github/workflows/ci.yml',
         'package.json',
         'package-lock.json',
