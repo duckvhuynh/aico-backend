@@ -59,6 +59,7 @@ export class InitiativesController {
     const run = result.body.run as { id: string };
     response.status(result.status);
     response.setHeader('Idempotency-Key', key as string);
+    response.setHeader('ETag', formatEtag(requireEtag(etag) + 1));
     response.setHeader('Location', `/api/v1/runs/${run.id}`);
     return {
       data: result.body,

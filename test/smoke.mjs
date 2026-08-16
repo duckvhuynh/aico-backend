@@ -129,6 +129,34 @@ const companyPayload = {
     sensitive_data_warning_acknowledged: true,
   },
 };
+
+const unacknowledged = await call('/companies', {
+  method: 'POST',
+  headers: { ...auth, 'content-type': 'application/json', 'idempotency-key': randomUUID() },
+  body: JSON.stringify({
+    ...companyPayload,
+    profile: { ...companyPayload.profile, sensitive_data_warning_acknowledged: false },
+  }),
+});
+assert(
+  unacknowledged.response.status === 422,
+  'unacknowledged sensitive-data warning was accepted',
+);
+assert(unacknowledged.body.code === 'unsupported_sensitive_data', 'sensitive-data code drifted');
+
+const overLimit = await call('/companies', {
+  method: 'POST',
+  headers: { ...auth, 'content-type': 'application/json', 'idempotency-key': randomUUID() },
+  body: JSON.stringify({
+    ...companyPayload,
+    profile: {
+      ...companyPayload.profile,
+      normalized_limits: { ...companyPayload.profile.normalized_limits, max_screens: 6 },
+    },
+  }),
+});
+assert(overLimit.response.status === 400, 'over-limit company profile was accepted');
+
 const company = await call('/companies', {
   method: 'POST',
   headers: { ...auth, 'content-type': 'application/json', 'idempotency-key': companyKey },
@@ -140,6 +168,33 @@ assert(
   'company response was cacheable',
 );
 const companyId = company.body.data.id;
+const originalProfile = company.body.data.current_profile;
+
+const missingEtag = await call('/companies/current/profile', {
+  method: 'PATCH',
+  headers: { ...auth, 'content-type': 'application/json', 'idempotency-key': randomUUID() },
+  body: JSON.stringify({
+    ...companyPayload.profile,
+    purpose: 'Help independent consultants prepare and review client proposals.',
+  }),
+});
+assert(missingEtag.response.status === 412, 'profile update without If-Match was accepted');
+
+const staleEtag = await call('/companies/current/profile', {
+  method: 'PATCH',
+  headers: {
+    ...auth,
+    'content-type': 'application/json',
+    'idempotency-key': randomUUID(),
+    'if-match': '"99"',
+  },
+  body: JSON.stringify({
+    ...companyPayload.profile,
+    purpose: 'Help independent consultants prepare and review client proposals.',
+  }),
+});
+assert(staleEtag.response.status === 412, 'stale profile If-Match was accepted');
+assert(staleEtag.body.code === 'precondition_failed', 'stale ETag code drifted');
 
 const secondCompany = await call('/companies', {
   method: 'POST',
@@ -163,6 +218,30 @@ const initiative = await call('/initiatives', {
 });
 assert(initiative.response.status === 201, `initiative failed: ${JSON.stringify(initiative.body)}`);
 
+const goalEnvelope = {
+  schema_version: 1,
+  goal: {
+    target_user: 'Independent consultants',
+    problem: 'Turning discovery notes into a proposal is slow and inconsistent.',
+    desired_outcome: 'Prepare and review a clear proposal draft.',
+    primary_flow: 'Create proposal, review sections, mark ready',
+    must_haves: [
+      { id: 'MH-001', text: 'Create a proposal from structured mock client data' },
+      { id: 'MH-002', text: 'Review scope, timeline, and price sections' },
+    ],
+    non_goals: ['Payment processing', 'Real customer data', 'Production deployment'],
+    visual_direction: 'Calm editorial workspace with clear status hierarchy',
+    constraints: {
+      max_screens: 5,
+      primary_flows: 1,
+      client_only: true,
+      data_mode: 'mock_or_local',
+    },
+    reference_ids: [],
+  },
+  attachment_ids: [],
+  start_run: true,
+};
 const goal = await call(`/initiatives/${initiative.body.data.id}/goals`, {
   method: 'POST',
   headers: {
@@ -171,30 +250,7 @@ const goal = await call(`/initiatives/${initiative.body.data.id}/goals`, {
     'idempotency-key': randomUUID(),
     'if-match': initiative.response.headers.get('etag'),
   },
-  body: JSON.stringify({
-    schema_version: 1,
-    goal: {
-      target_user: 'Independent consultants',
-      problem: 'Turning discovery notes into a proposal is slow and inconsistent.',
-      desired_outcome: 'Prepare and review a clear proposal draft.',
-      primary_flow: 'Create proposal, review sections, mark ready',
-      must_haves: [
-        { id: 'MH-001', text: 'Create a proposal from structured mock client data' },
-        { id: 'MH-002', text: 'Review scope, timeline, and price sections' },
-      ],
-      non_goals: ['Payment processing', 'Real customer data', 'Production deployment'],
-      visual_direction: 'Calm editorial workspace with clear status hierarchy',
-      constraints: {
-        max_screens: 5,
-        primary_flows: 1,
-        client_only: true,
-        data_mode: 'mock_or_local',
-      },
-      reference_ids: [],
-    },
-    attachment_ids: [],
-    start_run: true,
-  }),
+  body: JSON.stringify(goalEnvelope),
 });
 assert(goal.response.status === 201, `goal/run failed: ${JSON.stringify(goal.body)}`);
 const runId = goal.body.data.run.id;
@@ -208,6 +264,83 @@ for (let attempt = 0; attempt < 40; attempt += 1) {
 assert(
   run?.body.data?.state === 'AWAITING_BRIEF_APPROVAL',
   `worker did not complete PM task: ${JSON.stringify(run?.body)}`,
+);
+assert(
+  run.body.data.context.company_profile_version_id === originalProfile.id,
+  'run did not freeze the original company profile',
+);
+assert(
+  run.body.data.context.company_profile.purpose === originalProfile.purpose,
+  'frozen run profile drifted from the snapshot',
+);
+
+const updatedPurpose = 'Help independent consultants prepare and review client proposals.';
+const profileUpdate = await call('/companies/current/profile', {
+  method: 'PATCH',
+  headers: {
+    ...auth,
+    'content-type': 'application/json',
+    'idempotency-key': randomUUID(),
+    'if-match': company.response.headers.get('etag'),
+  },
+  body: JSON.stringify({
+    ...companyPayload.profile,
+    purpose: updatedPurpose,
+  }),
+});
+assert(
+  profileUpdate.response.status === 200,
+  `profile update failed: ${JSON.stringify(profileUpdate.body)}`,
+);
+assert(profileUpdate.body.data.current_profile.version === 2, 'profile version did not advance');
+assert(
+  profileUpdate.body.data.current_profile.purpose === updatedPurpose,
+  'current profile was not replaced',
+);
+assert(
+  profileUpdate.body.data.current_profile.id !== originalProfile.id,
+  'profile update mutated the frozen version row',
+);
+
+const currentAfterUpdate = await call('/companies/current', { headers: auth });
+assert(
+  currentAfterUpdate.body.data.current_profile.id === profileUpdate.body.data.current_profile.id,
+  'current pointer did not advance atomically',
+);
+
+const frozenRun = await call(`/runs/${runId}`, { headers: auth });
+assert(
+  frozenRun.body.data.context.company_profile_version_id === originalProfile.id,
+  'active run picked up a later company profile',
+);
+assert(
+  frozenRun.body.data.context.company_profile.purpose === originalProfile.purpose,
+  'active run lost its frozen company profile',
+);
+
+const secondGoal = await call(`/initiatives/${initiative.body.data.id}/goals`, {
+  method: 'POST',
+  headers: {
+    ...auth,
+    'content-type': 'application/json',
+    'idempotency-key': randomUUID(),
+    'if-match': goal.response.headers.get('etag'),
+  },
+  body: JSON.stringify(goalEnvelope),
+});
+assert(
+  secondGoal.response.status === 201,
+  `second explicit run failed: ${JSON.stringify(secondGoal.body)}`,
+);
+const secondRun = await call(`/runs/${secondGoal.body.data.run.id}`, { headers: auth });
+assert(
+  secondRun.body.data.context.company_profile_version_id ===
+    profileUpdate.body.data.current_profile.id,
+  'new run did not snapshot the updated company profile',
+);
+assert(
+  secondRun.body.data.context.company_profile.purpose === updatedPurpose,
+  'new run snapshot did not include the updated profile',
 );
 
 const tasks = await call(`/runs/${runId}/tasks`, { headers: auth });
