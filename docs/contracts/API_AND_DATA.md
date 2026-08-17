@@ -3,7 +3,7 @@
 - **Status:** Baseline v1 contract
 - **Base path:** `/api/v1`
 - **Media type:** `application/json`; errors use `application/problem+json`
-- **Primary traceability:** SRS sections 4–10; AICO-011–017, AICO-022–025, AICO-031, AICO-034
+- **Primary traceability:** SRS sections 4–10; AICO-011–018, AICO-022–025, AICO-031, AICO-034
 
 This document defines the externally observable REST contract and the PostgreSQL data rules behind it. Examples are illustrative values, not fixture secrets. The generated OpenAPI document and schema-versioned contract fixtures must conform to this baseline.
 
@@ -206,6 +206,12 @@ Response `201`:
 ```
 
 The database partial unique constraint settles concurrent creation. A second non-terminal Prototype Initiative returns `409 active_initiative_exists` and creates no event. Terminal initiatives do not reopen; a later run uses a new Initiative.
+
+### `GET /initiatives/current`
+
+Returns the Founder's current non-terminal Prototype Initiative and its ETag (`row_version`). `404 resource_not_found` means none exists; missing and foreign reads use the same non-disclosing 404. The Founder intake form uses this read to resume after refresh or after `409 active_initiative_exists`. Client tenant headers are not authoritative.
+
+Response `200` uses the same body as create. The ETag is the Initiative `row_version`.
 
 ### `POST /initiatives/{initiative_id}/goals`
 

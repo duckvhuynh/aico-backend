@@ -38,6 +38,25 @@ export class InitiativesService {
     private readonly config: ConfigService,
   ) {}
 
+  async getCurrent(actor: RequestActor): Promise<Record<string, unknown>> {
+    const companyId = companyScopeFromActor(actor).companyId;
+    const rows = await this.dataSource.query<InitiativeRow[]>(
+      `
+        SELECT id, company_id, type, title, status, current_goal_version_id, row_version, created_at
+        FROM initiatives
+        WHERE company_id = $1 AND type = 'PROTOTYPE' AND status IN ('DRAFT', 'ACTIVE')
+        ORDER BY created_at DESC, id DESC
+        LIMIT 1
+      `,
+      [companyId],
+    );
+    const row = rows[0];
+    if (!row) {
+      throw this.resourceNotFound();
+    }
+    return this.initiativeResponse(row);
+  }
+
   async create(
     actor: RequestActor,
     idempotencyKey: string,

@@ -227,6 +227,10 @@ const replay = await call('/companies', {
 assert(replay.body.meta.replayed === true, 'idempotent replay was not reported');
 assert(replay.body.data.id === companyId, 'idempotent replay returned a different resource');
 
+const missingInitiative = await call('/initiatives/current', { headers: auth });
+assert(missingInitiative.response.status === 404, 'current initiative existed before create');
+assert(missingInitiative.body.code === 'resource_not_found', 'missing initiative code drifted');
+
 const initiative = await call('/initiatives', {
   method: 'POST',
   headers: { ...auth, 'content-type': 'application/json', 'idempotency-key': randomUUID() },
@@ -235,6 +239,15 @@ const initiative = await call('/initiatives', {
 assert(initiative.response.status === 201, `initiative failed: ${JSON.stringify(initiative.body)}`);
 assert(initiative.response.headers.get('etag') === '"1"', 'initiative ETag was missing');
 
+const currentInitiative = await call('/initiatives/current', { headers: auth });
+assert(
+  currentInitiative.response.status === 200,
+  `current initiative failed: ${JSON.stringify(currentInitiative.body)}`,
+);
+assert(currentInitiative.body.data.id === initiative.body.data.id, 'current initiative id drifted');
+assert(currentInitiative.response.headers.get('etag') === '"1"', 'current initiative ETag drifted');
+assert(currentInitiative.body.data.status === 'DRAFT', 'current initiative status drifted');
+
 const secondInitiative = await call('/initiatives', {
   method: 'POST',
   headers: { ...auth, 'content-type': 'application/json', 'idempotency-key': randomUUID() },
@@ -242,6 +255,12 @@ const secondInitiative = await call('/initiatives', {
 });
 assert(secondInitiative.response.status === 409, 'second active initiative was accepted');
 assert(secondInitiative.body.code === 'active_initiative_exists', 'second initiative code drifted');
+
+const currentAfterConflict = await call('/initiatives/current', { headers: auth });
+assert(
+  currentAfterConflict.body.data.id === initiative.body.data.id,
+  'conflict recovery did not return the active initiative',
+);
 
 const notesBytes = Buffer.from('reference notes for the prototype');
 const notesPayload = attachmentBody(notesBytes, 'text/plain', 'notes.txt');
@@ -895,6 +914,13 @@ const foreignNeedles = [
   'Proposal workspace prototype',
 ];
 
+const otherCurrentInitiative = await call('/initiatives/current', {
+  headers: {
+    ...otherFounder.auth,
+    'x-company-id': companyId,
+    'x-aico-company-id': companyId,
+  },
+});
 const listTasks = await call(`/runs/${runId}/tasks`, { headers: otherFounder.auth });
 const listEvents = await call(`/runs/${runId}/events`, { headers: otherFounder.auth });
 const readRun = await call(`/runs/${runId}`, { headers: otherFounder.auth });
@@ -938,6 +964,11 @@ const absentDelete = await call(`/runs/${absentId}`, {
   headers: otherFounder.auth,
 });
 
+assertNonDisclosingDenial(
+  otherCurrentInitiative,
+  foreignNeedles,
+  'foreign current initiative',
+);
 assertNonDisclosingDenial(listTasks, foreignNeedles, 'foreign task list');
 assertNonDisclosingDenial(listEvents, foreignNeedles, 'foreign event list');
 assertNonDisclosingDenial(readRun, foreignNeedles, 'foreign run read');
