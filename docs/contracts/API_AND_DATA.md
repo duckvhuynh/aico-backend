@@ -268,7 +268,7 @@ The submitted goal is never silently shortened or edited. Product-limit failures
 
 ### `GET /runs/{run_id}`
 
-Returns persisted state only. It must not infer `working` from a worker heartbeat or generated prose.
+Returns persisted state only. It must not infer `working` from a worker heartbeat or generated prose. The `context` object includes the frozen Company Profile Version and founder-authored Goal Version bound by the run's Context Snapshot.
 
 ```json
 {
@@ -296,6 +296,32 @@ Returns persisted state only. It must not infer `working` from a worker heartbea
           "data_mode": "mock_or_local"
         },
         "created_at": "2026-08-12T10:30:00.000Z"
+      },
+      "goal": {
+        "id": "019c1234-1234-7abc-8def-123456789111",
+        "version": 1,
+        "schema_version": 1,
+        "structured_goal": {
+          "target_user": "Independent consultants",
+          "problem": "Turning discovery notes into a reviewable proposal is slow and inconsistent.",
+          "desired_outcome": "Prepare a clear proposal draft and review its sections before export.",
+          "primary_flow": "Create proposal, review sections, mark ready",
+          "must_haves": [
+            { "id": "MH-001", "text": "Create a proposal from structured mock client data" },
+            { "id": "MH-002", "text": "Review scope, timeline, and price sections" }
+          ],
+          "non_goals": ["Payment processing", "Real customer data", "Production deployment"],
+          "visual_direction": "Calm editorial workspace with clear status hierarchy",
+          "constraints": {
+            "max_screens": 5,
+            "primary_flows": 1,
+            "client_only": true,
+            "data_mode": "mock_or_local"
+          },
+          "reference_ids": []
+        },
+        "created_by": "FOUNDER",
+        "created_at": "2026-08-12T10:40:00.000Z"
       }
     },
     "summary": {

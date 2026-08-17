@@ -1,7 +1,10 @@
 import 'reflect-metadata';
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
-import { CreateGoalDto } from '../src/modules/initiatives/dto/create-goal.dto';
+import {
+  canonicalStructuredGoal,
+  CreateGoalDto,
+} from '../src/modules/initiatives/dto/create-goal.dto';
 
 const validGoal = {
   schema_version: 1,
@@ -50,8 +53,40 @@ describe('CreateGoalDto contract', () => {
         },
       },
     ],
+    [
+      'a missing target user',
+      { ...validGoal, goal: { ...validGoal.goal, target_user: undefined } },
+    ],
+    [
+      'an over-length target user',
+      { ...validGoal, goal: { ...validGoal.goal, target_user: `x${'y'.repeat(300)}` } },
+    ],
+    [
+      'an over-length non-goal',
+      { ...validGoal, goal: { ...validGoal.goal, non_goals: ['x'.repeat(501)] } },
+    ],
   ])('rejects %s', async (_name, payload) => {
     const errors = await validate(plainToInstance(CreateGoalDto, payload));
     expect(errors.length).toBeGreaterThan(0);
+  });
+
+  it('rejects an unknown structured-goal field', async () => {
+    const errors = await validate(
+      plainToInstance(CreateGoalDto, {
+        ...validGoal,
+        goal: { ...validGoal.goal, unexpected_field: 'drop-me' },
+      }),
+      { whitelist: true, forbidNonWhitelisted: true },
+    );
+    expect(errors.length).toBeGreaterThan(0);
+  });
+
+  it('persists the submitted schema without extra keys or truncation', () => {
+    const goal = plainToInstance(CreateGoalDto, {
+      ...validGoal,
+      goal: { ...validGoal.goal, unexpected_field: 'drop-me' },
+    }).goal;
+    expect(canonicalStructuredGoal(goal)).toEqual(validGoal.goal);
+    expect(JSON.stringify(canonicalStructuredGoal(goal))).not.toContain('drop-me');
   });
 });

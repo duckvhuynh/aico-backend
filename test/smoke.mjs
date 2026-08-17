@@ -218,6 +218,15 @@ const initiative = await call('/initiatives', {
   body: JSON.stringify({ type: 'PROTOTYPE', title: 'Proposal workspace prototype' }),
 });
 assert(initiative.response.status === 201, `initiative failed: ${JSON.stringify(initiative.body)}`);
+assert(initiative.response.headers.get('etag') === '"1"', 'initiative ETag was missing');
+
+const secondInitiative = await call('/initiatives', {
+  method: 'POST',
+  headers: { ...auth, 'content-type': 'application/json', 'idempotency-key': randomUUID() },
+  body: JSON.stringify({ type: 'PROTOTYPE', title: 'Second concurrent prototype' }),
+});
+assert(secondInitiative.response.status === 409, 'second active initiative was accepted');
+assert(secondInitiative.body.code === 'active_initiative_exists', 'second initiative code drifted');
 
 const goalEnvelope = {
   schema_version: 1,
@@ -243,7 +252,32 @@ const goalEnvelope = {
   attachment_ids: [],
   start_run: true,
 };
-const goal = await call(`/initiatives/${initiative.body.data.id}/goals`, {
+const missingGoalEtag = await call(`/initiatives/${initiative.body.data.id}/goals`, {
+  method: 'POST',
+  headers: {
+    ...auth,
+    'content-type': 'application/json',
+    'idempotency-key': randomUUID(),
+  },
+  body: JSON.stringify(goalEnvelope),
+});
+assert(missingGoalEtag.response.status === 412, 'goal create without If-Match was accepted');
+assert(missingGoalEtag.body.code === 'precondition_required', 'missing goal ETag code drifted');
+
+const staleGoalEtag = await call(`/initiatives/${initiative.body.data.id}/goals`, {
+  method: 'POST',
+  headers: {
+    ...auth,
+    'content-type': 'application/json',
+    'idempotency-key': randomUUID(),
+    'if-match': '"99"',
+  },
+  body: JSON.stringify(goalEnvelope),
+});
+assert(staleGoalEtag.response.status === 412, 'stale goal If-Match was accepted');
+assert(staleGoalEtag.body.code === 'precondition_failed', 'stale goal ETag code drifted');
+
+const extraGoalField = await call(`/initiatives/${initiative.body.data.id}/goals`, {
   method: 'POST',
   headers: {
     ...auth,
@@ -251,10 +285,101 @@ const goal = await call(`/initiatives/${initiative.body.data.id}/goals`, {
     'idempotency-key': randomUUID(),
     'if-match': initiative.response.headers.get('etag'),
   },
+  body: JSON.stringify({
+    ...goalEnvelope,
+    goal: { ...goalEnvelope.goal, unexpected_field: 'drop-me' },
+  }),
+});
+assert(extraGoalField.response.status === 400, 'unknown goal field was accepted');
+assert(extraGoalField.body.code === 'validation_failed', 'unknown goal field code drifted');
+
+const overLengthGoal = await call(`/initiatives/${initiative.body.data.id}/goals`, {
+  method: 'POST',
+  headers: {
+    ...auth,
+    'content-type': 'application/json',
+    'idempotency-key': randomUUID(),
+    'if-match': initiative.response.headers.get('etag'),
+  },
+  body: JSON.stringify({
+    ...goalEnvelope,
+    goal: { ...goalEnvelope.goal, target_user: `x${'y'.repeat(300)}` },
+  }),
+});
+assert(overLengthGoal.response.status === 400, 'over-length goal field was truncated or stored');
+assert(overLengthGoal.body.code === 'validation_failed', 'over-length goal code drifted');
+
+const outOfScopeGoal = await call(`/initiatives/${initiative.body.data.id}/goals`, {
+  method: 'POST',
+  headers: {
+    ...auth,
+    'content-type': 'application/json',
+    'idempotency-key': randomUUID(),
+    'if-match': initiative.response.headers.get('etag'),
+  },
+  body: JSON.stringify({
+    ...goalEnvelope,
+    goal: {
+      ...goalEnvelope.goal,
+      constraints: { ...goalEnvelope.goal.constraints, client_only: false },
+    },
+  }),
+});
+assert(outOfScopeGoal.response.status === 422, 'out-of-scope goal was silently narrowed');
+assert(outOfScopeGoal.body.code === 'goal_out_of_scope', 'out-of-scope goal code drifted');
+
+const goalIdempotencyKey = randomUUID();
+const goal = await call(`/initiatives/${initiative.body.data.id}/goals`, {
+  method: 'POST',
+  headers: {
+    ...auth,
+    'content-type': 'application/json',
+    'idempotency-key': goalIdempotencyKey,
+    'if-match': initiative.response.headers.get('etag'),
+  },
   body: JSON.stringify(goalEnvelope),
 });
 assert(goal.response.status === 201, `goal/run failed: ${JSON.stringify(goal.body)}`);
+assert(goal.body.data.goal_version.version === 1, 'first goal version was not 1');
+assert(goal.body.data.goal_version.created_by === 'FOUNDER', 'goal was not founder-authored');
+assert(goal.body.data.goal_version.created_at, 'goal version omitted created_at');
 const runId = goal.body.data.run.id;
+
+const replayGoal = await call(`/initiatives/${initiative.body.data.id}/goals`, {
+  method: 'POST',
+  headers: {
+    ...auth,
+    'content-type': 'application/json',
+    'idempotency-key': goalIdempotencyKey,
+    'if-match': initiative.response.headers.get('etag'),
+  },
+  body: JSON.stringify(goalEnvelope),
+});
+assert(
+  replayGoal.response.status === 201,
+  `goal replay failed: ${JSON.stringify(replayGoal.body)}`,
+);
+assert(replayGoal.body.meta.replayed === true, 'goal idempotent replay was not reported');
+assert(
+  replayGoal.body.data.goal_version.id === goal.body.data.goal_version.id,
+  'goal replay created a different version',
+);
+
+const reusedGoalKey = await call(`/initiatives/${initiative.body.data.id}/goals`, {
+  method: 'POST',
+  headers: {
+    ...auth,
+    'content-type': 'application/json',
+    'idempotency-key': goalIdempotencyKey,
+    'if-match': initiative.response.headers.get('etag'),
+  },
+  body: JSON.stringify({
+    ...goalEnvelope,
+    goal: { ...goalEnvelope.goal, problem: 'A different body must not reuse the command key.' },
+  }),
+});
+assert(reusedGoalKey.response.status === 409, 'goal idempotency key reuse was accepted');
+assert(reusedGoalKey.body.code === 'idempotency_key_reused', 'goal key-reuse code drifted');
 
 let run;
 for (let attempt = 0; attempt < 40; attempt += 1) {
@@ -273,6 +398,52 @@ assert(
 assert(
   run.body.data.context.company_profile.purpose === originalProfile.purpose,
   'frozen run profile drifted from the snapshot',
+);
+assert(run.body.data.context.goal.version === 1, 'run did not freeze goal version 1');
+assert(
+  run.body.data.context.goal.structured_goal.target_user === goalEnvelope.goal.target_user,
+  'frozen goal dropped target_user',
+);
+assert(
+  run.body.data.context.goal.structured_goal.problem === goalEnvelope.goal.problem,
+  'run did not persist the submitted goal schema',
+);
+assert(
+  run.body.data.context.goal.structured_goal.desired_outcome === goalEnvelope.goal.desired_outcome,
+  'frozen goal dropped desired_outcome',
+);
+assert(
+  run.body.data.context.goal.structured_goal.primary_flow === goalEnvelope.goal.primary_flow,
+  'frozen goal dropped primary_flow',
+);
+assert(
+  JSON.stringify(run.body.data.context.goal.structured_goal.must_haves) ===
+    JSON.stringify(goalEnvelope.goal.must_haves),
+  'frozen goal dropped must_haves',
+);
+assert(
+  JSON.stringify(run.body.data.context.goal.structured_goal.non_goals) ===
+    JSON.stringify(goalEnvelope.goal.non_goals),
+  'frozen goal dropped non_goals',
+);
+assert(
+  run.body.data.context.goal.structured_goal.visual_direction ===
+    goalEnvelope.goal.visual_direction,
+  'frozen goal dropped visual_direction',
+);
+assert(
+  JSON.stringify(run.body.data.context.goal.structured_goal.constraints) ===
+    JSON.stringify(goalEnvelope.goal.constraints),
+  'frozen goal dropped constraints',
+);
+assert(
+  JSON.stringify(run.body.data.context.goal.structured_goal.reference_ids) ===
+    JSON.stringify(goalEnvelope.goal.reference_ids),
+  'frozen goal dropped reference_ids',
+);
+assert(
+  !Object.hasOwn(run.body.data.context.goal.structured_goal, 'unexpected_field'),
+  'persisted goal kept an unknown field',
 );
 
 const updatedPurpose = 'Help independent consultants prepare and review client proposals.';
@@ -318,7 +489,30 @@ assert(
   frozenRun.body.data.context.company_profile.purpose === originalProfile.purpose,
   'active run lost its frozen company profile',
 );
+assert(
+  frozenRun.body.data.context.goal.structured_goal.problem === goalEnvelope.goal.problem,
+  'active run lost its frozen goal version',
+);
 
+const staleAfterGoal = await call(`/initiatives/${initiative.body.data.id}/goals`, {
+  method: 'POST',
+  headers: {
+    ...auth,
+    'content-type': 'application/json',
+    'idempotency-key': randomUUID(),
+    'if-match': '"1"',
+  },
+  body: JSON.stringify(goalEnvelope),
+});
+assert(staleAfterGoal.response.status === 412, 'stale post-goal If-Match was accepted');
+
+const secondGoalEnvelope = {
+  ...goalEnvelope,
+  goal: {
+    ...goalEnvelope.goal,
+    problem: 'A later founder-authored version restates the proposal review problem.',
+  },
+};
 const secondGoal = await call(`/initiatives/${initiative.body.data.id}/goals`, {
   method: 'POST',
   headers: {
@@ -327,13 +521,33 @@ const secondGoal = await call(`/initiatives/${initiative.body.data.id}/goals`, {
     'idempotency-key': randomUUID(),
     'if-match': goal.response.headers.get('etag'),
   },
-  body: JSON.stringify(goalEnvelope),
+  body: JSON.stringify(secondGoalEnvelope),
 });
 assert(
   secondGoal.response.status === 201,
   `second explicit run failed: ${JSON.stringify(secondGoal.body)}`,
 );
+assert(secondGoal.body.data.goal_version.version === 2, 'second goal did not create version 2');
+assert(
+  secondGoal.body.data.goal_version.id !== goal.body.data.goal_version.id,
+  'second goal mutated the submitted version row',
+);
+const firstRunAfterSecondGoal = await call(`/runs/${runId}`, { headers: auth });
+assert(
+  firstRunAfterSecondGoal.body.data.context.goal.version === 1,
+  'later goal submission edited the frozen first version',
+);
+assert(
+  firstRunAfterSecondGoal.body.data.context.goal.structured_goal.problem ===
+    goalEnvelope.goal.problem,
+  'later goal submission truncated or replaced version 1',
+);
 const secondRun = await call(`/runs/${secondGoal.body.data.run.id}`, { headers: auth });
+assert(secondRun.body.data.context.goal.version === 2, 'second run did not freeze goal version 2');
+assert(
+  secondRun.body.data.context.goal.structured_goal.problem === secondGoalEnvelope.goal.problem,
+  'second run did not persist the new founder-authored goal',
+);
 assert(
   secondRun.body.data.context.company_profile_version_id ===
     profileUpdate.body.data.current_profile.id,
@@ -469,6 +683,10 @@ assert(ownerAfterAttack.response.ok, 'owner run was mutated by a foreign write o
 assert(
   ownerAfterAttack.body.data.context.company_profile.purpose === originalProfile.purpose,
   'owner frozen profile changed after a foreign attempt',
+);
+assert(
+  ownerAfterAttack.body.data.context.goal.structured_goal.problem === goalEnvelope.goal.problem,
+  'owner frozen goal changed after a foreign attempt',
 );
 
 console.log(JSON.stringify({ status: 'passed', company_id: companyId, run_id: runId }));
