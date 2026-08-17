@@ -12,6 +12,7 @@ import { CommandExecutor, type CommandResult } from '../governance/command-execu
 import { DomainEventService } from '../governance/domain-event.service';
 import { canonicalStructuredGoal, type CreateGoalDto } from './dto/create-goal.dto';
 import type { CreateInitiativeDto } from './dto/create-initiative.dto';
+import { publicGoalQualification } from './goal-qualification';
 import { GoalScopePolicy } from './goal-scope.policy';
 
 const PM_EMPLOYEE_DEFINITION_ID = '019c0000-0000-7000-8000-000000000001';
@@ -140,7 +141,14 @@ export class InitiativesService {
     }
     const companyId = companyScopeFromActor(actor).companyId;
     const workflowVersion = this.config.getOrThrow<string>('worker.workflowVersion');
-    this.goalScope.assertSupported(dto);
+    const qualification = this.goalScope.evaluate(dto);
+    if (qualification.result === 'out_of_scope') {
+      throw this.goalScope.toOutOfScopeError(qualification);
+    }
+    const publishedQualification = publicGoalQualification(qualification);
+    const needsClarification = qualification.result === 'needs_clarification';
+    const runState = needsClarification ? 'AWAITING_FOUNDER_INPUT' : 'DRAFT';
+    const blockingReason = needsClarification ? 'GOAL_NEEDS_CLARIFICATION' : null;
     return this.commands.run({
       actorId: actor.id,
       operation: 'initiatives.goals.create_and_start',
@@ -184,7 +192,8 @@ export class InitiativesService {
         const goalVersionId = newId();
         const contextSnapshotId = newId();
         const runId = newId();
-        const taskId = newId();
+        const taskId = needsClarification ? null : newId();
+        const qualificationId = newId();
         const structuredGoal = canonicalStructuredGoal(dto.goal);
 
         const inserted = (await runner.query(
@@ -233,33 +242,65 @@ export class InitiativesService {
           `
             INSERT INTO runs
               (id, company_id, initiative_id, context_snapshot_id, state, stage,
-               workflow_version, policy_version)
-            VALUES ($1, $2, $3, $4, 'DRAFT', 'INTAKE', $5, 'mvp-v1')
+               workflow_version, policy_version, blocking_reason_code)
+            VALUES ($1, $2, $3, $4, $5, 'INTAKE', $6, 'mvp-v1', $7)
           `,
-          [runId, companyId, initiativeId, contextSnapshotId, workflowVersion],
+          [
+            runId,
+            companyId,
+            initiativeId,
+            contextSnapshotId,
+            runState,
+            workflowVersion,
+            blockingReason,
+          ],
         );
         await runner.query(
           `INSERT INTO run_event_counters (company_id, run_id, next_sequence) VALUES ($1, $2, 1)`,
           [companyId, runId],
         );
+        if (taskId) {
+          await runner.query(
+            `
+              INSERT INTO tasks
+                (id, company_id, run_id, type, owner_employee_definition_id, state, priority, input_manifest)
+              VALUES ($1, $2, $3, 'CREATE_PRODUCT_BRIEF', $4, 'QUEUED', 100, $5)
+            `,
+            [
+              taskId,
+              companyId,
+              runId,
+              PM_EMPLOYEE_DEFINITION_ID,
+              JSON.stringify({
+                context_snapshot_id: contextSnapshotId,
+                company_profile_version_id: profileRows[0].current_profile_version_id,
+                goal_version_id: goalVersionId,
+                workflow_version: workflowVersion,
+                policy_version: 'mvp-v1',
+              }),
+            ],
+          );
+        }
         await runner.query(
           `
-            INSERT INTO tasks
-              (id, company_id, run_id, type, owner_employee_definition_id, state, priority, input_manifest)
-            VALUES ($1, $2, $3, 'CREATE_PRODUCT_BRIEF', $4, 'QUEUED', 100, $5)
+            INSERT INTO goal_qualifications
+              (id, company_id, initiative_id, goal_version_id, run_id, result, reason_codes,
+               explanation, proposal, clarification_questions, screen_estimate, policy_version)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
           `,
           [
-            taskId,
+            qualificationId,
             companyId,
+            initiativeId,
+            goalVersionId,
             runId,
-            PM_EMPLOYEE_DEFINITION_ID,
-            JSON.stringify({
-              context_snapshot_id: contextSnapshotId,
-              company_profile_version_id: profileRows[0].current_profile_version_id,
-              goal_version_id: goalVersionId,
-              workflow_version: workflowVersion,
-              policy_version: 'mvp-v1',
-            }),
+            publishedQualification.result,
+            JSON.stringify(publishedQualification.reason_codes),
+            publishedQualification.explanation,
+            publishedQualification.proposal,
+            JSON.stringify(publishedQualification.clarification_questions),
+            publishedQualification.screen_estimate,
+            publishedQualification.policy_version,
           ],
         );
         await runner.query(
@@ -281,8 +322,25 @@ export class InitiativesService {
             goal_version_id: goalVersionId,
             context_snapshot_id: contextSnapshotId,
             initial_task_id: taskId,
-            state: 'DRAFT',
+            state: runState,
             stage: 'INTAKE',
+          },
+        });
+        await this.events.append(runner, {
+          companyId,
+          runId,
+          type: 'goal_qualification_recorded',
+          actorType: 'SYSTEM',
+          actorId: 'goal-qualification/v1',
+          correlationId,
+          payload: {
+            goal_version_id: goalVersionId,
+            qualification_id: qualificationId,
+            result: publishedQualification.result,
+            reason_codes: publishedQualification.reason_codes,
+            screen_estimate: publishedQualification.screen_estimate,
+            policy_version: publishedQualification.policy_version,
+            question_count: publishedQualification.clarification_questions.length,
           },
         });
         return {
@@ -295,14 +353,16 @@ export class InitiativesService {
               created_by: 'FOUNDER',
               created_at: inserted[0].created_at,
             },
+            qualification: publishedQualification,
             run: {
               id: runId,
-              state: 'DRAFT',
+              state: runState,
               stage: 'INTAKE',
               version: 1,
               context_snapshot_id: contextSnapshotId,
               workflow_version: workflowVersion,
               policy_version: 'mvp-v1',
+              blocking_reason_code: blockingReason,
             },
           },
         };

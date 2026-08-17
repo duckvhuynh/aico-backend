@@ -41,6 +41,13 @@ describe('GoalScopePolicy', () => {
     } catch (error: unknown) {
       expect(error).toBeInstanceOf(DomainError);
       expect((error as DomainError).code).toBe('goal_out_of_scope');
+      const published = (error as DomainError).errors.find((item) => 'qualification' in item)
+        ?.qualification as {
+        result: string;
+        reason_codes: string[];
+      };
+      expect(published.result).toBe('out_of_scope');
+      expect(published.reason_codes).toEqual(['GOAL_REQUIRES_BACKEND']);
       expect(goal.goal.constraints.client_only).toBe(false);
       expect(submitted.goal.constraints.client_only).toBe(true);
     }

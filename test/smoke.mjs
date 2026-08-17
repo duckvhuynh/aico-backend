@@ -558,6 +558,59 @@ const outOfScopeGoal = await call(`/initiatives/${initiative.body.data.id}/goals
 });
 assert(outOfScopeGoal.response.status === 422, 'out-of-scope goal was silently narrowed');
 assert(outOfScopeGoal.body.code === 'goal_out_of_scope', 'out-of-scope goal code drifted');
+const outOfScopeQualification = outOfScopeGoal.body.errors.find(
+  (item) => item.qualification,
+)?.qualification;
+assert(outOfScopeQualification?.result === 'out_of_scope', 'out-of-scope result was omitted');
+assert(
+  Array.isArray(outOfScopeQualification?.reason_codes) &&
+    outOfScopeQualification.reason_codes.includes('GOAL_REQUIRES_BACKEND'),
+  'out-of-scope reason codes drifted',
+);
+assert(
+  typeof outOfScopeQualification?.explanation === 'string' &&
+    outOfScopeQualification.explanation.length > 0,
+  'out-of-scope explanation was omitted',
+);
+assert(
+  typeof outOfScopeQualification?.proposal === 'string' &&
+    outOfScopeQualification.proposal.length > 0,
+  'out-of-scope proposal was omitted',
+);
+
+const paymentGoal = await call(`/initiatives/${initiative.body.data.id}/goals`, {
+  method: 'POST',
+  headers: {
+    ...auth,
+    'content-type': 'application/json',
+    'idempotency-key': randomUUID(),
+    'if-match': initiative.response.headers.get('etag'),
+  },
+  body: JSON.stringify({
+    ...goalEnvelope,
+    goal: {
+      ...goalEnvelope.goal,
+      must_haves: [
+        { id: 'MH-001', text: 'Process real Stripe payments for each accepted proposal' },
+      ],
+    },
+  }),
+});
+assert(paymentGoal.response.status === 422, 'payment goal started a build');
+assert(paymentGoal.body.code === 'goal_out_of_scope', 'payment goal code drifted');
+const paymentQualification = paymentGoal.body.errors.find(
+  (item) => item.qualification,
+)?.qualification;
+assert(paymentQualification?.result === 'out_of_scope', 'payment qualification result drifted');
+assert(
+  Array.isArray(paymentQualification?.reason_codes) &&
+    paymentQualification.reason_codes.includes('GOAL_CAPABILITY_UNSUPPORTED'),
+  'payment reason codes drifted',
+);
+assert(
+  typeof paymentQualification?.proposal === 'string' && paymentQualification.proposal.length > 0,
+  'payment proposal was omitted',
+);
 
 const goalIdempotencyKey = randomUUID();
 const goal = await call(`/initiatives/${initiative.body.data.id}/goals`, {
@@ -574,6 +627,12 @@ assert(goal.response.status === 201, `goal/run failed: ${JSON.stringify(goal.bod
 assert(goal.body.data.goal_version.version === 1, 'first goal version was not 1');
 assert(goal.body.data.goal_version.created_by === 'FOUNDER', 'goal was not founder-authored');
 assert(goal.body.data.goal_version.created_at, 'goal version omitted created_at');
+assert(goal.body.data.qualification.result === 'qualified', 'qualified result was omitted');
+assert(
+  Array.isArray(goal.body.data.qualification.reason_codes),
+  'qualified reason codes were omitted',
+);
+assert(goal.body.data.qualification.proposal === null, 'qualified result included a proposal');
 const runId = goal.body.data.run.id;
 
 const replayGoal = await call(`/initiatives/${initiative.body.data.id}/goals`, {
@@ -621,6 +680,14 @@ for (let attempt = 0; attempt < 40; attempt += 1) {
 assert(
   run?.body.data?.state === 'AWAITING_BRIEF_APPROVAL',
   `worker did not complete PM task: ${JSON.stringify(run?.body)}`,
+);
+assert(
+  run.body.data.qualification.result === 'qualified',
+  'persisted qualification result drifted',
+);
+assert(
+  run.body.data.qualification.explanation && run.body.data.qualification.policy_version === '1.0.0',
+  'persisted qualification explanation was omitted',
 );
 assert(
   run.body.data.context.company_profile_version_id === originalProfile.id,
@@ -829,6 +896,63 @@ assert(
   'new run snapshot did not include the updated profile',
 );
 
+const clarificationGoal = await call(`/initiatives/${initiative.body.data.id}/goals`, {
+  method: 'POST',
+  headers: {
+    ...auth,
+    'content-type': 'application/json',
+    'idempotency-key': randomUUID(),
+    'if-match': secondGoal.response.headers.get('etag'),
+  },
+  body: JSON.stringify({
+    ...goalEnvelope,
+    goal: { ...goalEnvelope.goal, target_user: 'TBD' },
+  }),
+});
+assert(
+  clarificationGoal.response.status === 201,
+  `clarification goal failed: ${JSON.stringify(clarificationGoal.body)}`,
+);
+assert(
+  clarificationGoal.body.data.qualification.result === 'needs_clarification',
+  'missing target user was not paused for clarification',
+);
+assert(
+  clarificationGoal.body.data.qualification.reason_codes.includes('GOAL_NEEDS_CLARIFICATION'),
+  'clarification reason code drifted',
+);
+assert(
+  clarificationGoal.body.data.qualification.clarification_questions.length > 0 &&
+    clarificationGoal.body.data.qualification.clarification_questions.length <= 5,
+  'clarification questions exceeded the policy ceiling',
+);
+assert(
+  clarificationGoal.body.data.qualification.proposal === null,
+  'clarification result included a narrowing proposal',
+);
+assert(
+  clarificationGoal.body.data.run.state === 'AWAITING_FOUNDER_INPUT',
+  'clarification run dispatched build work',
+);
+const clarificationRun = await call(`/runs/${clarificationGoal.body.data.run.id}`, {
+  headers: auth,
+});
+assert(
+  clarificationRun.body.data.qualification.result === 'needs_clarification',
+  'GET run omitted the persisted clarification result',
+);
+assert(
+  clarificationRun.body.data.summary.blocking_reason === 'GOAL_NEEDS_CLARIFICATION',
+  'clarification blocking reason drifted',
+);
+const clarificationTasks = await call(`/runs/${clarificationGoal.body.data.run.id}/tasks`, {
+  headers: auth,
+});
+assert(
+  !clarificationTasks.body.data.some((task) => task.type === 'CREATE_PRODUCT_BRIEF'),
+  'clarification run created a product-brief build task',
+);
+
 const tasks = await call(`/runs/${runId}/tasks`, { headers: auth });
 assert(
   tasks.body.data.some((task) => task.state === 'SUCCEEDED'),
@@ -964,11 +1088,7 @@ const absentDelete = await call(`/runs/${absentId}`, {
   headers: otherFounder.auth,
 });
 
-assertNonDisclosingDenial(
-  otherCurrentInitiative,
-  foreignNeedles,
-  'foreign current initiative',
-);
+assertNonDisclosingDenial(otherCurrentInitiative, foreignNeedles, 'foreign current initiative');
 assertNonDisclosingDenial(listTasks, foreignNeedles, 'foreign task list');
 assertNonDisclosingDenial(listEvents, foreignNeedles, 'foreign event list');
 assertNonDisclosingDenial(readRun, foreignNeedles, 'foreign run read');

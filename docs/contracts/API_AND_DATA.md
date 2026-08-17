@@ -215,7 +215,7 @@ Response `200` uses the same body as create. The ETag is the Initiative `row_ver
 
 ### `POST /initiatives/{initiative_id}/goals`
 
-Creates an immutable founder-authored Goal Version. With `start_run=true` (required for the first slice), the same transaction freezes a Context Snapshot, creates a Run, creates the initial Product Manager Task, assigns Run Event sequence 1, and writes the Outbox message. Requires `Idempotency-Key` and the Initiative ETag through `If-Match`.
+Creates an immutable founder-authored Goal Version after deterministic qualification against the accepted alpha operating policy. With `start_run=true` (required for the first slice), the same transaction freezes a Context Snapshot, persists the qualification result, and creates a Run. Qualified goals also create the initial Product Manager Task. `needs_clarification` persists the Goal Version and at most five questions, leaves the run in `AWAITING_FOUNDER_INPUT`, and does not dispatch build work. Requires `Idempotency-Key` and the Initiative ETag through `If-Match`.
 
 ```json
 {
@@ -264,13 +264,22 @@ Response `201`, with `Location: /api/v1/runs/{run_id}` and the Initiative ETag a
       "context_snapshot_id": "019c1234-1234-7abc-8def-123456789113",
       "workflow_version": "prototype-run/v1",
       "policy_version": "mvp-v1"
+    },
+    "qualification": {
+      "result": "qualified",
+      "reason_codes": [],
+      "explanation": "This goal fits the private-alpha prototype boundary: one primary persona, one primary flow, five screens or fewer, a client-only React prototype, and local mock data.",
+      "proposal": null,
+      "clarification_questions": [],
+      "screen_estimate": 5,
+      "policy_version": "1.0.0"
     }
   },
   "meta": { "correlation_id": "019c1234-1234-7abc-8def-123456789114", "replayed": false }
 }
 ```
 
-The submitted goal is never silently shortened or edited. Product-limit failures return `422 goal_out_of_scope` with machine-readable violated rules and safe narrowing suggestions; the Founder must submit a new Goal Version. Unvalidated attachment references fail the whole command.
+The submitted goal is never silently shortened or edited. Product-limit failures return `422 goal_out_of_scope` with machine reason codes, a founder-readable explanation, and a narrowing proposal; the Founder must submit a new Goal Version. Unvalidated attachment references fail the whole command. `needs_clarification` is a persisted `201` result, not a silent edit.
 
 ### `POST /attachments`
 
@@ -297,7 +306,7 @@ Employee/founder retrieval for an attachment frozen into that run's Goal Version
 
 ### `GET /runs/{run_id}`
 
-Returns persisted state only. It must not infer `working` from a worker heartbeat or generated prose. The `context` object includes the frozen Company Profile Version and founder-authored Goal Version bound by the run's Context Snapshot.
+Returns persisted state only. It must not infer `working` from a worker heartbeat or generated prose. The `context` object includes the frozen Company Profile Version and founder-authored Goal Version bound by the run's Context Snapshot. `qualification` is the immutable result recorded for that Goal Version (`qualified`, `needs_clarification`, or `out_of_scope`) with machine reason codes and a founder-readable explanation.
 
 ```json
 {
@@ -361,6 +370,15 @@ Returns persisted state only. It must not infer `working` from a worker heartbea
           "filename": "notes.txt"
         }
       ]
+    },
+    "qualification": {
+      "result": "qualified",
+      "reason_codes": [],
+      "explanation": "This goal fits the private-alpha prototype boundary: one primary persona, one primary flow, five screens or fewer, a client-only React prototype, and local mock data.",
+      "proposal": null,
+      "clarification_questions": [],
+      "screen_estimate": 5,
+      "policy_version": "1.0.0"
     },
     "summary": {
       "task_counts": { "QUEUED": 1 },
@@ -500,6 +518,7 @@ All tenant-owned tables have `company_id uuid NOT NULL`, composite tenant foreig
 |---|---|---|
 | `initiatives` | `id`, `company_id`, `type`, `title`, `status`, `current_goal_version_id`, `row_version`, timestamps | unique `(company_id,id)`; partial unique active Prototype per Company; goal pointer belongs to same Initiative/Company |
 | `goal_versions` | `id`, `company_id`, `initiative_id`, `version`, `schema_version`, `structured_goal jsonb`, `created_by`, `created_at` | unique `(initiative_id,version)` and `(company_id,id)`; immutable; no silent transform |
+| `goal_qualifications` | `id`, `company_id`, `initiative_id`, `goal_version_id`, `run_id`, `result`, `reason_codes jsonb`, `explanation`, `proposal`, `clarification_questions jsonb`, `screen_estimate`, `policy_version`, `created_at` | unique `(company_id,goal_version_id)`; immutable; `out_of_scope` requires proposal; `needs_clarification` has 1–5 questions |
 | `goal_version_attachments` | `company_id`, `goal_version_id`, `object_id`, `ordinal` | exact validated object refs; unique ordinal/ref per goal |
 | `attachment_retrieval_grants` | `id`, `company_id`, `object_id`, `run_id`, `expires_at`, `consumed_at`, `created_at` | short-lived run-scoped retrieval; unique `(company_id,id)`; never a public URL |
 | `context_snapshots` | `id`, `company_id`, `company_profile_version_id`, `goal_version_id`, `created_at` | exact immutable same-company refs; unique `(company_id,id)` |
