@@ -452,8 +452,8 @@ export class DurableWaitSpikeService {
       ),
     );
     const sequences = await this.dataSource.query<Array<{ run_sequence: string }>>(
-      `SELECT run_sequence FROM events WHERE id = ANY($1::uuid[]) ORDER BY run_sequence`,
-      [eventIds],
+      `SELECT run_sequence FROM events WHERE company_id = $1 AND id = ANY($2::uuid[]) ORDER BY run_sequence`,
+      [companyId, eventIds],
     );
     return { event_ids: eventIds, sequences: sequences.map((row) => Number(row.run_sequence)) };
   }

@@ -3,6 +3,7 @@ import {
   hashInviteToken,
   signedResourceAccessAllowed,
 } from '../src/modules/auth/auth-crypto';
+import type { AccessTokenPayload } from '../src/modules/auth/auth.types';
 
 describe('AICO-012 invite/session helpers', () => {
   it('hashes invite tokens without storing the plaintext', () => {
@@ -39,5 +40,17 @@ describe('AICO-012 invite/session helpers', () => {
         now,
       }),
     ).toBe(false);
+  });
+
+  it('does not put a client tenant id on the access-token payload', () => {
+    const payload: AccessTokenPayload = {
+      sub: '019c1500-0000-7000-8000-000000000001',
+      auth_subject: 'founder:a@example.test',
+      type: 'founder',
+      sid: '019c1500-0000-7000-8000-000000000002',
+      jti: '019c1500-0000-7000-8000-000000000002',
+    };
+    expect(payload).not.toHaveProperty('company_id');
+    expect(Object.keys(payload).sort()).toEqual(['auth_subject', 'jti', 'sid', 'sub', 'type']);
   });
 });

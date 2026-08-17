@@ -6,6 +6,7 @@ import { DomainError } from '../../common/domain/domain-error';
 import { newId } from '../../common/domain/identifiers';
 import { postgresError } from '../../common/domain/postgres-error';
 import type { RequestActor } from '../../common/http/request-context';
+import { companyScopeFromActor } from '../../common/tenant/company-scope';
 import { CommandExecutor, type CommandResult } from '../governance/command-executor.service';
 import { DomainEventService } from '../governance/domain-event.service';
 import type { CreateGoalDto } from './dto/create-goal.dto';
@@ -44,7 +45,7 @@ export class InitiativesService {
     if (!actor.companyId) {
       throw this.companyNotFound();
     }
-    const companyId = actor.companyId;
+    const companyId = companyScopeFromActor(actor).companyId;
     try {
       return await this.commands.run({
         actorId: actor.id,
@@ -52,7 +53,10 @@ export class InitiativesService {
         idempotencyKey,
         request: dto,
         execute: async (runner) => {
-          await runner.query(`SELECT id FROM companies WHERE id = $1 FOR UPDATE`, [companyId]);
+          await runner.query(
+            `SELECT id FROM companies WHERE id = $1 AND founder_id = $2 FOR UPDATE`,
+            [companyId, actor.id],
+          );
           const existing = (await runner.query(
             `
               SELECT id FROM initiatives
@@ -113,7 +117,7 @@ export class InitiativesService {
     if (!actor.companyId) {
       throw this.companyNotFound();
     }
-    const companyId = actor.companyId;
+    const companyId = companyScopeFromActor(actor).companyId;
     const workflowVersion = this.config.getOrThrow<string>('worker.workflowVersion');
     this.goalScope.assertSupported(dto);
     return this.commands.run({
@@ -144,12 +148,16 @@ export class InitiativesService {
           });
         }
         const profileRows = (await runner.query(
-          `SELECT current_profile_version_id FROM companies WHERE id = $1`,
-          [companyId],
+          `SELECT current_profile_version_id FROM companies WHERE id = $1 AND founder_id = $2`,
+          [companyId, actor.id],
         )) as Array<{ current_profile_version_id: string }>;
         const versionRows = (await runner.query(
-          `SELECT COALESCE(MAX(version), 0) + 1 AS version FROM goal_versions WHERE initiative_id = $1`,
-          [initiativeId],
+          `
+            SELECT COALESCE(MAX(version), 0) + 1 AS version
+            FROM goal_versions
+            WHERE company_id = $1 AND initiative_id = $2
+          `,
+          [companyId, initiativeId],
         )) as Array<{ version: string }>;
         const goalVersion = Number.parseInt(versionRows[0].version, 10);
         const goalVersionId = newId();

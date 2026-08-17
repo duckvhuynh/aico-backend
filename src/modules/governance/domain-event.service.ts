@@ -33,8 +33,8 @@ export class DomainEventService {
       )) as Array<{ sequence: string }>;
       sequence = Number.parseInt(rows[0].sequence, 10);
       await runner.query(
-        `UPDATE run_event_counters SET next_sequence = next_sequence + 1 WHERE run_id = $1`,
-        [options.runId],
+        `UPDATE run_event_counters SET next_sequence = next_sequence + 1 WHERE run_id = $1 AND company_id = $2`,
+        [options.runId, options.companyId],
       );
     }
 
