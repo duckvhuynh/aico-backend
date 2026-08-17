@@ -27,8 +27,8 @@ const query = (sql) =>
   ).stdout.trim();
 
 compose('run', '--rm', 'migrate');
-if (query('SELECT count(*) FROM aico_migrations;') !== '6') {
-  throw new Error('Expected all six migrations after clean apply.');
+if (query('SELECT count(*) FROM aico_migrations;') !== '7') {
+  throw new Error('Expected all seven migrations after clean apply.');
 }
 if (
   query(`
@@ -42,7 +42,8 @@ if (
       AND to_regclass('public.founder_sessions') IS NOT NULL
       AND to_regclass('public.object_records') IS NOT NULL
       AND to_regclass('public.goal_version_attachments') IS NOT NULL
-      AND to_regclass('public.attachment_retrieval_grants') IS NOT NULL;
+      AND to_regclass('public.attachment_retrieval_grants') IS NOT NULL
+      AND to_regclass('public.goal_qualifications') IS NOT NULL;
   `) !== 't'
 ) {
   throw new Error('Durable wait or invite/session schema was not created by migration apply.');
@@ -51,22 +52,23 @@ if (
 proveAico011DomainSchema(query);
 
 compose('run', '--rm', 'migrate', 'npm', 'run', 'migration:revert:prod');
-if (query('SELECT count(*) FROM aico_migrations;') !== '5') {
-  throw new Error('Expected five migrations after reverting the latest migration.');
+if (query('SELECT count(*) FROM aico_migrations;') !== '6') {
+  throw new Error('Expected six migrations after reverting the latest migration.');
 }
 if (
   query(`
     SELECT
       to_regclass('public.object_records') IS NOT NULL
-      AND to_regclass('public.goal_version_attachments') IS NULL
-      AND to_regclass('public.attachment_retrieval_grants') IS NULL
+      AND to_regclass('public.goal_version_attachments') IS NOT NULL
+      AND to_regclass('public.attachment_retrieval_grants') IS NOT NULL
+      AND to_regclass('public.goal_qualifications') IS NULL
       AND to_regclass('public.founder_invites') IS NOT NULL
       AND to_regclass('public.founder_sessions') IS NOT NULL
       AND to_regclass('public.human_waits') IS NOT NULL
       AND to_regclass('public.task_edges') IS NOT NULL;
   `) !== 't'
 ) {
-  throw new Error('Attachment schema was not removed by migration revert.');
+  throw new Error('Goal qualification schema was not removed by migration revert.');
 }
 
 query(`
@@ -160,8 +162,8 @@ query(`
 `);
 
 compose('run', '--rm', 'migrate');
-if (query('SELECT count(*) FROM aico_migrations;') !== '6') {
-  throw new Error('Expected all six migrations after forward reapply.');
+if (query('SELECT count(*) FROM aico_migrations;') !== '7') {
+  throw new Error('Expected all seven migrations after forward reapply.');
 }
 if (
   query(`
@@ -171,10 +173,11 @@ if (
       AND to_regclass('public.founder_sessions') IS NOT NULL
       AND to_regclass('public.object_records') IS NOT NULL
       AND to_regclass('public.goal_version_attachments') IS NOT NULL
-      AND to_regclass('public.attachment_retrieval_grants') IS NOT NULL;
+      AND to_regclass('public.attachment_retrieval_grants') IS NOT NULL
+      AND to_regclass('public.goal_qualifications') IS NOT NULL;
   `) !== 't'
 ) {
-  throw new Error('Attachment schema was not restored by forward reapply.');
+  throw new Error('Qualification schema was not restored by forward reapply.');
 }
 if (
   query(`
@@ -207,6 +210,23 @@ query(`
     'notes.txt',
     'CLEAN'
   );
+  INSERT INTO goal_qualifications
+    (id, company_id, initiative_id, goal_version_id, run_id, result, reason_codes,
+     explanation, proposal, clarification_questions, screen_estimate, policy_version)
+  VALUES (
+    '019c1200-0000-7000-8000-000000000012',
+    '019c1000-0000-7000-8000-000000000002',
+    '019c1000-0000-7000-8000-000000000004',
+    '019c1000-0000-7000-8000-000000000005',
+    '019c1000-0000-7000-8000-000000000007',
+    'qualified',
+    '[]'::jsonb,
+    'Migration fixture qualification.',
+    NULL,
+    '[]'::jsonb,
+    5,
+    '1.0.0'
+  );
 `);
 const blockedRevert = run(
   'docker',
@@ -214,15 +234,15 @@ const blockedRevert = run(
   { capture: true, allowFailure: true },
 );
 if (blockedRevert.status === 0) {
-  throw new Error('Schema-down rollback did not fail closed after attachment data existed.');
+  throw new Error('Schema-down rollback did not fail closed after qualification data existed.');
 }
 if (
-  query('SELECT count(*) FROM aico_migrations;') !== '6' ||
-  query("SELECT to_regclass('public.goal_version_attachments') IS NOT NULL;") !== 't'
+  query('SELECT count(*) FROM aico_migrations;') !== '7' ||
+  query("SELECT to_regclass('public.goal_qualifications') IS NOT NULL;") !== 't'
 ) {
   throw new Error('Failed schema-down rollback did not preserve forward schema and data.');
 }
 
 console.log(
-  'Migration fixture passed: clean apply, AICO-011 domain factory/invariants, AICO-012 invite/session schema, AICO-015 object records, AICO-017 attachments, pre-use revert, populated-history reapply, workflow pin, and fail-closed post-use rollback.',
+  'Migration fixture passed: clean apply, AICO-011 domain factory/invariants, AICO-012 invite/session schema, AICO-015 object records, AICO-017 attachments, AICO-019 qualifications, pre-use revert, populated-history reapply, workflow pin, and fail-closed post-use rollback.',
 );

@@ -33,6 +33,13 @@ interface RunRow {
   frozen_goal_schema_version: number;
   frozen_structured_goal: Record<string, unknown>;
   frozen_goal_created_at: Date;
+  qualification_result: string | null;
+  qualification_reason_codes: string[] | null;
+  qualification_explanation: string | null;
+  qualification_proposal: string | null;
+  qualification_questions: Array<Record<string, unknown>> | null;
+  qualification_screen_estimate: number | null;
+  qualification_policy_version: string | null;
   created_at: Date;
   updated_at: Date;
 }
@@ -82,13 +89,20 @@ export class RunsService {
                p.normalized_limits AS frozen_normalized_limits, p.created_at AS frozen_profile_created_at,
                gv.id AS frozen_goal_id, gv.version AS frozen_goal_version,
                gv.schema_version AS frozen_goal_schema_version, gv.structured_goal AS frozen_structured_goal,
-               gv.created_at AS frozen_goal_created_at
+               gv.created_at AS frozen_goal_created_at,
+               q.result AS qualification_result, q.reason_codes AS qualification_reason_codes,
+               q.explanation AS qualification_explanation, q.proposal AS qualification_proposal,
+               q.clarification_questions AS qualification_questions,
+               q.screen_estimate AS qualification_screen_estimate,
+               q.policy_version AS qualification_policy_version
         FROM runs r
         JOIN context_snapshots cs ON cs.id = r.context_snapshot_id AND cs.company_id = r.company_id
         JOIN company_profile_versions p
           ON p.id = cs.company_profile_version_id AND p.company_id = r.company_id
         JOIN goal_versions gv
           ON gv.id = cs.goal_version_id AND gv.company_id = r.company_id
+        LEFT JOIN goal_qualifications q
+          ON q.company_id = r.company_id AND q.goal_version_id = gv.id
         WHERE r.company_id = $1 AND r.id = $2
       `,
       [companyId, runId],
@@ -150,6 +164,17 @@ export class RunsService {
           filename: item.filename,
         })),
       },
+      qualification: run.qualification_result
+        ? {
+            result: run.qualification_result,
+            reason_codes: run.qualification_reason_codes ?? [],
+            explanation: run.qualification_explanation,
+            proposal: run.qualification_proposal,
+            clarification_questions: run.qualification_questions ?? [],
+            screen_estimate: Number(run.qualification_screen_estimate),
+            policy_version: run.qualification_policy_version,
+          }
+        : null,
       summary: {
         task_counts: Object.fromEntries(counts.map((entry) => [entry.state, entry.count])),
         pending_decisions: run.state.startsWith('AWAITING_') ? 1 : 0,
