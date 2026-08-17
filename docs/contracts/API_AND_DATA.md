@@ -3,7 +3,7 @@
 - **Status:** Baseline v1 contract
 - **Base path:** `/api/v1`
 - **Media type:** `application/json`; errors use `application/problem+json`
-- **Primary traceability:** SRS sections 4–10; AICO-011–016, AICO-022–025, AICO-031, AICO-034
+- **Primary traceability:** SRS sections 4–10; AICO-011–017, AICO-022–025, AICO-031, AICO-034
 
 This document defines the externally observable REST contract and the PostgreSQL data rules behind it. Examples are illustrative values, not fixture secrets. The generated OpenAPI document and schema-versioned contract fixtures must conform to this baseline.
 
@@ -77,7 +77,7 @@ Errors follow RFC 9457 and add stable, machine-readable fields:
 | 404 | `resource_not_found` | Resource absent or outside resolved tenant |
 | 409 | `state_conflict`, `active_initiative_exists`, `idempotency_key_reused`, `command_in_progress` | Current material state conflicts with otherwise valid command |
 | 412 | `precondition_required`, `precondition_failed` | Missing/stale `If-Match` or expected exact version/state |
-| 422 | `domain_rule_violated`, `goal_out_of_scope`, `unsupported_sensitive_data` | Valid JSON cannot be accepted by product/domain policy |
+| 422 | `domain_rule_violated`, `goal_out_of_scope`, `unsupported_sensitive_data`, `attachment_type_unsupported`, `attachment_count_exceeded`, `attachment_too_large`, `attachment_total_exceeded`, `attachment_pdf_too_long`, `attachment_image_too_large`, `attachment_validation_failed`, `attachment_unsafe` | Valid JSON cannot be accepted by product/domain policy |
 | 429 | `rate_limited`, `capacity_exhausted` | Retry according to `Retry-After` when supplied |
 | 503 | `dependency_unavailable`, `service_not_ready` | Safe transient failure; acknowledgement does not imply a domain commit |
 
@@ -266,6 +266,29 @@ Response `201`, with `Location: /api/v1/runs/{run_id}` and the Initiative ETag a
 
 The submitted goal is never silently shortened or edited. Product-limit failures return `422 goal_out_of_scope` with machine-readable violated rules and safe narrowing suggestions; the Founder must submit a new Goal Version. Unvalidated attachment references fail the whole command.
 
+### `POST /attachments`
+
+Ingests a founder attachment. Requires `Idempotency-Key`. The server verifies declared and detected allowlisted types, type match, per-type byte limit, SHA-256, malware/safety class, parser limits, tenant key, and a safe display filename **before** linking or storing. Object keys are opaque (`companies/{company_id}/attachment/{id}/1`) and never derived from the original filename. Rejected attempts are audited with reason codes only; problem details and events never include file bytes.
+
+```json
+{
+  "declared_media_type": "text/plain",
+  "filename": "notes.txt",
+  "content_sha256": "64-lowercase-or-mixed-hex",
+  "content_base64": "cmVmZXJlbmNlIG5vdGVz"
+}
+```
+
+Response `201` metadata only (`id`, `media_type`, `size_bytes`, `checksum_sha256`, `scan_state`, `filename`, `expires_at`). Unsupported, oversized, spoofed, executable, HTML, archive, encrypted, or unsafe content returns `422` with the matching `attachment_*` code.
+
+### `GET /attachments/{attachment_id}`
+
+Returns own-tenant CLEAN/READY metadata. Missing, foreign, rejected, and expired ids return the same non-disclosing `404` as an absent resource. This route never returns bytes or a signed URL.
+
+### `GET /runs/{run_id}/attachments/{attachment_id}`
+
+Employee/founder retrieval for an attachment frozen into that run's Goal Version. The server authorizes `(company_id, run_id, attachment_id)` and consumes a short-lived scoped grant **before** object-store `get`. Bytes are returned with the detected `Content-Type`; there is no public or direct object-key execution path.
+
 ### `GET /runs/{run_id}`
 
 Returns persisted state only. It must not infer `working` from a worker heartbeat or generated prose. The `context` object includes the frozen Company Profile Version and founder-authored Goal Version bound by the run's Context Snapshot.
@@ -322,7 +345,16 @@ Returns persisted state only. It must not infer `working` from a worker heartbea
         },
         "created_by": "FOUNDER",
         "created_at": "2026-08-12T10:40:00.000Z"
-      }
+      },
+      "attachments": [
+        {
+          "id": "019c1234-1234-7abc-8def-123456789119",
+          "media_type": "text/plain",
+          "size_bytes": 32,
+          "checksum_sha256": "64-hex",
+          "filename": "notes.txt"
+        }
+      ]
     },
     "summary": {
       "task_counts": { "QUEUED": 1 },
@@ -463,6 +495,7 @@ All tenant-owned tables have `company_id uuid NOT NULL`, composite tenant foreig
 | `initiatives` | `id`, `company_id`, `type`, `title`, `status`, `current_goal_version_id`, `row_version`, timestamps | unique `(company_id,id)`; partial unique active Prototype per Company; goal pointer belongs to same Initiative/Company |
 | `goal_versions` | `id`, `company_id`, `initiative_id`, `version`, `schema_version`, `structured_goal jsonb`, `created_by`, `created_at` | unique `(initiative_id,version)` and `(company_id,id)`; immutable; no silent transform |
 | `goal_version_attachments` | `company_id`, `goal_version_id`, `object_id`, `ordinal` | exact validated object refs; unique ordinal/ref per goal |
+| `attachment_retrieval_grants` | `id`, `company_id`, `object_id`, `run_id`, `expires_at`, `consumed_at`, `created_at` | short-lived run-scoped retrieval; unique `(company_id,id)`; never a public URL |
 | `context_snapshots` | `id`, `company_id`, `company_profile_version_id`, `goal_version_id`, `created_at` | exact immutable same-company refs; unique `(company_id,id)` |
 | `context_snapshot_answers` | `company_id`, `context_snapshot_id`, `answer_version_id`, `ordinal` | exact same-run/company answer refs |
 
@@ -490,7 +523,7 @@ All tenant-owned tables have `company_id uuid NOT NULL`, composite tenant foreig
 | `outbox_messages` | event ID, topic, envelope, available/lease/published timestamps, attempts, error class | unique event ID; leased claim indexes; event FK |
 | `inbox_receipts` | consumer name, event ID, received/processed timestamps, result digest | PK `(consumer_name,event_id)` before side effect |
 | `idempotency_records` | actor, operation, key, request digest, status, response code/body/ref, expiry, timestamps | unique `(actor_id,operation,key)`; changed digest conflicts |
-| `objects` | `id`, `company_id`, purpose/type, opaque storage key, media type, size, checksum, scan/state, retention/expiry, timestamps | unique `(company_id,id)` and storage key; no public ACL; metadata precedes signed access |
+| `objects` / `object_records` | `id`, `company_id`, purpose/type, opaque storage key, media type, size, checksum, scan/state, retention/expiry, timestamps | unique `(company_id,id)` and storage key; purposes `quality-fixture` and `attachment`; no public ACL; metadata precedes scoped retrieval |
 
 Later migrations add Clarification, Employee Definition, Evaluation/Verdict/Finding, Notification, Export, and feedback tables using the same tenant/exact-version/outbox rules.
 

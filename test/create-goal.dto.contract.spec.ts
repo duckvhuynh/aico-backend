@@ -37,6 +37,16 @@ describe('CreateGoalDto contract', () => {
   it.each([
     ['unknown schema version', { ...validGoal, schema_version: 2 }],
     [
+      'more than five attachments',
+      {
+        ...validGoal,
+        attachment_ids: Array.from(
+          { length: 6 },
+          (_, index) => `019c1600-0000-7000-8000-00000000000${index}`,
+        ),
+      },
+    ],
+    [
       'more than five screens',
       {
         ...validGoal,

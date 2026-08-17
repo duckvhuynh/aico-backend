@@ -1,7 +1,7 @@
 const OBJECT_KEY_PATTERN =
   /^companies\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\/([a-z0-9-]+)\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\/(\d+)$/i;
 
-export const OBJECT_PURPOSES = Object.freeze(['quality-fixture'] as const);
+export const OBJECT_PURPOSES = Object.freeze(['quality-fixture', 'attachment'] as const);
 export type ObjectPurpose = (typeof OBJECT_PURPOSES)[number];
 
 export interface ObjectKeyParts {

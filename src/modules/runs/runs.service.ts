@@ -37,6 +37,14 @@ interface RunRow {
   updated_at: Date;
 }
 
+interface FrozenAttachmentRow {
+  id: string;
+  media_type: string;
+  size_bytes: number;
+  checksum_sha256: string;
+  filename: string;
+}
+
 interface TaskCountRow {
   state: string;
   count: number;
@@ -93,6 +101,18 @@ export class RunsService {
       `SELECT state, count(*)::integer AS count FROM tasks WHERE company_id = $1 AND run_id = $2 GROUP BY state`,
       [companyId, runId],
     );
+    const attachments = await this.dataSource.query<FrozenAttachmentRow[]>(
+      `
+        SELECT o.id, o.detected_media_type AS media_type, o.size_bytes, o.checksum_sha256,
+               o.original_filename AS filename
+        FROM goal_version_attachments gva
+        JOIN object_records o
+          ON o.company_id = gva.company_id AND o.id = gva.object_id
+        WHERE gva.company_id = $1 AND gva.goal_version_id = $2
+        ORDER BY gva.ordinal, o.id
+      `,
+      [companyId, run.goal_version_id],
+    );
     return {
       id: run.id,
       initiative_id: run.initiative_id,
@@ -122,6 +142,13 @@ export class RunsService {
           created_by: 'FOUNDER',
           created_at: run.frozen_goal_created_at,
         },
+        attachments: attachments.map((item) => ({
+          id: item.id,
+          media_type: item.media_type,
+          size_bytes: Number(item.size_bytes),
+          checksum_sha256: item.checksum_sha256,
+          filename: item.filename,
+        })),
       },
       summary: {
         task_counts: Object.fromEntries(counts.map((entry) => [entry.state, entry.count])),

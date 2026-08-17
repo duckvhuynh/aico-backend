@@ -7,6 +7,8 @@ const TENANT_TABLES = [
   'events',
   'initiatives',
   'goal_versions',
+  'goal_version_attachments',
+  'attachment_retrieval_grants',
   'object_records',
   'artifacts',
   'artifact_versions',

@@ -24,13 +24,6 @@ export class GoalScopePolicy {
     if (new Set(dto.goal.must_haves.map((item) => item.id)).size !== dto.goal.must_haves.length) {
       violations.push({ rule: 'unique_must_have_ids', field: 'goal.must_haves' });
     }
-    if (dto.attachment_ids.length > 0) {
-      violations.push({
-        rule: 'attachments_not_enabled_in_foundation_slice',
-        field: 'attachment_ids',
-      });
-    }
-
     if (violations.length > 0) {
       throw new DomainError({
         status: 422,

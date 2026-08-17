@@ -1,6 +1,7 @@
 import { Type } from 'class-transformer';
 import {
   ArrayMaxSize,
+  ArrayUnique,
   IsArray,
   IsBoolean,
   IsDefined,
@@ -106,7 +107,8 @@ export class CreateGoalDto {
   goal!: StructuredGoalDto;
 
   @IsArray()
-  @ArrayMaxSize(10)
+  @ArrayMaxSize(5)
+  @ArrayUnique()
   @IsUUID('all', { each: true })
   attachment_ids!: string[];
 

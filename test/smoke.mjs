@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { authenticateInvitedFounder } from '../scripts/auth-invite-session.mjs';
 import { assertEquivalentAbsence, assertNonDisclosingDenial } from './isolation-harness.mjs';
 
@@ -9,6 +9,21 @@ async function call(path, options = {}) {
   const text = await response.text();
   const body = text ? JSON.parse(text) : {};
   return { response, body };
+}
+
+async function callRaw(path, options = {}) {
+  const response = await fetch(`${baseUrl}${path}`, options);
+  const buffer = Buffer.from(await response.arrayBuffer());
+  return { response, buffer };
+}
+
+function attachmentBody(bytes, declaredMediaType, filename) {
+  return {
+    declared_media_type: declaredMediaType,
+    filename,
+    content_sha256: createHash('sha256').update(bytes).digest('hex'),
+    content_base64: Buffer.from(bytes).toString('base64'),
+  };
 }
 
 function assert(condition, message) {
@@ -228,6 +243,203 @@ const secondInitiative = await call('/initiatives', {
 assert(secondInitiative.response.status === 409, 'second active initiative was accepted');
 assert(secondInitiative.body.code === 'active_initiative_exists', 'second initiative code drifted');
 
+const notesBytes = Buffer.from('reference notes for the prototype');
+const notesPayload = attachmentBody(notesBytes, 'text/plain', 'notes.txt');
+const attachment = await call('/attachments', {
+  method: 'POST',
+  headers: { ...auth, 'content-type': 'application/json', 'idempotency-key': randomUUID() },
+  body: JSON.stringify(notesPayload),
+});
+assert(
+  attachment.response.status === 201,
+  `attachment ingest failed: ${JSON.stringify(attachment.body)}`,
+);
+assert(attachment.body.data.scan_state === 'CLEAN', 'accepted attachment was not marked CLEAN');
+assert(attachment.body.data.media_type === 'text/plain', 'accepted attachment dropped media type');
+assert(
+  !JSON.stringify(attachment.body).includes(notesPayload.content_base64),
+  'attachment response leaked file body',
+);
+const attachmentId = attachment.body.data.id;
+assert(
+  !JSON.stringify(attachment.body).includes('companies/'),
+  'attachment response leaked object key',
+);
+
+const attachmentReplayKey = randomUUID();
+const firstIngest = await call('/attachments', {
+  method: 'POST',
+  headers: { ...auth, 'content-type': 'application/json', 'idempotency-key': attachmentReplayKey },
+  body: JSON.stringify(notesPayload),
+});
+const replayIngest = await call('/attachments', {
+  method: 'POST',
+  headers: { ...auth, 'content-type': 'application/json', 'idempotency-key': attachmentReplayKey },
+  body: JSON.stringify(notesPayload),
+});
+assert(replayIngest.body.meta.replayed === true, 'attachment replay was not reported');
+assert(
+  replayIngest.body.data.id === firstIngest.body.data.id,
+  'attachment replay stored a second object',
+);
+
+const deniedCases = [
+  [
+    attachmentBody(Buffer.alloc(262145, 0x61), 'text/plain', 'notes.txt'),
+    'attachment_too_large',
+    'a'.repeat(40),
+  ],
+  [
+    attachmentBody(
+      Buffer.from('X5O!P%@AP[4\\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*'),
+      'text/plain',
+      'notes.txt',
+    ),
+    'attachment_unsafe',
+    'EICAR-STANDARD-ANTIVIRUS-TEST-FILE',
+  ],
+  [
+    attachmentBody(
+      Buffer.from([0x4d, 0x5a, 0x90, 0x00, 0x03, 0x00, 0x00, 0x00]),
+      'text/plain',
+      'notes.txt',
+    ),
+    'attachment_unsafe',
+    'MZ',
+  ],
+  [
+    attachmentBody(
+      Buffer.from('<!DOCTYPE html><html><script>alert(1)</script></html>'),
+      'text/plain',
+      'notes.txt',
+    ),
+    'attachment_unsafe',
+    '<script>alert(1)</script>',
+  ],
+  [
+    attachmentBody(
+      Buffer.from([0x50, 0x4b, 0x03, 0x04, 0x14, 0x00, 0x00, 0x00]),
+      'text/plain',
+      'notes.txt',
+    ),
+    'attachment_unsafe',
+    'PK',
+  ],
+  [
+    attachmentBody(notesBytes, 'application/zip', 'archive.zip'),
+    'attachment_type_unsupported',
+    'archive.zip',
+  ],
+  [
+    attachmentBody(notesBytes, 'text/plain', '../evil.exe'),
+    'attachment_validation_failed',
+    '../evil.exe',
+  ],
+  [
+    attachmentBody(
+      Buffer.from(
+        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
+        'base64',
+      ),
+      'text/plain',
+      'notes.txt',
+    ),
+    'attachment_validation_failed',
+    'iVBORw0KGgo',
+  ],
+];
+for (const [payload, code, leak] of deniedCases) {
+  const denied = await call('/attachments', {
+    method: 'POST',
+    headers: { ...auth, 'content-type': 'application/json', 'idempotency-key': randomUUID() },
+    body: JSON.stringify(payload),
+  });
+  assert(
+    denied.response.status === 422,
+    `denied attachment returned ${denied.response.status} for ${code}`,
+  );
+  assert(
+    denied.body.code === code,
+    `denied attachment code drifted for ${code}: ${denied.body.code}`,
+  );
+  const serialized = JSON.stringify(denied.body);
+  assert(!serialized.includes(payload.content_base64), `denial leaked body for ${code}`);
+  assert(!serialized.includes(leak), `denial leaked ${leak}`);
+}
+
+const metadata = await call(`/attachments/${attachmentId}`, { headers: auth });
+assert(metadata.response.ok, `attachment metadata failed: ${JSON.stringify(metadata.body)}`);
+assert(metadata.body.data.id === attachmentId, 'attachment metadata id drifted');
+assert(!Object.hasOwn(metadata.body.data, 'body'), 'attachment metadata included a body');
+
+const unvalidatedGoal = await call(`/initiatives/${initiative.body.data.id}/goals`, {
+  method: 'POST',
+  headers: {
+    ...auth,
+    'content-type': 'application/json',
+    'idempotency-key': randomUUID(),
+    'if-match': initiative.response.headers.get('etag'),
+  },
+  body: JSON.stringify({
+    schema_version: 1,
+    start_run: true,
+    attachment_ids: [randomUUID()],
+    goal: {
+      target_user: 'Independent consultants',
+      problem: 'Turning discovery notes into a proposal is slow and inconsistent.',
+      desired_outcome: 'Prepare and review a clear proposal draft.',
+      primary_flow: 'Create proposal, review sections, mark ready',
+      must_haves: [{ id: 'MH-001', text: 'Create a proposal from structured mock client data' }],
+      non_goals: ['Payments'],
+      visual_direction: 'Calm editorial workspace',
+      constraints: {
+        max_screens: 5,
+        primary_flows: 1,
+        client_only: true,
+        data_mode: 'mock_or_local',
+      },
+      reference_ids: [],
+    },
+  }),
+});
+assert(
+  unvalidatedGoal.response.status === 404,
+  'unvalidated attachment id did not fail the goal command',
+);
+assert(unvalidatedGoal.body.code === 'resource_not_found', 'unvalidated attachment denial drifted');
+
+const extraAttachments = await call(`/initiatives/${initiative.body.data.id}/goals`, {
+  method: 'POST',
+  headers: {
+    ...auth,
+    'content-type': 'application/json',
+    'idempotency-key': randomUUID(),
+    'if-match': initiative.response.headers.get('etag'),
+  },
+  body: JSON.stringify({
+    schema_version: 1,
+    start_run: true,
+    attachment_ids: Array.from({ length: 6 }, () => randomUUID()),
+    goal: {
+      target_user: 'Independent consultants',
+      problem: 'Turning discovery notes into a proposal is slow and inconsistent.',
+      desired_outcome: 'Prepare and review a clear proposal draft.',
+      primary_flow: 'Create proposal, review sections, mark ready',
+      must_haves: [{ id: 'MH-001', text: 'Create a proposal from structured mock client data' }],
+      non_goals: ['Payments'],
+      visual_direction: 'Calm editorial workspace',
+      constraints: {
+        max_screens: 5,
+        primary_flows: 1,
+        client_only: true,
+        data_mode: 'mock_or_local',
+      },
+      reference_ids: [],
+    },
+  }),
+});
+assert(extraAttachments.response.status === 400, 'more than five attachment ids were accepted');
+
 const goalEnvelope = {
   schema_version: 1,
   goal: {
@@ -249,7 +461,7 @@ const goalEnvelope = {
     },
     reference_ids: [],
   },
-  attachment_ids: [],
+  attachment_ids: [attachmentId],
   start_run: true,
 };
 const missingGoalEtag = await call(`/initiatives/${initiative.body.data.id}/goals`, {
@@ -451,9 +663,40 @@ assert(
   'frozen goal dropped reference_ids',
 );
 assert(
+  run.body.data.context.attachments?.[0]?.id === attachmentId,
+  'run context dropped frozen attachment metadata',
+);
+assert(
+  !JSON.stringify(run.body.data.context.attachments).includes(notesPayload.content_base64),
+  'run context leaked attachment bytes',
+);
+assert(
   !Object.hasOwn(run.body.data.context.goal.structured_goal, 'unexpected_field'),
   'persisted goal kept an unknown field',
 );
+
+const retrieved = await callRaw(`/runs/${runId}/attachments/${attachmentId}`, { headers: auth });
+assert(retrieved.response.ok, 'run-scoped attachment retrieval failed');
+assert(
+  retrieved.response.headers.get('content-type')?.startsWith('text/plain'),
+  'run-scoped retrieval used a public execution content type',
+);
+assert(retrieved.buffer.equals(notesBytes), 'run-scoped retrieval returned different bytes');
+assert(
+  !retrieved.response.headers.get('location'),
+  'run-scoped retrieval issued a public object location',
+);
+
+const retrievedAgain = await callRaw(`/runs/${runId}/attachments/${attachmentId}`, {
+  headers: auth,
+});
+assert(retrievedAgain.response.ok, 'repeat run-scoped retrieval failed');
+assert(retrievedAgain.buffer.equals(notesBytes), 'repeat retrieval returned different bytes');
+
+const unlinkedRetrieval = await callRaw(`/runs/${runId}/attachments/${firstIngest.body.data.id}`, {
+  headers: auth,
+});
+assert(unlinkedRetrieval.response.status === 404, 'unlinked attachment was retrievable');
 
 const updatedPurpose = 'Help independent consultants prepare and review client proposals.';
 const profileUpdate = await call('/companies/current/profile', {
@@ -669,6 +912,26 @@ const deleteRun = await call(`/runs/${runId}`, {
   method: 'DELETE',
   headers: otherFounder.auth,
 });
+const foreignAttachmentMeta = await call(`/attachments/${attachmentId}`, {
+  headers: otherFounder.auth,
+});
+const foreignAttachmentBytes = await callRaw(`/runs/${runId}/attachments/${attachmentId}`, {
+  headers: otherFounder.auth,
+});
+const foreignAttachmentWrite = await call(`/initiatives/${initiative.body.data.id}/goals`, {
+  method: 'POST',
+  headers: {
+    ...otherFounder.auth,
+    'content-type': 'application/json',
+    'idempotency-key': randomUUID(),
+    'if-match': '"1"',
+  },
+  body: JSON.stringify({ ...goalEnvelope, attachment_ids: [attachmentId] }),
+});
+const absentAttachment = await call(`/attachments/${absentId}`, { headers: otherFounder.auth });
+const absentAttachmentBytes = await callRaw(`/runs/${absentId}/attachments/${absentId}`, {
+  headers: otherFounder.auth,
+});
 const absentRun = await call(`/runs/${absentId}`, { headers: otherFounder.auth });
 const absentDelete = await call(`/runs/${absentId}`, {
   method: 'DELETE',
@@ -680,6 +943,30 @@ assertNonDisclosingDenial(listEvents, foreignNeedles, 'foreign event list');
 assertNonDisclosingDenial(readRun, foreignNeedles, 'foreign run read');
 assertNonDisclosingDenial(writeGoal, foreignNeedles, 'foreign goal write');
 assertNonDisclosingDenial(deleteRun, foreignNeedles, 'foreign run delete');
+assertNonDisclosingDenial(
+  foreignAttachmentMeta,
+  [...foreignNeedles, 'notes.txt'],
+  'foreign attachment metadata',
+);
+assert(foreignAttachmentBytes.response.status === 404, 'foreign attachment bytes were disclosed');
+assert(
+  !foreignAttachmentBytes.buffer.toString('utf8').includes('reference notes'),
+  'foreign bytes leaked body',
+);
+assertNonDisclosingDenial(
+  foreignAttachmentWrite,
+  [...foreignNeedles, 'notes.txt'],
+  'foreign attachment link',
+);
+assertEquivalentAbsence(
+  foreignAttachmentMeta,
+  absentAttachment,
+  'foreign vs absent attachment metadata',
+);
+assert(
+  foreignAttachmentBytes.response.status === absentAttachmentBytes.response.status,
+  'foreign vs absent attachment bytes status diverged',
+);
 assertEquivalentAbsence(readRun, absentRun, 'foreign vs absent read');
 assertEquivalentAbsence(deleteRun, absentDelete, 'foreign vs absent delete');
 assert(

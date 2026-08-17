@@ -15,6 +15,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { CompaniesModule } from './modules/companies/companies.module';
 import { GovernanceModule } from './modules/governance/governance.module';
 import { HealthModule } from './modules/health/health.module';
+import { AttachmentsModule } from './modules/attachments/attachments.module';
 import { InitiativesModule } from './modules/initiatives/initiatives.module';
 import { ObjectsModule } from './modules/objects/objects.module';
 import { RunsModule } from './modules/runs/runs.module';
@@ -36,6 +37,7 @@ import { RunsModule } from './modules/runs/runs.module';
             'req.headers.cookie',
             'req.body.password',
             'req.body.access_token',
+            'req.body.content_base64',
             'res.headers["set-cookie"]',
           ],
           censor: '[REDACTED]',
@@ -48,6 +50,7 @@ import { RunsModule } from './modules/runs/runs.module';
     HealthModule,
     CompaniesModule,
     InitiativesModule,
+    AttachmentsModule,
     ObjectsModule,
     RunsModule,
   ],

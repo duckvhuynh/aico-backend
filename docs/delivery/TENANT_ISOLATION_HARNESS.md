@@ -38,13 +38,13 @@ ownership is proven. Cross-tenant attempts must not use `403`.
 
 ## Later surfaces
 
-| Surface       | Owning issue | How to extend the harness                                      |
-| ------------- | ------------ | -------------------------------------------------------------- |
-| Attachments   | AICO-017     | Foreign attachment ID/finalize/scan must deny before store I/O |
-| Model context | AICO-031/032 | Foreign frozen refs must fail before provider invocation       |
-| Preview       | AICO-057     | Foreign preview handle is the same `404` as absent             |
-| Sandbox       | AICO-049     | Foreign workspace/object path denies before materialization    |
-| Export        | AICO-069–071 | Foreign export ID denies before package/object write           |
+| Surface       | Owning issue | How to extend the harness                                                    |
+| ------------- | ------------ | ---------------------------------------------------------------------------- |
+| Attachments   | AICO-017     | Foreign metadata/list/link/bytes deny before store I/O; same `404` as absent |
+| Model context | AICO-031/032 | Foreign frozen refs must fail before provider invocation                     |
+| Preview       | AICO-057     | Foreign preview handle is the same `404` as absent                           |
+| Sandbox       | AICO-049     | Foreign workspace/object path denies before materialization                  |
+| Export        | AICO-069–071 | Foreign export ID denies before package/object write                         |
 
 Keep seeded foreign markers out of logs, events, and evidence bundles. AICO-082
 owns the remaining adversarial completeness, RLS, and signed-access cases.
