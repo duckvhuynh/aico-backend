@@ -46,6 +46,12 @@ describe('GoalScopePolicy', () => {
     }
   });
 
+  it('accepts validated attachment references without treating them as out of scope', () => {
+    const goal = validGoal();
+    goal.attachment_ids = ['019c1700-0000-7000-8000-0000000000aa'];
+    expect(() => policy.assertSupported(goal)).not.toThrow();
+  });
+
   it('rejects duplicate stable requirement IDs', () => {
     const goal = validGoal();
     goal.goal.must_haves.push({ id: 'MH-001', text: 'Duplicate identifier' });

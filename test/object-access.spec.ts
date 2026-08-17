@@ -40,6 +40,14 @@ describe('AICO-015 company scope and object access', () => {
     expect(parseObjectKey(key)?.companyId).toBe(companyA);
     expect(authorizeObjectAccess(companyB, key)).toBe(false);
     expect(authorizeObjectAccess(companyA, `client-supplied/${companyA}/secret.txt`)).toBe(false);
+    expect(
+      buildObjectKey({
+        companyId: companyA,
+        purpose: 'attachment',
+        objectId: objectA,
+        version: 1,
+      }),
+    ).toBe(`companies/${companyA}/attachment/${objectA}/1`);
   });
 
   it('does not call the object adapter for foreign get/head/delete', async () => {

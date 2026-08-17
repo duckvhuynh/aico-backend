@@ -7,6 +7,7 @@ import { newId } from '../../common/domain/identifiers';
 import { postgresError } from '../../common/domain/postgres-error';
 import type { RequestActor } from '../../common/http/request-context';
 import { companyScopeFromActor } from '../../common/tenant/company-scope';
+import { AttachmentsService } from '../attachments/attachments.service';
 import { CommandExecutor, type CommandResult } from '../governance/command-executor.service';
 import { DomainEventService } from '../governance/domain-event.service';
 import { canonicalStructuredGoal, type CreateGoalDto } from './dto/create-goal.dto';
@@ -33,6 +34,7 @@ export class InitiativesService {
     private readonly commands: CommandExecutor,
     private readonly events: DomainEventService,
     private readonly goalScope: GoalScopePolicy,
+    private readonly attachments: AttachmentsService,
     private readonly config: ConfigService,
   ) {}
 
@@ -185,6 +187,12 @@ export class InitiativesService {
             actor.id,
           ],
         )) as Array<{ created_at: Date }>;
+        await this.attachments.bindToGoalVersion(
+          runner,
+          companyId,
+          goalVersionId,
+          dto.attachment_ids,
+        );
         await runner.query(
           `
             UPDATE initiatives

@@ -8,6 +8,6 @@ import { MemoryObjectStore, OBJECT_STORE } from './object-store';
     { provide: OBJECT_STORE, useExisting: MemoryObjectStore },
     ObjectAccessService,
   ],
-  exports: [ObjectAccessService],
+  exports: [ObjectAccessService, OBJECT_STORE],
 })
 export class ObjectsModule {}

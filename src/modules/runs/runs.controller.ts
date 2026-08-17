@@ -1,15 +1,45 @@
-import { Controller, Delete, Get, Param, ParseUUIDPipe, Query, Res } from '@nestjs/common';
+import {
+  Controller,
+  Delete,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Query,
+  Res,
+  StreamableFile,
+} from '@nestjs/common';
 import type { Response } from 'express';
 import { CurrentActor } from '../../common/http/current-actor.decorator';
 import { formatEtag } from '../../common/http/command-headers';
 import type { ContextRequest, RequestActor } from '../../common/http/request-context';
+import { AttachmentRetrievalService } from '../attachments/attachment-retrieval.service';
 import { EventQueryDto } from './dto/event-query.dto';
 import { TaskQueryDto } from './dto/task-query.dto';
 import { RunsService } from './runs.service';
 
 @Controller({ path: 'runs', version: '1' })
 export class RunsController {
-  constructor(private readonly runs: RunsService) {}
+  constructor(
+    private readonly runs: RunsService,
+    private readonly attachments: AttachmentRetrievalService,
+  ) {}
+
+  @Get(':runId/attachments/:attachmentId')
+  async retrieveAttachment(
+    @CurrentActor() actor: RequestActor,
+    @Param('runId', ParseUUIDPipe) runId: string,
+    @Param('attachmentId', ParseUUIDPipe) attachmentId: string,
+    @Res({ passthrough: true }) response: Response,
+  ): Promise<StreamableFile> {
+    const result = await this.attachments.retrieveForRun(actor, runId, attachmentId);
+    response.setHeader('Content-Type', result.mediaType);
+    response.setHeader('X-Content-Type-Options', 'nosniff');
+    response.setHeader(
+      'Content-Disposition',
+      `attachment; filename="${result.filename.replaceAll('"', '')}"`,
+    );
+    return new StreamableFile(result.body);
+  }
 
   @Get(':runId')
   async get(
