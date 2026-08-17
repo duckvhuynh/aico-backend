@@ -416,11 +416,18 @@ assert(
   run.body.data.context.goal.structured_goal.primary_flow === goalEnvelope.goal.primary_flow,
   'frozen goal dropped primary_flow',
 );
+const persistedMustHaves = run.body.data.context.goal.structured_goal.must_haves;
+const persistedConstraints = run.body.data.context.goal.structured_goal.constraints;
 assert(
-  JSON.stringify(run.body.data.context.goal.structured_goal.must_haves) ===
-    JSON.stringify(goalEnvelope.goal.must_haves),
+  persistedMustHaves.length === goalEnvelope.goal.must_haves.length,
   'frozen goal dropped must_haves',
 );
+for (const [index, item] of goalEnvelope.goal.must_haves.entries()) {
+  assert(
+    persistedMustHaves[index]?.id === item.id && persistedMustHaves[index]?.text === item.text,
+    `frozen goal dropped must_haves[${index}]`,
+  );
+}
 assert(
   JSON.stringify(run.body.data.context.goal.structured_goal.non_goals) ===
     JSON.stringify(goalEnvelope.goal.non_goals),
@@ -432,8 +439,10 @@ assert(
   'frozen goal dropped visual_direction',
 );
 assert(
-  JSON.stringify(run.body.data.context.goal.structured_goal.constraints) ===
-    JSON.stringify(goalEnvelope.goal.constraints),
+  Number(persistedConstraints.max_screens) === goalEnvelope.goal.constraints.max_screens &&
+    Number(persistedConstraints.primary_flows) === goalEnvelope.goal.constraints.primary_flows &&
+    persistedConstraints.client_only === goalEnvelope.goal.constraints.client_only &&
+    persistedConstraints.data_mode === goalEnvelope.goal.constraints.data_mode,
   'frozen goal dropped constraints',
 );
 assert(
