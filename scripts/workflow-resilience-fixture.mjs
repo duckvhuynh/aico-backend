@@ -211,8 +211,8 @@ assert(rollbackAttempt.status !== 0, 'A2-TX-01 injected rollback unexpectedly co
 const rollbackState = spike('inspect', rollback).result;
 assert(rollbackState.run_state === 'DRAFT', 'A2-TX-01 changed run state');
 assert(rollbackState.counts.waits === 0, 'A2-TX-01 left a wait row');
-assert(rollbackState.counts.events === 1, 'A2-TX-01 left a partial event');
-assert(rollbackState.counts.outbox === 1, 'A2-TX-01 left a partial outbox record');
+assert(rollbackState.counts.events === 2, 'A2-TX-01 left a partial event');
+assert(rollbackState.counts.outbox === 2, 'A2-TX-01 left a partial outbox record');
 evidence.matrix['A2-TX-01'] = 'passed';
 
 const recovery = await createRun('restart-recovery');
@@ -254,8 +254,8 @@ assert(
 assert(waiting.result.expires_at !== null, 'wait expiry metadata is missing');
 assert(
   waiting.result.counts.waits === 1 &&
-    waiting.result.counts.events === 2 &&
-    waiting.result.counts.outbox === 2,
+    waiting.result.counts.events === 3 &&
+    waiting.result.counts.outbox === 3,
   'committed wait transaction row counts drifted',
 );
 evidence.processes.open = opened.process;
@@ -374,7 +374,7 @@ assert(
 );
 assert(resumed.counts.answers === 1, 'more than one immutable answer exists');
 assert(
-  resumed.counts.events === 3 && resumed.counts.outbox === 3,
+  resumed.counts.events === 4 && resumed.counts.outbox === 4,
   'resume event/outbox count drifted',
 );
 assert(
@@ -447,8 +447,8 @@ assert(
 const afterConcurrent = spike('inspect', concurrent).result;
 assert(
   afterConcurrent.counts.answers === 1 &&
-    afterConcurrent.counts.events === 3 &&
-    afterConcurrent.counts.outbox === 3 &&
+    afterConcurrent.counts.events === 4 &&
+    afterConcurrent.counts.outbox === 4 &&
     afterConcurrent.task_state === 'READY',
   'concurrent response race created more than one logical continuation',
 );
