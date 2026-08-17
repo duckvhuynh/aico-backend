@@ -5,10 +5,10 @@
 **Evidence date:** 2026-08-17  
 **Canonical command:** `npm run verify:ci`
 
-**Hosted PR SHA:** pending  
-**Hosted `verify`:** pending  
-**Hosted `prove`:** pending  
-**Hosted `validate`:** pending
+**Hosted PR SHA:** `739fe1f531c3a1a0044801c903d9148a6422a8ce`  
+**Hosted `verify`:** https://github.com/duckvhuynh/aico-backend/actions/runs/32019306820  
+**Hosted `prove`:** https://github.com/duckvhuynh/aico-backend/actions/runs/32019306827  
+**Hosted `validate`:** https://github.com/duckvhuynh/aico-backend/actions/runs/32019306850
 
 Founders can resume the non-terminal Prototype Initiative after refresh or a
 `409 active_initiative_exists` without inferring identity from the conflict body.
@@ -23,11 +23,11 @@ Founders can resume the non-terminal Prototype Initiative after refresh or a
 
 ## Acceptance reconciliation
 
-| ID           | Parent criterion                                                                | Evidence                                      | Result  |
-| ------------ | ------------------------------------------------------------------------------- | --------------------------------------------- | ------- |
-| A18-READ-01  | Authenticated founder can read their current non-terminal Prototype Initiative. | `InitiativesController.getCurrent`, smoke GET | Pending |
-| A18-READ-02  | Missing/foreign reads match absent 404. No client tenant header authority.      | Smoke foreign GET with `x-company-id`         | Pending |
-| A18-BOUND-01 | No qualification result persistence, no founder UI in this repo, no 23rd gate.  | Additive GET only                             | Pending |
+| ID           | Parent criterion                                                                | Evidence                                                                                                                            | Result |
+| ------------ | ------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| A18-READ-01  | Authenticated founder can read their current non-terminal Prototype Initiative. | `InitiativesController.getCurrent`, smoke GET. Hosted `verify`: https://github.com/duckvhuynh/aico-backend/actions/runs/32019306820 | Pass   |
+| A18-READ-02  | Missing/foreign reads match absent 404. No client tenant header authority.      | Smoke foreign GET with `x-company-id`. Hosted `verify`: https://github.com/duckvhuynh/aico-backend/actions/runs/32019306820         | Pass   |
+| A18-BOUND-01 | No qualification result persistence, no founder UI in this repo, no 23rd gate.  | Additive GET only. Gates remain the frozen 22. Hosted `prove`: https://github.com/duckvhuynh/aico-backend/actions/runs/32019306827  | Pass   |
 
 ## Non-goals kept
 
