@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { authenticateInvitedFounder } from '../scripts/auth-invite-session.mjs';
+import { assertEquivalentAbsence, assertNonDisclosingDenial } from './isolation-harness.mjs';
 
 const baseUrl = process.env.AICO_BASE_URL ?? 'http://localhost:3000/api/v1';
 
@@ -362,9 +363,112 @@ const otherFounder = await authenticateInvitedFounder(call, {
   email: `other-${randomUUID()}@example.test`,
   display_name: 'Other Founder',
 });
-const crossTenant = await call(`/runs/${runId}`, {
+const otherCompany = await call('/companies', {
+  method: 'POST',
+  headers: {
+    ...otherFounder.auth,
+    'content-type': 'application/json',
+    'idempotency-key': randomUUID(),
+  },
+  body: JSON.stringify({
+    name: 'Other Company',
+    profile: companyPayload.profile,
+  }),
+});
+assert(
+  otherCompany.response.status === 201,
+  `other company failed: ${JSON.stringify(otherCompany.body)}`,
+);
+assert(otherCompany.body.data.id !== companyId, 'two founders received the same company');
+assert(
+  otherCompany.body.data.name !== 'Smoke Company',
+  'company current leaked a foreign name during create',
+);
+
+const otherCurrent = await call('/companies/current', { headers: otherFounder.auth });
+assert(
+  otherCurrent.body.data.id === otherCompany.body.data.id,
+  'other founder did not read their company',
+);
+assert(
+  !JSON.stringify(otherCurrent.body).includes('Smoke Company'),
+  'company list leaked foreign content',
+);
+
+const clientTenantHeader = await call(`/runs/${runId}`, {
+  headers: { ...otherFounder.auth, 'x-company-id': companyId, 'x-aico-company-id': companyId },
+});
+assertNonDisclosingDenial(
+  clientTenantHeader,
+  [email, 'Smoke Founder', 'Smoke Company', companyId, originalProfile.purpose],
+  'client tenant header',
+);
+
+const clientTenantBody = await call('/companies', {
+  method: 'POST',
+  headers: {
+    ...otherFounder.auth,
+    'content-type': 'application/json',
+    'idempotency-key': randomUUID(),
+  },
+  body: JSON.stringify({
+    company_id: companyId,
+    name: 'Hijack Company',
+    profile: companyPayload.profile,
+  }),
+});
+assert(clientTenantBody.response.status === 400, 'client tenant body was accepted');
+assertNoTenantLeak(clientTenantBody.body, 'Smoke Company', originalProfile.purpose);
+
+const absentId = randomUUID();
+const foreignNeedles = [
+  email,
+  'Smoke Founder',
+  'Smoke Company',
+  originalProfile.purpose,
+  'Proposal workspace prototype',
+];
+
+const listTasks = await call(`/runs/${runId}/tasks`, { headers: otherFounder.auth });
+const listEvents = await call(`/runs/${runId}/events`, { headers: otherFounder.auth });
+const readRun = await call(`/runs/${runId}`, { headers: otherFounder.auth });
+const writeGoal = await call(`/initiatives/${initiative.body.data.id}/goals`, {
+  method: 'POST',
+  headers: {
+    ...otherFounder.auth,
+    'content-type': 'application/json',
+    'idempotency-key': randomUUID(),
+    'if-match': '"1"',
+  },
+  body: JSON.stringify(goalEnvelope),
+});
+const deleteRun = await call(`/runs/${runId}`, {
+  method: 'DELETE',
   headers: otherFounder.auth,
 });
-assert(crossTenant.response.status === 404, 'cross-tenant lookup did not fail closed');
+const absentRun = await call(`/runs/${absentId}`, { headers: otherFounder.auth });
+const absentDelete = await call(`/runs/${absentId}`, {
+  method: 'DELETE',
+  headers: otherFounder.auth,
+});
+
+assertNonDisclosingDenial(listTasks, foreignNeedles, 'foreign task list');
+assertNonDisclosingDenial(listEvents, foreignNeedles, 'foreign event list');
+assertNonDisclosingDenial(readRun, foreignNeedles, 'foreign run read');
+assertNonDisclosingDenial(writeGoal, foreignNeedles, 'foreign goal write');
+assertNonDisclosingDenial(deleteRun, foreignNeedles, 'foreign run delete');
+assertEquivalentAbsence(readRun, absentRun, 'foreign vs absent read');
+assertEquivalentAbsence(deleteRun, absentDelete, 'foreign vs absent delete');
+assert(
+  !Array.isArray(listTasks.body.data) || listTasks.body.data.length === 0,
+  'foreign task list returned rows',
+);
+
+const ownerAfterAttack = await call(`/runs/${runId}`, { headers: auth });
+assert(ownerAfterAttack.response.ok, 'owner run was mutated by a foreign write or delete');
+assert(
+  ownerAfterAttack.body.data.context.company_profile.purpose === originalProfile.purpose,
+  'owner frozen profile changed after a foreign attempt',
+);
 
 console.log(JSON.stringify({ status: 'passed', company_id: companyId, run_id: runId }));

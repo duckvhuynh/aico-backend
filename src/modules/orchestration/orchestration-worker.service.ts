@@ -57,7 +57,7 @@ export class OrchestrationWorkerService {
     try {
       const context = await this.loadContext(claim.company_id, claim.run_id);
       if (!(await this.isLeaseCurrent(claim))) {
-        await this.abandonAttempt(claim.attempt_id, 'STALE_BEFORE_INVOCATION');
+        await this.abandonAttempt(claim.company_id, claim.attempt_id, 'STALE_BEFORE_INVOCATION');
         return true;
       }
       if (!(await this.beginModelInvocation(claim))) {
@@ -119,17 +119,17 @@ export class OrchestrationWorkerService {
             SET state = 'RUNNING', lease_owner = $2, lease_token = $3,
                 lease_expires_at = now() + ($4 * interval '1 second'),
                 attempt_count = attempt_count + 1, row_version = row_version + 1, updated_at = now()
-            WHERE id = $1
+            WHERE company_id = $5 AND id = $1
           `,
-          [candidate.id, this.workerId, leaseToken, this.leaseSeconds],
+          [candidate.id, this.workerId, leaseToken, this.leaseSeconds, candidate.company_id],
         );
         await manager.query(
           `
             UPDATE task_attempts
             SET status = 'ABANDONED', result_class = 'LEASE_EXPIRED', completed_at = now()
-            WHERE task_id = $1 AND status = 'RUNNING'
+            WHERE company_id = $1 AND task_id = $2 AND status = 'RUNNING'
           `,
-          [candidate.id],
+          [candidate.company_id, candidate.id],
         );
         await manager.query(
           `
@@ -192,9 +192,9 @@ export class OrchestrationWorkerService {
           `
             UPDATE runs SET state = 'QUALIFYING', stage = 'PRODUCT', row_version = row_version + 1,
                             updated_at = now()
-            WHERE id = $1 AND state = 'DRAFT'
+            WHERE company_id = $1 AND id = $2 AND state = 'DRAFT'
           `,
-          [candidate.run_id],
+          [candidate.company_id, candidate.run_id],
         );
         const runner = manager.queryRunner;
         if (!runner) {
@@ -254,18 +254,18 @@ export class OrchestrationWorkerService {
         `
           SELECT status, invocation_count
           FROM model_invocation_effects
-          WHERE effect_key = $1
+          WHERE company_id = $1 AND effect_key = $2
           FOR UPDATE
         `,
-        [claim.effect_key],
+        [claim.company_id, claim.effect_key],
       );
       const current = rows[0];
       if (!current || current.status !== 'RUNNING' || current.invocation_count !== 0) {
         return false;
       }
       await manager.query(
-        `UPDATE model_invocation_effects SET invocation_count = 1 WHERE effect_key = $1`,
-        [claim.effect_key],
+        `UPDATE model_invocation_effects SET invocation_count = 1 WHERE company_id = $1 AND effect_key = $2`,
+        [claim.company_id, claim.effect_key],
       );
       return true;
     });
@@ -296,29 +296,29 @@ export class OrchestrationWorkerService {
           `
             UPDATE task_attempts
             SET status = 'ABANDONED', result_class = 'STALE_RECONCILIATION', completed_at = now()
-            WHERE id = $1 AND status = 'RUNNING'
+            WHERE company_id = $1 AND id = $2 AND status = 'RUNNING'
           `,
-          [claim.attempt_id],
+          [claim.company_id, claim.attempt_id],
         );
         return;
       }
       await manager.query(
         `
-          UPDATE task_attempts
-          SET status = 'ABANDONED', result_class = 'UNKNOWN_EXTERNAL_OUTCOME', completed_at = now()
-          WHERE id = $1 AND status = 'RUNNING'
-        `,
-        [claim.attempt_id],
+            UPDATE task_attempts
+            SET status = 'ABANDONED', result_class = 'UNKNOWN_EXTERNAL_OUTCOME', completed_at = now()
+            WHERE company_id = $1 AND id = $2 AND status = 'RUNNING'
+          `,
+        [claim.company_id, claim.attempt_id],
       );
       await manager.query(
         `
-          UPDATE tasks
-          SET state = 'BLOCKED', blocker_code = 'model_outcome_reconciliation_required',
-              lease_owner = NULL, lease_token = NULL, lease_expires_at = NULL,
-              row_version = row_version + 1, updated_at = now()
-          WHERE id = $1 AND lease_token = $2 AND state = 'RUNNING'
-        `,
-        [claim.id, claim.lease_token],
+            UPDATE tasks
+            SET state = 'BLOCKED', blocker_code = 'model_outcome_reconciliation_required',
+                lease_owner = NULL, lease_token = NULL, lease_expires_at = NULL,
+                row_version = row_version + 1, updated_at = now()
+            WHERE company_id = $1 AND id = $2 AND lease_token = $3 AND state = 'RUNNING'
+          `,
+        [claim.company_id, claim.id, claim.lease_token],
       );
       await manager.query(
         `
@@ -351,14 +351,18 @@ export class OrchestrationWorkerService {
     });
   }
 
-  private async abandonAttempt(attemptId: string, resultClass: string): Promise<void> {
+  private async abandonAttempt(
+    companyId: string,
+    attemptId: string,
+    resultClass: string,
+  ): Promise<void> {
     await this.dataSource.query(
       `
         UPDATE task_attempts
-        SET status = 'ABANDONED', result_class = $2, completed_at = now()
-        WHERE id = $1 AND status = 'RUNNING'
+        SET status = 'ABANDONED', result_class = $3, completed_at = now()
+        WHERE company_id = $1 AND id = $2 AND status = 'RUNNING'
       `,
-      [attemptId, resultClass],
+      [companyId, attemptId, resultClass],
     );
   }
 
@@ -392,7 +396,7 @@ export class OrchestrationWorkerService {
       const lock = (await runner.query(
         `
           SELECT t.id, t.state, t.lease_token, r.state AS run_state
-          FROM tasks t JOIN runs r ON r.id = t.run_id
+          FROM tasks t JOIN runs r ON r.id = t.run_id AND r.company_id = t.company_id
           WHERE t.company_id = $1 AND t.id = $2
           FOR UPDATE OF t, r
         `,
@@ -406,16 +410,16 @@ export class OrchestrationWorkerService {
         ['CANCELED', 'FAILED', 'COMPLETED'].includes(current.run_state)
       ) {
         await runner.query(
-          `UPDATE task_attempts SET status = 'ABANDONED', result_class = 'STALE_COMPLETION', completed_at = now() WHERE id = $1 AND status = 'RUNNING'`,
-          [attemptId],
+          `UPDATE task_attempts SET status = 'ABANDONED', result_class = 'STALE_COMPLETION', completed_at = now() WHERE company_id = $1 AND id = $2 AND status = 'RUNNING'`,
+          [claim.company_id, attemptId],
         );
         await runner.query(
           `
             UPDATE model_invocation_effects
             SET status = 'UNKNOWN', completed_at = now()
-            WHERE effect_key = $1 AND status = 'RUNNING'
+            WHERE company_id = $1 AND effect_key = $2 AND status = 'RUNNING'
           `,
-          [claim.effect_key],
+          [claim.company_id, claim.effect_key],
         );
         return;
       }
@@ -450,35 +454,45 @@ export class OrchestrationWorkerService {
         ],
       );
       await runner.query(
-        `UPDATE artifacts SET current_version_id = $2, updated_at = now() WHERE id = $1`,
-        [artifactId, artifactVersionId],
+        `UPDATE artifacts SET current_version_id = $3, updated_at = now() WHERE company_id = $1 AND id = $2`,
+        [claim.company_id, artifactId, artifactVersionId],
       );
       await runner.query(
         `
           UPDATE task_attempts
-          SET status = 'SUCCEEDED', result_class = 'SUCCESS', output_refs = $2, usage = $3,
+          SET status = 'SUCCEEDED', result_class = 'SUCCESS', output_refs = $3, usage = $4,
               completed_at = now()
-          WHERE id = $1
+          WHERE company_id = $1 AND id = $2
         `,
-        [attemptId, JSON.stringify([artifactVersionId]), JSON.stringify(result.usage)],
+        [
+          claim.company_id,
+          attemptId,
+          JSON.stringify([artifactVersionId]),
+          JSON.stringify(result.usage),
+        ],
       );
       await runner.query(
         `
           UPDATE model_invocation_effects
-          SET status = 'SUCCEEDED', output_digest = $2, usage = $3,
+          SET status = 'SUCCEEDED', output_digest = $3, usage = $4,
               completed_at = now()
-          WHERE effect_key = $1 AND status = 'RUNNING'
+          WHERE company_id = $1 AND effect_key = $2 AND status = 'RUNNING'
         `,
-        [claim.effect_key, canonicalDigest(result.content), JSON.stringify(result.usage)],
+        [
+          claim.company_id,
+          claim.effect_key,
+          canonicalDigest(result.content),
+          JSON.stringify(result.usage),
+        ],
       );
       await runner.query(
         `
           UPDATE tasks
           SET state = 'SUCCEEDED', lease_owner = NULL, lease_token = NULL, lease_expires_at = NULL,
               completed_at = now(), updated_at = now(), row_version = row_version + 1
-          WHERE id = $1
+          WHERE company_id = $1 AND id = $2
         `,
-        [claim.id],
+        [claim.company_id, claim.id],
       );
       await runner.query(
         `
@@ -540,17 +554,17 @@ export class OrchestrationWorkerService {
           `
             UPDATE task_attempts
             SET status = 'ABANDONED', result_class = 'STALE_FAILURE', completed_at = now()
-            WHERE id = $1 AND status = 'RUNNING'
+            WHERE company_id = $1 AND id = $2 AND status = 'RUNNING'
           `,
-          [attemptId],
+          [claim.company_id, attemptId],
         );
         await manager.query(
           `
             UPDATE model_invocation_effects
             SET status = 'UNKNOWN', completed_at = now()
-            WHERE effect_key = $1 AND status = 'RUNNING'
+            WHERE company_id = $1 AND effect_key = $2 AND status = 'RUNNING'
           `,
-          [claim.effect_key],
+          [claim.company_id, claim.effect_key],
         );
         return;
       }
@@ -558,26 +572,26 @@ export class OrchestrationWorkerService {
         `
           UPDATE task_attempts
           SET status = 'FAILED', result_class = 'UNKNOWN_EXTERNAL_OUTCOME', completed_at = now()
-          WHERE id = $1 AND status = 'RUNNING'
+          WHERE company_id = $1 AND id = $2 AND status = 'RUNNING'
         `,
-        [attemptId],
+        [claim.company_id, attemptId],
       );
       await manager.query(
         `
           UPDATE model_invocation_effects
           SET status = 'UNKNOWN', completed_at = now()
-          WHERE effect_key = $1 AND status = 'RUNNING'
+          WHERE company_id = $1 AND effect_key = $2 AND status = 'RUNNING'
         `,
-        [claim.effect_key],
+        [claim.company_id, claim.effect_key],
       );
       await manager.query(
         `
           UPDATE tasks
           SET state = 'BLOCKED', blocker_code = 'model_outcome_reconciliation_required', lease_owner = NULL,
               lease_token = NULL, lease_expires_at = NULL, updated_at = now()
-          WHERE id = $1 AND lease_token = $2 AND state = 'RUNNING'
+          WHERE company_id = $1 AND id = $2 AND lease_token = $3 AND state = 'RUNNING'
         `,
-        [claim.id, claim.lease_token],
+        [claim.company_id, claim.id, claim.lease_token],
       );
       await manager.query(
         `

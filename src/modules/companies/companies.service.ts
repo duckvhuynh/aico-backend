@@ -87,8 +87,8 @@ export class CompaniesService {
           ],
         );
         await runner.query(
-          `UPDATE companies SET current_profile_version_id = $2, updated_at = now() WHERE id = $1`,
-          [companyId, profileId],
+          `UPDATE companies SET current_profile_version_id = $2, updated_at = now() WHERE id = $1 AND founder_id = $3`,
+          [companyId, profileId, actor.id],
         );
         await this.events.append(runner, {
           companyId,
@@ -98,7 +98,7 @@ export class CompaniesService {
           correlationId,
           payload: { company_id: companyId, profile_version_id: profileId, profile_version: 1 },
         });
-        const company = await this.getByIdWithRunner(runner, companyId);
+        const company = await this.getByIdWithRunner(runner, companyId, actor.id);
         return { status: 201, body: this.toResponse(company) };
       },
     });
@@ -133,7 +133,8 @@ export class CompaniesService {
           `
             SELECT c.id, p.version
             FROM companies c
-            JOIN company_profile_versions p ON p.id = c.current_profile_version_id
+            JOIN company_profile_versions p
+              ON p.company_id = c.id AND p.id = c.current_profile_version_id
             WHERE c.founder_id = $1 AND c.status <> 'DELETED'
             FOR UPDATE OF c
           `,
@@ -177,9 +178,9 @@ export class CompaniesService {
           `
             UPDATE companies
             SET current_profile_version_id = $2, row_version = row_version + 1, updated_at = now()
-            WHERE id = $1
+            WHERE id = $1 AND founder_id = $3
           `,
-          [current.id, profileId],
+          [current.id, profileId, actor.id],
         );
         await this.events.append(runner, {
           companyId: current.id,
@@ -189,7 +190,7 @@ export class CompaniesService {
           correlationId,
           payload: { profile_version_id: profileId, profile_version: nextVersion },
         });
-        const company = await this.getByIdWithRunner(runner, current.id);
+        const company = await this.getByIdWithRunner(runner, current.id, actor.id);
         return { status: 200, body: this.toResponse(company) };
       },
     });
@@ -198,22 +199,25 @@ export class CompaniesService {
   private async getByIdWithRunner(
     runner: import('typeorm').QueryRunner,
     companyId: string,
+    founderId: string,
   ): Promise<CompanyProfileRow> {
-    const rows = (await runner.query(this.companyQuery('WHERE c.id = $1'), [
-      companyId,
-    ])) as CompanyProfileRow[];
+    const rows = (await runner.query(
+      this.companyQuery("WHERE c.id = $1 AND c.founder_id = $2 AND c.status <> 'DELETED'"),
+      [companyId, founderId],
+    )) as CompanyProfileRow[];
     return rows[0];
   }
 
-  private companyQuery(where: string): string {
+  private companyQuery(predicate: string): string {
     return `
       SELECT c.id, c.name, c.status, c.row_version, c.created_at,
              p.id AS profile_id, p.version AS profile_version, p.purpose, p.target_customer,
              p.constraints, p.normalized_limits, p.sensitive_data_warning_acknowledged,
              p.created_at AS profile_created_at
       FROM companies c
-      JOIN company_profile_versions p ON p.id = c.current_profile_version_id
-      ${where}
+      JOIN company_profile_versions p
+        ON p.company_id = c.id AND p.id = c.current_profile_version_id
+      ${predicate}
     `;
   }
 

@@ -3,6 +3,7 @@ import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 import { DomainError } from '../../common/domain/domain-error';
 import type { RequestActor } from '../../common/http/request-context';
+import { companyScopeFromActor } from '../../common/tenant/company-scope';
 import type { EventQueryDto } from './dto/event-query.dto';
 import type { TaskQueryDto } from './dto/task-query.dto';
 
@@ -56,7 +57,7 @@ export class RunsService {
   constructor(@InjectDataSource() private readonly dataSource: DataSource) {}
 
   async get(actor: RequestActor, runId: string): Promise<Record<string, unknown>> {
-    const companyId = this.requireCompany(actor);
+    const companyId = companyScopeFromActor(actor).companyId;
     const rows = await this.dataSource.query<RunRow[]>(
       `
         SELECT r.id, r.initiative_id, r.context_snapshot_id, r.state, r.stage, r.row_version,
@@ -119,7 +120,7 @@ export class RunsService {
     runId: string,
     query: TaskQueryDto,
   ): Promise<Array<Record<string, unknown>>> {
-    const companyId = this.requireCompany(actor);
+    const companyId = companyScopeFromActor(actor).companyId;
     await this.assertRun(companyId, runId);
     const parameters: unknown[] = [companyId, runId];
     const filters: string[] = [];
@@ -154,7 +155,7 @@ export class RunsService {
     runId: string,
     query: EventQueryDto,
   ): Promise<{ events: Array<Record<string, unknown>>; hasMore: boolean }> {
-    const companyId = this.requireCompany(actor);
+    const companyId = companyScopeFromActor(actor).companyId;
     await this.assertRun(companyId, runId);
     const parameters: unknown[] = [companyId, runId, query.after_sequence];
     let typeFilter = '';
@@ -190,6 +191,17 @@ export class RunsService {
     return { events: projected, hasMore };
   }
 
+  async denyDelete(actor: RequestActor, runId: string): Promise<void> {
+    const companyId = companyScopeFromActor(actor).companyId;
+    await this.assertRun(companyId, runId);
+    throw new DomainError({
+      status: 403,
+      code: 'action_denied',
+      title: 'The action is not allowed',
+      detail: 'Run deletion is not available in this release.',
+    });
+  }
+
   private async assertRun(companyId: string, runId: string): Promise<void> {
     const rows = await this.dataSource.query<Array<{ id: string }>>(
       `SELECT id FROM runs WHERE company_id = $1 AND id = $2`,
@@ -198,13 +210,6 @@ export class RunsService {
     if (!rows[0]) {
       throw this.notFound();
     }
-  }
-
-  private requireCompany(actor: RequestActor): string {
-    if (!actor.companyId) {
-      throw this.notFound();
-    }
-    return actor.companyId;
   }
 
   private notFound(): DomainError {

@@ -50,4 +50,15 @@ describe('CreateCompanyDto contract', () => {
     const errors = await validate(plainToInstance(CreateCompanyDto, payload));
     expect(errors.length).toBeGreaterThan(0);
   });
+
+  it('rejects a client-supplied tenant id', async () => {
+    const errors = await validate(
+      plainToInstance(CreateCompanyDto, {
+        ...validCompany,
+        company_id: '019c1500-0000-7000-8000-000000000099',
+      }),
+      { whitelist: true, forbidNonWhitelisted: true },
+    );
+    expect(errors.length).toBeGreaterThan(0);
+  });
 });

@@ -182,18 +182,20 @@ Application/config rollback is preferred. Schema-down or backup rollback after t
 ### 6.1 Present, reusable evidence
 
 - Authentication re-resolves the Founder and Company from PostgreSQL; request context carries `companyId` and does not accept a company header/body as authority.
+- Ordinary tenant SQL and object access require `CompanyScope` derived from that identity. The reusable two-company harness in `test/isolation-harness.mjs` covers list/read/write/delete HTTP denials and object-key denial before adapter invocation.
 - Core migrations put `company_id` on most tenant-owned state and define many composite unique keys and foreign keys across Runs, Tasks, Events, Artifact Versions, waits, answers, and model invocation effects.
 - Founder Run/task/event reads use `(company_id, resource_id)` and return the common `resource_not_found` response for missing/foreign IDs.
 - Worker context retrieval scopes the Run and frozen version joins by company; worker effect/lease work records stable tenant ownership.
 - The local S3-compatible fixture writes under a tenant prefix with tenant metadata and a SHA-256 checksum, verifies content, and exercises a fixture-local cross-prefix denial.
 - Object-store configuration is fail-fast and local Compose creates a private MinIO bucket.
+- `object_records` plus `ObjectAccessService` authorize opaque tenant keys before the object adapter. Signed access, staging promotion, encryption policy, and attachment ingestion remain later issues.
 
 These are reusable controls/evidence only. They do not satisfy production object authorization, signed access, deletion, retention, hold, backup/restore, preview/export, sandbox, or comprehensive tenant-isolation proof.
 
 ### 6.2 Required before the relevant capabilities/release gates
 
-- Introduce tenant-scoped repository ports and remove/contain raw ad hoc data access that can omit company predicates; repair remaining ID-only tenant joins/updates and constraint gaps through migrations.
-- Implement an object authorization/application service and S3-compatible adapter using the key/metadata/checksum/staging/signed-access rules above; add real two-company negative tests that prove the adapter is not called on denial.
+- Keep tenant-scoped repository ports on every new tenant-owned table; do not reintroduce `findById(id)` or optional tenant predicates. PostgreSQL RLS remains required before external alpha.
+- Complete the object authorization/application service with staging, signed-access, encryption, and lifecycle rules; keep proving the adapter is not called on denial.
 - Add immutable attachment metadata, validation/scan lifecycle, and exact tenant-aware relation tables instead of treating a JSON/array attachment ID as ownership proof.
 - Implement allowlisted exact-version context assembly and assert zero provider/tool/cost effects for a foreign reference.
 - Implement sandbox, preview, and export boundaries only under their owning AICO issues and this contract.

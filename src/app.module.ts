@@ -16,6 +16,7 @@ import { CompaniesModule } from './modules/companies/companies.module';
 import { GovernanceModule } from './modules/governance/governance.module';
 import { HealthModule } from './modules/health/health.module';
 import { InitiativesModule } from './modules/initiatives/initiatives.module';
+import { ObjectsModule } from './modules/objects/objects.module';
 import { RunsModule } from './modules/runs/runs.module';
 
 @Module({
@@ -47,6 +48,7 @@ import { RunsModule } from './modules/runs/runs.module';
     HealthModule,
     CompaniesModule,
     InitiativesModule,
+    ObjectsModule,
     RunsModule,
   ],
 })

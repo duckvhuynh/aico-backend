@@ -1,4 +1,4 @@
-import { Controller, Get, Param, ParseUUIDPipe, Query, Res } from '@nestjs/common';
+import { Controller, Delete, Get, Param, ParseUUIDPipe, Query, Res } from '@nestjs/common';
 import type { Response } from 'express';
 import { CurrentActor } from '../../common/http/current-actor.decorator';
 import { formatEtag } from '../../common/http/command-headers';
@@ -53,5 +53,13 @@ export class RunsController {
       page: { next_cursor: null, has_more: result.hasMore },
       meta: { correlation_id: (response.req as ContextRequest).correlationId },
     };
+  }
+
+  @Delete(':runId')
+  async remove(
+    @CurrentActor() actor: RequestActor,
+    @Param('runId', ParseUUIDPipe) runId: string,
+  ): Promise<void> {
+    await this.runs.denyDelete(actor, runId);
   }
 }
