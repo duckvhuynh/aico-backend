@@ -28,6 +28,11 @@ interface RunRow {
   frozen_constraints: string[];
   frozen_normalized_limits: Record<string, unknown>;
   frozen_profile_created_at: Date;
+  frozen_goal_id: string;
+  frozen_goal_version: number;
+  frozen_goal_schema_version: number;
+  frozen_structured_goal: Record<string, unknown>;
+  frozen_goal_created_at: Date;
   created_at: Date;
   updated_at: Date;
 }
@@ -66,11 +71,16 @@ export class RunsService {
                cs.company_profile_version_id, cs.goal_version_id, cs.answer_version_ids,
                p.id AS frozen_profile_id, p.version AS frozen_profile_version, p.purpose AS frozen_purpose,
                p.target_customer AS frozen_target_customer, p.constraints AS frozen_constraints,
-               p.normalized_limits AS frozen_normalized_limits, p.created_at AS frozen_profile_created_at
+               p.normalized_limits AS frozen_normalized_limits, p.created_at AS frozen_profile_created_at,
+               gv.id AS frozen_goal_id, gv.version AS frozen_goal_version,
+               gv.schema_version AS frozen_goal_schema_version, gv.structured_goal AS frozen_structured_goal,
+               gv.created_at AS frozen_goal_created_at
         FROM runs r
         JOIN context_snapshots cs ON cs.id = r.context_snapshot_id AND cs.company_id = r.company_id
         JOIN company_profile_versions p
           ON p.id = cs.company_profile_version_id AND p.company_id = r.company_id
+        JOIN goal_versions gv
+          ON gv.id = cs.goal_version_id AND gv.company_id = r.company_id
         WHERE r.company_id = $1 AND r.id = $2
       `,
       [companyId, runId],
@@ -103,6 +113,14 @@ export class RunsService {
           constraints: run.frozen_constraints,
           normalized_limits: run.frozen_normalized_limits,
           created_at: run.frozen_profile_created_at,
+        },
+        goal: {
+          id: run.frozen_goal_id,
+          version: Number(run.frozen_goal_version),
+          schema_version: Number(run.frozen_goal_schema_version),
+          structured_goal: run.frozen_structured_goal,
+          created_by: 'FOUNDER',
+          created_at: run.frozen_goal_created_at,
         },
       },
       summary: {

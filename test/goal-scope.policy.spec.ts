@@ -33,6 +33,7 @@ describe('GoalScopePolicy', () => {
 
   it('rejects server-side scope without silently narrowing it', () => {
     const goal = validGoal();
+    const submitted = structuredClone(goal);
     goal.goal.constraints.client_only = false;
     try {
       policy.assertSupported(goal);
@@ -40,6 +41,8 @@ describe('GoalScopePolicy', () => {
     } catch (error: unknown) {
       expect(error).toBeInstanceOf(DomainError);
       expect((error as DomainError).code).toBe('goal_out_of_scope');
+      expect(goal.goal.constraints.client_only).toBe(false);
+      expect(submitted.goal.constraints.client_only).toBe(true);
     }
   });
 

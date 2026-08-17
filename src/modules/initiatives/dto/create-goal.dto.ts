@@ -3,6 +3,7 @@ import {
   ArrayMaxSize,
   IsArray,
   IsBoolean,
+  IsDefined,
   IsIn,
   IsInt,
   IsString,
@@ -74,6 +75,8 @@ export class StructuredGoalDto {
   @IsArray()
   @ArrayMaxSize(20)
   @IsString({ each: true })
+  @MinLength(1, { each: true })
+  @MaxLength(500, { each: true })
   non_goals!: string[];
 
   @IsString()
@@ -97,6 +100,7 @@ export class CreateGoalDto {
   @Max(1)
   schema_version!: 1;
 
+  @IsDefined()
   @ValidateNested()
   @Type(() => StructuredGoalDto)
   goal!: StructuredGoalDto;
@@ -108,4 +112,23 @@ export class CreateGoalDto {
 
   @IsBoolean()
   start_run!: boolean;
+}
+
+export function canonicalStructuredGoal(goal: StructuredGoalDto): Record<string, unknown> {
+  return {
+    target_user: goal.target_user,
+    problem: goal.problem,
+    desired_outcome: goal.desired_outcome,
+    primary_flow: goal.primary_flow,
+    must_haves: goal.must_haves.map((item) => ({ id: item.id, text: item.text })),
+    non_goals: [...goal.non_goals],
+    visual_direction: goal.visual_direction,
+    constraints: {
+      max_screens: goal.constraints.max_screens,
+      primary_flows: goal.constraints.primary_flows,
+      client_only: goal.constraints.client_only,
+      data_mode: goal.constraints.data_mode,
+    },
+    reference_ids: [...goal.reference_ids],
+  };
 }

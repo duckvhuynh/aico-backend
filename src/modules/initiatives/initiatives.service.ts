@@ -9,7 +9,7 @@ import type { RequestActor } from '../../common/http/request-context';
 import { companyScopeFromActor } from '../../common/tenant/company-scope';
 import { CommandExecutor, type CommandResult } from '../governance/command-executor.service';
 import { DomainEventService } from '../governance/domain-event.service';
-import type { CreateGoalDto } from './dto/create-goal.dto';
+import { canonicalStructuredGoal, type CreateGoalDto } from './dto/create-goal.dto';
 import type { CreateInitiativeDto } from './dto/create-initiative.dto';
 import { GoalScopePolicy } from './goal-scope.policy';
 
@@ -164,13 +164,15 @@ export class InitiativesService {
         const contextSnapshotId = newId();
         const runId = newId();
         const taskId = newId();
+        const structuredGoal = canonicalStructuredGoal(dto.goal);
 
-        await runner.query(
+        const inserted = (await runner.query(
           `
             INSERT INTO goal_versions
               (id, company_id, initiative_id, version, schema_version, structured_goal,
                attachment_ids, created_by)
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            RETURNING created_at
           `,
           [
             goalVersionId,
@@ -178,11 +180,11 @@ export class InitiativesService {
             initiativeId,
             goalVersion,
             dto.schema_version,
-            JSON.stringify(dto.goal),
-            JSON.stringify(dto.attachment_ids),
+            JSON.stringify(structuredGoal),
+            JSON.stringify([...dto.attachment_ids]),
             actor.id,
           ],
-        );
+        )) as Array<{ created_at: Date }>;
         await runner.query(
           `
             UPDATE initiatives
@@ -264,6 +266,7 @@ export class InitiativesService {
               version: goalVersion,
               schema_version: 1,
               created_by: 'FOUNDER',
+              created_at: inserted[0].created_at,
             },
             run: {
               id: runId,
