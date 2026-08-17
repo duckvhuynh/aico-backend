@@ -1,4 +1,4 @@
-import { Body, Controller, Headers, HttpCode, Param, Post, Res } from '@nestjs/common';
+import { Body, Controller, Get, Headers, HttpCode, Param, Post, Res } from '@nestjs/common';
 import { ParseUUIDPipe } from '@nestjs/common';
 import type { Response } from 'express';
 import { CurrentActor } from '../../common/http/current-actor.decorator';
@@ -11,6 +11,19 @@ import { InitiativesService } from './initiatives.service';
 @Controller({ path: 'initiatives', version: '1' })
 export class InitiativesController {
   constructor(private readonly initiatives: InitiativesService) {}
+
+  @Get('current')
+  async getCurrent(
+    @CurrentActor() actor: RequestActor,
+    @Res({ passthrough: true }) response: Response,
+  ): Promise<Record<string, unknown>> {
+    const initiative = await this.initiatives.getCurrent(actor);
+    response.setHeader('ETag', formatEtag(Number(initiative.row_version)));
+    return {
+      data: initiative,
+      meta: { correlation_id: (response.req as ContextRequest).correlationId },
+    };
+  }
 
   @Post()
   @HttpCode(201)
