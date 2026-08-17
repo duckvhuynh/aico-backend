@@ -23,11 +23,11 @@ Founders can resume the non-terminal Prototype Initiative after refresh or a
 
 ## Acceptance reconciliation
 
-| ID           | Parent criterion                                                                 | Evidence                                      | Result  |
-| ------------ | -------------------------------------------------------------------------------- | --------------------------------------------- | ------- |
-| A18-READ-01  | Authenticated founder can read their current non-terminal Prototype Initiative.  | `InitiativesController.getCurrent`, smoke GET | Pending |
-| A18-READ-02  | Missing/foreign reads match absent 404. No client tenant header authority.       | Smoke foreign GET with `x-company-id`         | Pending |
-| A18-BOUND-01 | No qualification result persistence, no founder UI in this repo, no 23rd gate.   | Additive GET only                             | Pending |
+| ID           | Parent criterion                                                                | Evidence                                      | Result  |
+| ------------ | ------------------------------------------------------------------------------- | --------------------------------------------- | ------- |
+| A18-READ-01  | Authenticated founder can read their current non-terminal Prototype Initiative. | `InitiativesController.getCurrent`, smoke GET | Pending |
+| A18-READ-02  | Missing/foreign reads match absent 404. No client tenant header authority.      | Smoke foreign GET with `x-company-id`         | Pending |
+| A18-BOUND-01 | No qualification result persistence, no founder UI in this repo, no 23rd gate.  | Additive GET only                             | Pending |
 
 ## Non-goals kept
 
